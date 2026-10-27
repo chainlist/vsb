@@ -75,6 +75,7 @@ src/routes/
       +layout.svelte          # settings: a full page over the canvas, one tab per child route
       +page.ts                # opens the first tab
       appearance/+page.svelte # the vault's theme
+      canvas/+page.svelte     # snapping to the grid
 ```
 
 ### Shared pieces
@@ -143,7 +144,9 @@ Rarely written. Holds:
 
 - `format`: file format version
 - `id`: vault ULID, used to find the index in the app-data folder
-- vault settings: for now `theme`, the theme the vault is drawn in, left out for the default
+- vault settings, each left out at its default:
+  - `theme`: the theme the vault is drawn in
+  - `snap`: `false` when moved and resized cards and zones do not snap to the grid (on by default)
 
 ### Note: `notes/**/*.md`
 
@@ -210,6 +213,7 @@ Competitor scan
 - Moving or resizing a zone never changes what is inside it. Moving a zone over loose cards does not capture them.
 - A zone cannot be resized smaller than the area its contents cover. Resizing from the left or top keeps the contents in place, so its direct children's coordinates are rewritten.
 - Ctrl+drag (Cmd on macOS) on the paper draws a zone. A zone's name is its handle: click selects, drag moves, double-click renames. Its body behaves like the paper: dragging pans, double-clicking places a card inside.
+- **Snap to grid**, on by default: a card or zone being moved lands with its top-left corner on a crossing of the minor grid (20 world units). With several items selected, the one pressed snaps and the others keep their places around it. Resizing, the sides pulled land on grid lines; the minimum size and a zone's contents still win over the grid. Holding Alt (Option on macOS) while dragging moves or resizes freely. A drag that snaps back to where it started writes nothing. Turned off in Settings > Canvas, which writes `snap: false` to `vault.json`.
 
 ## Cards
 
@@ -407,7 +411,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 ## Appearance
 
-- **Settings is a full page** at `vault/[vaultId]/settings/`, drawn over the canvas, which stays mounted underneath. Each tab is a child route; only Appearance exists so far. Escape or Close goes back to the canvas.
+- **Settings is a full page** at `vault/[vaultId]/settings/`, drawn over the canvas, which stays mounted underneath. Each tab is a child route: Appearance and Canvas so far. Escape or Close goes back to the canvas.
 - **Four themes:** Studio, the default, Engineering pad, and two dark ones, Orbit and Cairn.
   - Studio: a cool gray canvas dotted at the grid crossings, white cards with a hairline edge, graphite text and a petrol accent. Instrument Sans for notes and controls; zone names are set narrower.
   - Engineering pad: sage graph paper, index cards with a red rule under the title, fountain-pen blue. Literata for notes, IBM Plex Sans for controls.

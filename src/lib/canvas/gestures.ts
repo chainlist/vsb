@@ -14,6 +14,7 @@ import {
 } from '#lib/api.js';
 import { camera } from './camera.svelte.js';
 import { track } from './drag.js';
+import { snap, toGrid } from './grid.svelte.js';
 import { history } from './history.js';
 import { items } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
@@ -48,9 +49,17 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 	const zones = selection.zones.filter((z) => !carried.has(z.id));
 	const cards = selection.cards.filter((c) => !carried.has(c.id));
 	const moving = [...zones, ...cards, ...inside].map((i) => ({ item: i, x: i.x, y: i.y }));
+	// The item pressed lands on the grid and the others keep their places around it. Pressing an
+	// edge moves its selection, led by the first item in it.
+	const lead = moving.find((m) => m.item.id === item.id) ?? moving[0];
 	track(down, {
-		move(dx, dy) {
+		move(dx, dy, e) {
 			const by = { x: Math.round(dx / camera.zoom), y: Math.round(dy / camera.zoom) };
+			// Alt held moves freely.
+			if (lead && snap.on && !e.altKey) {
+				by.x = toGrid(lead.x + by.x) - lead.x;
+				by.y = toGrid(lead.y + by.y) - lead.y;
+			}
 			for (const m of moving) {
 				m.item.x = m.x + by.x;
 				m.item.y = m.y + by.y;
@@ -58,6 +67,8 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 		},
 		end(dragged) {
 			if (dragged) {
+				// Back where it started, as a short drag can snap, nothing is written.
+				if (!lead || (lead.item.x === lead.x && lead.item.y === lead.y)) return;
 				// Zones land first, so cards dropped along with them find them where they now are.
 				history.edit(async () => [...(await moveZones(drops(zones))), ...(await moveCards(drops(cards)))]);
 			} else if (wasSelected && !down.shiftKey) {
@@ -82,13 +93,22 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 	down.preventDefault();
 	down.stopPropagation();
 	const from = { x: item.x, y: item.y, w: item.w, h: item.h };
+	// Where the pulled sides start.
+	const side = { x: px > 0 ? from.x + from.w : from.x, y: py > 0 ? from.y + from.h : from.y };
 	// A zone can't shrink smaller than the area its contents cover.
 	let cover: Rect | null = null;
 	if (kind === 'zone') zoneContents(item.id).then((r) => (cover = r));
 	track(down, {
-		move(dx, dy) {
-			item.w = stretch(from.w, px, dx / camera.zoom, MIN.w);
-			item.h = stretch(from.h, py, dy / camera.zoom, MIN.h);
+		move(dx, dy, e) {
+			let bx = dx / camera.zoom;
+			let by = dy / camera.zoom;
+			// The pulled sides land on the grid. Alt held resizes freely.
+			if (snap.on && !e.altKey) {
+				bx = toGrid(side.x + bx) - side.x;
+				by = toGrid(side.y + by) - side.y;
+			}
+			item.w = stretch(from.w, px, bx, MIN.w);
+			item.h = stretch(from.h, py, by, MIN.h);
 			// Pulling the left or top edge keeps the opposite edge in place.
 			item.x = px < 0 ? from.x + from.w - item.w : from.x;
 			item.y = py < 0 ? from.y + from.h - item.h : from.y;
@@ -102,8 +122,9 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 			}
 		},
 		end(dragged) {
-			if (!dragged) return;
 			const { id, x, y, w, h } = item;
+			// Back to its size, as a short drag can snap, nothing is written.
+			if (!dragged || (x === from.x && y === from.y && w === from.w && h === from.h)) return;
 			history.edit(() => (kind === 'zone' ? resizeZone : resizeCard)(id, x, y, w, h));
 		}
 	});

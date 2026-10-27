@@ -33,6 +33,8 @@ pub fn run() {
       commands::open_vault,
       commands::vault_theme,
       commands::set_vault_theme,
+      commands::vault_snap,
+      commands::set_vault_snap,
       commands::query_viewport,
       commands::create_card,
       commands::place_note,
