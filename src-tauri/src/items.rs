@@ -64,6 +64,17 @@ pub enum Arrow {
   None,
 }
 
+/// How an edge's line is drawn: one solid line, dashes, dots, or two parallel lines.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Stroke {
+  #[default]
+  Solid,
+  Dashed,
+  Dotted,
+  Double,
+}
+
 impl HAlign {
   pub fn as_str(self) -> &'static str {
     match self {
@@ -100,6 +111,17 @@ impl Arrow {
       Arrow::To => "to",
       Arrow::Both => "both",
       Arrow::None => "none",
+    }
+  }
+}
+
+impl Stroke {
+  pub fn as_str(self) -> &'static str {
+    match self {
+      Stroke::Solid => "solid",
+      Stroke::Dashed => "dashed",
+      Stroke::Dotted => "dotted",
+      Stroke::Double => "double",
     }
   }
 }
@@ -146,6 +168,8 @@ pub struct Edge {
   pub shape: Shape,
   #[serde(default, skip_serializing_if = "is_default")]
   pub arrow: Arrow,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub stroke: Stroke,
 }
 
 pub trait Item: Serialize + DeserializeOwned {

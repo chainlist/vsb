@@ -37,13 +37,18 @@ impl Session {
     })
   }
 
-  /// Gives a zone a new world rectangle, grown where needed to cover its contents. They stay in
-  /// place: when the zone's corner moves, its direct children shift back by as much.
+  /// Gives a zone a new world rectangle, grown where needed to cover its contents, which stay in place.
   pub fn resize_zone(&self, id: &str, x: f64, y: f64, w: f64, h: f64) -> Result<Vec<ItemState>> {
     let mut r = Rect::of(x, y, w, h);
     if let Some(contents) = self.index.zone_contents(id)? {
       r = r.union(contents);
     }
+    self.apply(self.reshaped(id, r)?)
+  }
+
+  /// The states that give a zone the world rectangle `r`, its contents staying in place: when its
+  /// corner moves, its direct children shift back by as much.
+  pub(crate) fn reshaped(&self, id: &str, r: Rect) -> Result<Vec<ItemState>> {
     let Some((ax, ay)) = self.index.zone_origin(id)? else {
       return msg("zone not found");
     };
@@ -56,7 +61,7 @@ impl Session {
         states.push(self.rehomed(kind, &child, Some(id), -dx, -dy)?);
       }
     }
-    self.apply(states)
+    Ok(states)
   }
 
   pub fn rename_zone(&self, id: &str, name: &str) -> Result<Vec<ItemState>> {

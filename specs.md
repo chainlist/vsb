@@ -21,6 +21,7 @@ Principles:
 | Frontend | SvelteKit 3 with Svelte 5, built as a static single-page app (`@sveltejs/adapter-static`) |
 | Index | SQLite, used only from Rust. The build must include FTS5, R*Tree and math functions (`floor()`). |
 | Batch creation layout | `@dagrejs/dagre` |
+| Dialogs | shadcn-svelte (on bits-ui), styled with Tailwind CSS 4 |
 | Icons | Lucide (`@lucide/svelte`) |
 
 ### Responsibilities
@@ -87,6 +88,7 @@ src/routes/
   - undo
 - **Repeated UI is one component.** For example, the Unplaced tray and search results both list notes, so they share one note list component; the tray and search share one panel shell.
 - **Design tokens:** every color, font, radius and shadow comes from a theme's tokens (see [Appearance](#appearance)). Components never hard-code them.
+- **shadcn-svelte components** live in `#lib/components/ui`, copied from its registry. `app.css` maps their colors, radii and shadows onto the theme's tokens, so they follow the vault's theme. Tailwind comes without its preflight reset, which the rest of the app is not styled for, and without `dark:` variants: a theme, not the OS, decides whether it is dark.
 - **Icons are Lucide icons**, drawn in the color of their text, at a size set once in the root layout. An icon Lucide lacks (the angled edge shape) is drawn through Lucide's own `Icon` component, so it matches.
   - A universal symbol in a tight bar stands alone, with a tooltip and a screen-reader label: settings (gear), close (cross), delete (trash).
   - Everywhere else the icon sits beside its text.
@@ -186,13 +188,14 @@ Competitor scan
 ### Edge: `.canvas/edges/<edge-id>.json`
 
 ```json
-{ "from": "01JD...", "to": "01JE...", "label": "needs", "shape": "angled", "arrow": "both" }
+{ "from": "01JD...", "to": "01JE...", "label": "needs", "shape": "angled", "arrow": "both", "stroke": "dashed" }
 ```
 
 - `from`, `to`: card ULIDs.
 - `label`: optional.
 - `shape`: `curved` (default), `straight`, `angled`.
 - `arrow`: where arrowheads are drawn: `to` (default), `both`, `none`.
+- `stroke`: how the line is drawn: `solid` (default), `dashed`, `dotted`, `double` (two parallel lines).
 - Fields at their default value are left out of the file.
 
 ## Zones and membership
@@ -252,11 +255,12 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - Mod+drag (Ctrl, Cmd on macOS) from a card draws an edge: releasing on another card connects them, `from` the first, `to` the second. Started on the paper, the same gesture draws a zone. Releasing on the paper or on the starting card creates nothing.
 - Edges join cards only, never zones or notes. Cards in different zones and empty cards can be connected.
 - No edge from a card to itself, and at most one edge between two cards, in either direction. Connecting a pair that is already connected selects its edge.
-- Each edge has a style, picked for the selected edges in the selection bar: its shape and its arrowheads. New edges are curved, with an arrowhead at `to`.
+- Each edge has a style, picked for the selected edges in the selection bar: its shape, its arrowheads and its line. New edges are curved and solid, with an arrowhead at `to`.
   - Curved and angled lines leave each card square to the side that faces the other card, from the middle of that side. An angled line bends at right angles halfway across.
   - A straight line runs along the line between the two cards' centers, from border to border.
 - Pressing the line or its label selects the edge. Double-clicking it, or Enter while it is selected, edits the label in place at the curve's middle. New edges have no label; clearing a label removes it from the file.
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
+- Selecting cards brings out their links: every other card that no edge joins to one of them dims, and so does every edge that touches none of them. They stay solid, nothing shows through: a card's content fades into its stock, an edge's color into the paper. Zones never dim. A card with no edges dims all the others.
 
 ## Unplaced tray and search
 
@@ -275,20 +279,29 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 A small text syntax, inspired by Mermaid but not compatible with it, to create several cards and edges at once:
 
 ```
-Competitor scan -> Price tiers -> Customer interviews
-Competitor scan -> Pricing risks
+Competitor scan -> Price tiers --> Customer interviews
+Competitor scan .-> Pricing risks
 Open questions
 ```
 
-This creates 5 cards and 3 edges.
+This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
 
-- Each line is one card, or a chain of cards joined by `->`.
-- The text is the note's content. The same text twice in one block is the same card.
-- The cards land where the command is run. Run inside a zone, they join that zone.
-- Created cards have `halign: center` and `valign: center`.
-- Layout uses `@dagrejs/dagre`.
-- One-shot: the text creates the cards once and is not kept or linked to them.
-- The whole batch is one undo step.
+- **Running it.** Mod+B (Ctrl, Cmd on macOS) opens the batch dialog, a modal over the canvas, which turns the canvas's keys off. The cards land on the point the pointer was over, or on the middle of the screen when it was elsewhere. Mod+Enter or Create makes the cards. Escape, Cancel, Close or a click outside closes it; the text stays for the next time it opens, until it creates cards.
+- **The syntax.**
+  - Each line is one card, or a chain of cards joined by arrows. Blank lines and empty steps (`A -> -> B`, a trailing `->`) are skipped.
+  - An arrow is a line with a head at one end or both. The heads set the arrowheads: `A -> B` points at B, `A <- B` at A (the edge runs from B), `A <-> B` at both.
+  - The line sets the stroke: one `-` is solid, `--` (or longer) dashed, any `.` dotted (`.->`, `<-.`, `-.->`), `=` double (`=>`, `<=`, `<=>`). Each arrow in a chain keeps its own.
+  - Without a head, `-`, `.` and `=` are text: a hyphenated word stays one card.
+  - The text is the note's content. The same text twice in one block is the same card.
+  - Edges follow the [edge](#edges) rules: none from a card to itself, at most one between two cards, either way round.
+  - The dialog lists the arrows, counts the cards and edges as they are typed, and shows `->` as typed, even in a font that draws it as an arrow.
+- **A preview map** under the text shows what the batch creates as it is typed, laid out as it will land: the cards by their titles only, and the edges with their arrowheads and lines. It fits the map, never drawing a card above half its size on the canvas.
+- **Layout** uses `@dagrejs/dagre`, left to right along the edges, and centers the whole batch on the point. Each card has the size of a card placed by double-click, with `halign: center` and `valign: center`.
+- **Run inside a zone,** the cards all join the innermost zone under the point. A zone too small for them grows to hold them, like a resize, its contents staying in place: one graph-paper square of room on the sides and at the bottom, three at the top for its name.
+- **One command** writes the batch: the notes, then a grown zone, the cards and the edges.
+- **The new cards are selected.** Landing in a collapsed zone or partly off-screen, they are framed, zoomed in at least until the zones open.
+- **One-shot:** the text creates the cards once and is not kept or linked to them.
+- **The whole batch is one undo step.** Undoing it removes the cards and edges and gives a grown zone back its size. The notes stay, in the Unplaced tray, as for any deleted card; redo places them again.
 - Not supported yet: edge labels, empty cards, zones.
 
 ## Index (SQLite)
@@ -342,6 +355,7 @@ CREATE TABLE edges (
   label     TEXT,
   shape     TEXT NOT NULL DEFAULT 'curved',
   arrow     TEXT NOT NULL DEFAULT 'to',
+  stroke    TEXT NOT NULL DEFAULT 'solid',
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX edges_from ON edges(from_card);
@@ -400,7 +414,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - Orbit (futuristic): a deep navy canvas with faint major lines and brighter nodes where they cross, cards edged in light, an ice-blue accent. Saira for notes and controls; zone names are set narrower.
   - Cairn (eerie, Celtic): a peat-moss canvas with a faint speckle, slate cards with a dim gold rule under the title, fog-pale text and a bog-gold accent. Alegreya for notes, Alegreya Sans for controls.
 - **A theme is a set of design tokens:** CSS custom properties, picked by the `data-theme` attribute on the root element. A new theme, or a dark variant, is a new set of values with no component changes.
-  - The tokens also set whether the theme is light or dark (for scrollbars and form controls), how strongly zones are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
+  - The tokens also set whether the theme is light or dark (for scrollbars and form controls), the wash behind a dialog, how strongly zones are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
   - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **Screens outside a vault** (the vault picker, errors) use the default theme.

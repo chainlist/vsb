@@ -56,7 +56,7 @@ impl Index {
     let fields = match T::KIND {
       Kind::Zone => "'name', name, 'parent', parent, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color",
       Kind::Card => "'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign",
-      Kind::Edge => "'from', from_card, 'to', to_card, 'label', label, 'shape', shape, 'arrow', arrow",
+      Kind::Edge => "'from', from_card, 'to', to_card, 'label', label, 'shape', shape, 'arrow', arrow, 'stroke', stroke",
     };
     let sql = format!("SELECT json_object({fields}) FROM {} WHERE id = ?1", tables(T::KIND).0);
     let json: Option<String> = self.db.query_row(&sql, [id], |r| r.get(0)).optional()?;
@@ -91,10 +91,10 @@ impl Index {
 
   pub fn put_edge(&self, id: &str, e: &Edge, stamp: Stamp) -> Result<()> {
     self.db.execute(
-      "INSERT INTO edges (id, from_card, to_card, label, shape, arrow, mtime, size) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-       ON CONFLICT (id) DO UPDATE SET from_card = excluded.from_card, to_card = excluded.to_card,
-         label = excluded.label, shape = excluded.shape, arrow = excluded.arrow, mtime = excluded.mtime, size = excluded.size",
-      params![id, e.from, e.to, e.label, e.shape.as_str(), e.arrow.as_str(), stamp.mtime, stamp.size],
+      "INSERT INTO edges (id, from_card, to_card, label, shape, arrow, stroke, mtime, size) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+       ON CONFLICT (id) DO UPDATE SET from_card = excluded.from_card, to_card = excluded.to_card, label = excluded.label,
+         shape = excluded.shape, arrow = excluded.arrow, stroke = excluded.stroke, mtime = excluded.mtime, size = excluded.size",
+      params![id, e.from, e.to, e.label, e.shape.as_str(), e.arrow.as_str(), e.stroke.as_str(), stamp.mtime, stamp.size],
     )?;
     Ok(())
   }

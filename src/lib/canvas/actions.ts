@@ -5,6 +5,7 @@ import {
 	arrowEdges,
 	clearCard,
 	colorZones,
+	createBatch,
 	deleteCards,
 	deleteEdges,
 	deleteZones,
@@ -13,18 +14,21 @@ import {
 	placeNote,
 	renameZone,
 	shapeEdges,
+	strokeEdges,
 	type Arrow,
 	type CardView,
 	type EdgeView,
 	type HAlign,
 	type Shape,
+	type Stroke,
 	type VAlign,
 	type ZoneView
 } from '#lib/api.js';
+import { layOut, parse } from './batch.js';
 import { camera } from './camera.svelte.js';
 import { newCardAt } from './gestures.js';
 import { history } from './history.js';
-import { items, OPEN_ZOOM } from './items.svelte.js';
+import { inside, items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
@@ -80,6 +84,11 @@ export function arrowSelected(arrow: Arrow) {
 	return history.edit(() => arrowEdges(ids, arrow));
 }
 
+export function strokeSelected(stroke: Stroke) {
+	const ids = selection.edges.map((e) => e.id);
+	return history.edit(() => strokeEdges(ids, stroke));
+}
+
 export function rename(id: string, name: string) {
 	return history.edit(() => renameZone(id, name));
 }
@@ -107,12 +116,33 @@ export async function show(kind: 'card' | 'zone', id: string) {
 export function dropNote(path: string, at: { x: number; y: number }) {
 	const { x, y, w, h } = newCardAt(at);
 	// The card joins the zone under its center. In a collapsed zone it would be hidden: it is shown.
-	const [cx, cy] = [x + w / 2, y + h / 2];
-	const hidden = items.collapsed && items.zones.some((z) => cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h);
+	const hidden = items.hides({ x: x + w / 2, y: y + h / 2 });
 	return history.edit(async () => {
 		const { id, undo } = await placeNote(path, x, y, w, h);
 		if (undo.length && !hidden) selection.only(id);
 		else await show('card', id);
+		return undo;
+	});
+}
+
+/** Creates the cards and edges written in the batch syntax, centered on a world point, as one undo
+ * step, and selects the cards. Hidden in a collapsed zone, or partly off-screen, they are framed. */
+export function createCards(text: string, at: { x: number; y: number }) {
+	const plan = parse(text);
+	if (!plan.texts.length) return;
+	const boxes = layOut(plan, at);
+	const span = {
+		minX: Math.min(...boxes.map((b) => b.x)),
+		minY: Math.min(...boxes.map((b) => b.y)),
+		maxX: Math.max(...boxes.map((b) => b.x + b.w)),
+		maxY: Math.max(...boxes.map((b) => b.y + b.h))
+	};
+	const framed = items.hides(at) || !inside(span, camera.visible);
+	return history.edit(async () => {
+		const cards = boxes.map((box, i) => ({ ...box, text: plan.texts[i] }));
+		const { cards: ids, undo } = await createBatch(at.x, at.y, cards, plan.edges);
+		selection.ids = ids;
+		if (framed) camera.fit(span, OPEN_ZOOM);
 		return undo;
 	});
 }

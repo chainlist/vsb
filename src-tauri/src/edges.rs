@@ -1,8 +1,8 @@
-//! Edge edits: connecting two cards, labeling, styling and deleting. Like card and zone edits,
+//! Edge edits: connecting two cards, labeling, styling (shape, arrowheads, line) and deleting. Like card and zone edits,
 //! each hands the target item states to `apply`, so every edit can be undone.
 
 use crate::error::{msg, Result};
-use crate::items::{Arrow, Card, Edge, Kind, Shape};
+use crate::items::{Arrow, Card, Edge, Kind, Shape, Stroke};
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 
@@ -20,7 +20,7 @@ impl Session {
     self.read::<Card>(from)?;
     self.read::<Card>(to)?;
     let id = crate::new_id();
-    let edge = Edge { from: from.to_string(), to: to.to_string(), label: None, shape: Shape::default(), arrow: Arrow::default() };
+    let edge = Edge { from: from.to_string(), to: to.to_string(), label: None, shape: Shape::default(), arrow: Arrow::default(), stroke: Stroke::default() };
     let undo = self.apply(vec![ItemState::of(&id, &edge)?])?;
     Ok(Created { id, undo })
   }
@@ -46,6 +46,14 @@ impl Session {
     let ids: Vec<&str> = ids.iter().map(String::as_str).collect();
     self.edit::<Edge>(&ids, |_, edge| {
       edge.arrow = arrow;
+      Ok(())
+    })
+  }
+
+  pub fn stroke_edges(&self, ids: &[String], stroke: Stroke) -> Result<Vec<ItemState>> {
+    let ids: Vec<&str> = ids.iter().map(String::as_str).collect();
+    self.edit::<Edge>(&ids, |_, edge| {
+      edge.stroke = stroke;
       Ok(())
     })
   }

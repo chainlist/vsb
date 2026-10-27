@@ -45,6 +45,8 @@ export type Frame = { x: number; y: number; w: number; h: number };
 export type Shape = 'curved' | 'straight' | 'angled';
 /** Where an edge has arrowheads: at its `to` card, at both cards, or at neither. */
 export type Arrow = 'to' | 'both' | 'none';
+/** How an edge's line is drawn: one solid line, dashes, dots, or two parallel lines. */
+export type Stroke = 'solid' | 'dashed' | 'dotted' | 'double';
 
 /** An edge, with the boxes of both its cards, `from` first, so it is drawn when they are off-screen. */
 export type EdgeView = {
@@ -54,6 +56,7 @@ export type EdgeView = {
 	label: string | null;
 	shape: Shape;
 	arrow: Arrow;
+	stroke: Stroke;
 	ends: [Frame, Frame];
 };
 
@@ -65,6 +68,15 @@ export type ItemState = { kind: 'zone' | 'card' | 'edge'; id: string; value: unk
 
 /** A new item's ID, with the states that undo its creation. */
 export type Created = { id: string; undo: ItemState[] };
+
+/** A card to create on a world rectangle, with a new note holding `text`. */
+export type BatchCard = Frame & { text: string };
+
+/** An edge to create between two of a batch's cards, given as indexes into them. */
+export type BatchEdge = { from: number; to: number; arrow: Arrow; stroke: Stroke };
+
+/** The new cards' IDs, in the order they were given, with the states that undo the batch. */
+export type Batch = { cards: string[]; undo: ItemState[] };
 
 /** A card or zone dropped with its top-left corner at a world position. */
 export type Move = { id: string; x: number; y: number };
@@ -102,6 +114,11 @@ export const createCard = (x: number, y: number, w: number, h: number) =>
  * nothing to undo. */
 export const placeNote = (path: string, x: number, y: number, w: number, h: number) =>
 	invoke<Created>('place_note', { path, x, y, w, h });
+
+/** Writes a note for each card, then the cards, centered, then the edges between them. They all
+ * join the innermost zone under world point (x, y), which grows to hold them. */
+export const createBatch = (x: number, y: number, cards: BatchCard[], edges: BatchEdge[]) =>
+	invoke<Batch>('create_batch', { x, y, cards, edges });
 
 /** A card's or a zone's box in the world, or null when it is gone. */
 export const itemBox = (kind: 'card' | 'zone', id: string) => invoke<Rect | null>('item_box', { kind, id });
@@ -170,7 +187,9 @@ export const shapeEdges = (ids: string[], shape: Shape) => invoke<ItemState[]>('
 
 export const arrowEdges = (ids: string[], arrow: Arrow) => invoke<ItemState[]>('arrow_edges', { ids, arrow });
 
-export const deleteEdges = (ids: string[]) => invoke<ItemState[]>('delete_edges', { ids });
+export const strokeEdges = (ids: string[], stroke: Stroke) => invoke<ItemState[]>('stroke_edges', { ids, stroke });
+
+export const deleteEdges =(ids: string[]) => invoke<ItemState[]>('delete_edges', { ids });
 
 /** Brings items to the given states and returns the states they had. */
 export const applyStates = (states: ItemState[]) => invoke<ItemState[]>('apply_states', { states });

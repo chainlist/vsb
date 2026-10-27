@@ -67,7 +67,7 @@ impl Index {
     // neither card is inside it.
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
-       SELECT e.id, e.from_card, e.to_card, e.label, e.shape, e.arrow,
+       SELECT e.id, e.from_card, e.to_card, e.label, e.shape, e.arrow, e.stroke,
          coalesce(fz.ax, 0) + f.x, coalesce(fz.ay, 0) + f.y, f.w, f.h,
          coalesce(tz.ax, 0) + t.x, coalesce(tz.ay, 0) + t.y, t.w, t.h
        FROM edge_bounds b JOIN edges e ON e.key = b.key
@@ -87,7 +87,8 @@ impl Index {
           label: r.get(3)?,
           shape: r.get(4)?,
           arrow: r.get(5)?,
-          ends: [frame(r, 6)?, frame(r, 10)?],
+          stroke: r.get(6)?,
+          ends: [frame(r, 7)?, frame(r, 11)?],
         })
       })?
       .collect::<rusqlite::Result<_>>()?;

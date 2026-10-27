@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createCard, type Rect } from '#lib/api.js';
 	import { bindKeys, isMod } from '#lib/keys.js';
+	import { batchDialog } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { draft, startDraw } from './draw.svelte.js';
 	import { track } from './drag.js';
@@ -10,6 +11,7 @@
 	import { NEW_EDGE, route } from './route.js';
 	import { selection } from './selection.svelte.js';
 	import { shortcuts } from './shortcuts.js';
+	import BatchDialog from './BatchDialog.svelte';
 	import Card from './Card.svelte';
 	import EdgeLine from './EdgeLine.svelte';
 	import Edge from './Edge.svelte';
@@ -34,6 +36,7 @@
 	selection.clear();
 	selection.editing = null;
 	history.reset();
+	batchDialog.close();
 
 	// Frames the contents once, as soon as the canvas has a size.
 	$effect(() => {
@@ -116,6 +119,8 @@
 	bind:clientWidth={camera.width}
 	bind:clientHeight={camera.height}
 	onpointerdown={down}
+	onpointermove={(e) => (batchDialog.pointer = local(e))}
+	onpointerleave={() => (batchDialog.pointer = null)}
 	ondblclick={place}
 >
 	<!-- --scale: one screen pixel in world units, for marks drawn at a constant size on screen. -->
@@ -145,6 +150,7 @@
 	</div>
 	<SelectionBar />
 </div>
+<BatchDialog />
 
 <style>
 	.canvas {

@@ -19,7 +19,7 @@ function grow(r: Rect, by: number): Rect {
 	return { minX: r.minX - dx, minY: r.minY - dy, maxX: r.maxX + dx, maxY: r.maxY + dy };
 }
 
-function inside(a: Rect, b: Rect) {
+export function inside(a: Rect, b: Rect) {
 	return a.minX >= b.minX && a.minY >= b.minY && a.maxX <= b.maxX && a.maxY <= b.maxY;
 }
 
@@ -47,6 +47,11 @@ class Items {
 	/** The topmost card under a world point. */
 	cardAt(p: { x: number; y: number }) {
 		return this.cards.findLast((c) => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
+	}
+
+	/** Whether a world point lies in a collapsed zone, where a card placed there would be hidden. */
+	hides(p: { x: number; y: number }) {
+		return this.collapsed && this.zones.some((z) => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h);
 	}
 
 	/** Where an edge runs, between its cards as they are on the canvas, so it follows a drag, or
