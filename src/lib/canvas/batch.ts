@@ -1,11 +1,11 @@
 // Batch creation's text syntax, inspired by Mermaid but not compatible with it: each line is a card,
 // or a chain of cards joined by arrows, and the same text twice in one block is the same card. The
-// cards are laid out with dagre, left to right along their edges.
+// cards are laid out with dagre along their edges, left to right unless another direction is picked.
 import { Graph, layout } from '@dagrejs/dagre';
 import type { BatchEdge, Frame, Stroke } from '#lib/api.js';
 import { NEW_CARD } from './gestures.js';
 
-/** Room between cards, in world units: 2 graph-paper squares within a column, 4 between columns. */
+/** Room between cards, in world units: 2 graph-paper squares within a rank, 4 between ranks. */
 const NODE_GAP = 40;
 const RANK_GAP = 80;
 /** An arrow: a line of `-`, `.` or `=` with a head, `<` or `>`, at one end or both. Without a head
@@ -14,6 +14,9 @@ const ARROW = /(<(?:[-.]+|=+)>?|(?:[-.]+|=+)>)/;
 
 /** The cards' texts, and the edges between them as indexes into `texts`. */
 export type Plan = { texts: string[]; edges: BatchEdge[] };
+
+/** Which way the edges run in the layout, as dagre names it: left to right, top to bottom, and back. */
+export type Direction = 'LR' | 'TB' | 'RL' | 'BT';
 
 /** How an arrow's line is drawn: `=` double, any `.` dotted, `--` dashed, one `-` solid. */
 function strokeOf(line: string): Stroke {
@@ -64,9 +67,9 @@ export function parse(text: string): Plan {
 }
 
 /** The cards' world rectangles, each the size of a placed card, the whole centered on a world point. */
-export function layOut({ texts, edges }: Plan, at: { x: number; y: number }): Frame[] {
+export function layOut({ texts, edges }: Plan, at: { x: number; y: number }, direction: Direction = 'LR'): Frame[] {
 	const g = new Graph();
-	g.setGraph({ rankdir: 'LR', nodesep: NODE_GAP, ranksep: RANK_GAP });
+	g.setGraph({ rankdir: direction, nodesep: NODE_GAP, ranksep: RANK_GAP });
 	g.setDefaultEdgeLabel(() => ({}));
 	texts.forEach((_, i) => g.setNode(String(i), { width: NEW_CARD.w, height: NEW_CARD.h }));
 	for (const { from, to } of edges) g.setEdge(String(from), String(to));

@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Frame } from '#lib/api.js';
-	import { layOut, type Plan } from './batch.js';
+	import { layOut, type Direction, type Plan } from './batch.js';
 	import { route } from './route.js';
 	import EdgeLine from './EdgeLine.svelte';
 
 	// A small map of what a batch creates, laid out as it will land: the cards by their titles only,
 	// and the edges with their arrowheads and lines.
-	let { plan }: { plan: Plan } = $props();
+	let { plan, direction }: { plan: Plan; direction: Direction } = $props();
 
 	/** Room around the map's contents, in pixels. */
 	const PAD = 16;
@@ -18,7 +18,7 @@
 
 	// In the map's own pixels, edges included, so arrowheads and dashes keep their size on screen.
 	const cards = $derived.by((): Frame[] => {
-		const boxes = layOut(plan, { x: 0, y: 0 });
+		const boxes = layOut(plan, { x: 0, y: 0 }, direction);
 		if (!boxes.length) return [];
 		const [minX, minY] = [Math.min(...boxes.map((b) => b.x)), Math.min(...boxes.map((b) => b.y))];
 		const [maxX, maxY] = [Math.max(...boxes.map((b) => b.x + b.w)), Math.max(...boxes.map((b) => b.y + b.h))];
