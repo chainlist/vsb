@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import Settings from '@lucide/svelte/icons/settings';
 	import Canvas from '#lib/canvas/Canvas.svelte';
+	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { bindKeys, MOD_NAME } from '#lib/keys.js';
 	import { PANELS } from '#lib/panel/panels.js';
 	import { theme } from '#lib/theme.svelte.js';
@@ -17,6 +18,9 @@
 	$effect(() => {
 		theme.use(data.theme);
 		return () => theme.use(null);
+	});
+	$effect(() => {
+		snap.on = data.snap;
 	});
 
 	/** Where a panel's button and key lead: the panel, or back to the canvas when it is open. */

@@ -54,6 +54,21 @@ fn theme_is_kept_in_vault_json_and_left_out_for_the_default() {
 }
 
 #[test]
+fn snap_is_on_by_default_and_only_written_while_off() {
+  let f = Fixture::new();
+  assert!(f.vault.snap().unwrap());
+  assert!(!f.read(".canvas/vault.json").contains("snap"));
+  f.vault.set_theme(Some("pad".into())).unwrap();
+  f.vault.set_snap(false).unwrap();
+  let json: serde_json::Value = serde_json::from_str(&f.read(".canvas/vault.json")).unwrap();
+  assert_eq!(json["snap"], false);
+  assert_eq!(json["theme"], "pad");
+  assert!(!Vault::open(f.dir.path()).unwrap().snap().unwrap());
+  f.vault.set_snap(true).unwrap();
+  assert!(!f.read(".canvas/vault.json").contains("snap"));
+}
+
+#[test]
 fn open_refuses_a_folder_that_is_not_a_vault() {
   let dir = TempDir::new().unwrap();
   assert!(Vault::open(dir.path()).is_err());

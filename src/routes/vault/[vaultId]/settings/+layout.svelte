@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import Grid3x3 from '@lucide/svelte/icons/grid-3x3';
 	import Palette from '@lucide/svelte/icons/palette';
 	import X from '@lucide/svelte/icons/x';
 	import { bindKeys } from '#lib/keys.js';
@@ -10,7 +11,10 @@
 	let { data, children }: LayoutProps = $props();
 
 	/** One child route per tab. */
-	const tabs = [{ route: '/vault/[vaultId]/settings/appearance', name: 'Appearance', icon: Palette }] as const;
+	const tabs = [
+		{ route: '/vault/[vaultId]/settings/appearance', name: 'Appearance', icon: Palette },
+		{ route: '/vault/[vaultId]/settings/canvas', name: 'Canvas', icon: Grid3x3 }
+	] as const;
 
 	const canvas = $derived(resolve('/vault/[vaultId]', { vaultId: data.vault.id }));
 

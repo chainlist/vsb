@@ -16,6 +16,17 @@ struct VaultFile {
   /// The theme the app is drawn in for this vault; left out for the default.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   theme: Option<String>,
+  /// Whether moved and resized cards and zones land on the grid; left out while on, the default.
+  #[serde(default = "on", skip_serializing_if = "is_on")]
+  snap: bool,
+}
+
+fn on() -> bool {
+  true
+}
+
+fn is_on(b: &bool) -> bool {
+  *b
 }
 
 pub struct Vault {
@@ -48,7 +59,7 @@ impl Vault {
   pub fn open_or_init(root: &Path) -> Result<Vault> {
     let file = vault_file(root);
     if !file.exists() {
-      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None };
+      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, snap: true };
       atomic_write(&file, &serde_json::to_vec_pretty(&v)?)?;
     }
     fs::create_dir_all(root.join("notes"))?;
@@ -65,6 +76,19 @@ impl Vault {
   pub fn set_theme(&self, theme: Option<String>) -> Result<()> {
     let mut v = read_vault_file(&self.root)?;
     v.theme = theme;
+    atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
+  }
+
+  /// Whether `vault.json` has moved and resized items snap to the grid: on unless it says otherwise.
+  pub fn snap(&self) -> Result<bool> {
+    Ok(read_vault_file(&self.root)?.snap)
+  }
+
+  /// Turns snapping off in `vault.json`, or on again by leaving it out. Read again first, as for
+  /// the theme.
+  pub fn set_snap(&self, snap: bool) -> Result<()> {
+    let mut v = read_vault_file(&self.root)?;
+    v.snap = snap;
     atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
   }
 

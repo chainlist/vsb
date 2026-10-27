@@ -6,6 +6,7 @@
 	import { draft, startDraw } from './draw.svelte.js';
 	import { track } from './drag.js';
 	import { newCardAt } from './gestures.js';
+	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
 	import { items } from './items.svelte.js';
 	import { NEW_EDGE, route } from './route.js';
@@ -19,8 +20,6 @@
 	import SelectionBar from './SelectionBar.svelte';
 	import Zone from './Zone.svelte';
 
-	/** World size of a minor graph-paper square; major lines fall every 5 squares. */
-	const GRID = 20;
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
 	const MIN_SQUARE = 8;
 

@@ -100,6 +100,12 @@ export const vaultTheme = () => invoke<string | null>('vault_theme');
 /** Names the open vault's theme in its `vault.json`; null leaves it out, for the default. */
 export const setVaultTheme = (theme: string | null) => invoke<void>('set_vault_theme', { theme });
 
+/** Whether the open vault's `vault.json` has moved and resized cards and zones snap to the grid. */
+export const vaultSnap = () => invoke<boolean>('vault_snap');
+
+/** Turns snapping to the grid on or off in the open vault's `vault.json`. */
+export const setVaultSnap = (snap: boolean) => invoke<void>('set_vault_snap', { snap });
+
 /** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. When
  * `collapsed`, nothing inside a zone comes back: only the outermost zones and the loose cards. */
 export const queryViewport = (rect: Rect, minSize: number, collapsed: boolean) =>

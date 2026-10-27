@@ -5,7 +5,7 @@
 const THRESHOLD = 3;
 
 type Handlers = {
-	move(dx: number, dy: number): void;
+	move(dx: number, dy: number, e: PointerEvent): void;
 	end(dragged: boolean): void;
 };
 
@@ -16,7 +16,7 @@ export function track(down: PointerEvent, on: Handlers) {
 		const dy = e.clientY - down.clientY;
 		if (!dragged && Math.hypot(dx, dy) < THRESHOLD) return;
 		dragged = true;
-		on.move(dx, dy);
+		on.move(dx, dy, e);
 	};
 	const up = () => {
 		removeEventListener('pointermove', move);

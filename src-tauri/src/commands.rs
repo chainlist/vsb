@@ -78,6 +78,16 @@ pub async fn set_vault_theme(state: State<'_, AppState>, theme: Option<String>) 
 }
 
 #[tauri::command]
+pub async fn vault_snap(state: State<'_, AppState>) -> Result<bool> {
+  state.with(|s| s.vault.snap())
+}
+
+#[tauri::command]
+pub async fn set_vault_snap(state: State<'_, AppState>, snap: bool) -> Result<()> {
+  state.with(|s| s.vault.set_snap(snap))
+}
+
+#[tauri::command]
 pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f64, collapsed: bool) -> Result<Viewport> {
   state.with(|s| s.index.viewport(rect, min_size, collapsed))
 }
