@@ -5,7 +5,7 @@
 	import { camera } from './camera.svelte.js';
 	import { draft, startDraw } from './draw.svelte.js';
 	import { track } from './drag.js';
-	import { newCardAt } from './gestures.js';
+	import { GRIP, newCardAt } from './gestures.js';
 	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
 	import { items } from './items.svelte.js';
@@ -28,6 +28,8 @@
 
 	let el: HTMLDivElement;
 	let panning = $state(false);
+	/** The card or zone under the pointer, which shows its resize handles. */
+	let hovered = $state<string | null>(null);
 	let framed = false;
 
 	camera.reset();
@@ -84,6 +86,7 @@
 		track(e, {
 			move(dx, dy) {
 				panning = true;
+				hovered = null;
 				camera.panBy(dx - last.dx, dy - last.dy);
 				last = { dx, dy };
 			},
@@ -92,6 +95,20 @@
 				if (!dragged && !middle) selection.clear();
 			}
 		});
+	}
+
+	// While a button is down the item keeps its handles, so they stay with it as it moves or resizes.
+	function hover(e: PointerEvent) {
+		const p = local(e);
+		batchDialog.pointer = p;
+		if (e.buttons) return;
+		// Within half a handle of an item, the pointer is on its handle.
+		hovered = items.itemAt(camera.toWorld(p.x, p.y), GRIP / 2 / camera.zoom)?.id ?? null;
+	}
+
+	function leave(e: PointerEvent) {
+		batchDialog.pointer = null;
+		if (!e.buttons) hovered = null;
 	}
 
 	function place(e: MouseEvent) {
@@ -118,8 +135,8 @@
 	bind:clientWidth={camera.width}
 	bind:clientHeight={camera.height}
 	onpointerdown={down}
-	onpointermove={(e) => (batchDialog.pointer = local(e))}
-	onpointerleave={() => (batchDialog.pointer = null)}
+	onpointermove={hover}
+	onpointerleave={leave}
 	ondblclick={place}
 >
 	<!-- --scale: one screen pixel in world units, for marks drawn at a constant size on screen. -->
@@ -145,7 +162,7 @@
 				style:height="{draft.box.h}px"
 			></div>
 		{/if}
-		<ResizeHandles />
+		<ResizeHandles {hovered} />
 	</div>
 	<SelectionBar />
 </div>
