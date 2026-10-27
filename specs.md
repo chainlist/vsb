@@ -68,7 +68,7 @@ src/routes/
     +layout.ts                # opens the vault
     +page.svelte              # canvas with no panel open
     (panel)/
-      +layout.svelte          # the panel shell, shared by the tray and search
+      +layout.svelte          # the panel shell, a sheet shared by the tray and search
       unplaced/+page.svelte   # Unplaced tray
       search/+page.svelte     # search
     settings/
@@ -268,7 +268,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 
 ## Unplaced tray and search
 
-- **Panels beside the canvas.** The tray and search are child routes in the vault's `(panel)` route group, whose layout is their shell: a panel docked on the right, full height. The canvas stays mounted and usable beside it, keys included: the panel is not modal.
+- **Panels beside the canvas.** The tray and search are child routes in the vault's `(panel)` route group, whose layout is their shell: a shadcn-svelte Sheet docked on the right, full height. The canvas stays mounted and usable beside it, keys included: the panel is not modal, so the sheet has no overlay and does not hold the focus.
 - **Opening and closing.** The top bar has an Unplaced and a Search button, icon beside text, between the vault name and the settings gear. Mod+U opens the tray and Mod+F opens search (Ctrl, Cmd on macOS), also while typing. The same key or button again, Close, or Escape while the focus is in the panel goes back to the canvas.
 - **One note list.** Each line shows the title and the excerpt from the index, the excerpt as plain text without Markdown marks. Lines are fetched 50 at a time as the list scrolls, never all at once. After any edit to the vault (an undo step, the end of a card edit), the lines shown are fetched again.
 - **The tray** lists the notes with no card, most recently changed first: notes never placed, created outside the app, or whose cards were all deleted, and `(conflict).md` copies.
