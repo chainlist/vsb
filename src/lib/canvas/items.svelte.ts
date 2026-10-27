@@ -49,6 +49,21 @@ class Items {
 		return this.cards.findLast((c) => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
 	}
 
+	/** The topmost card within `margin` of a world point, or else the topmost zone. */
+	itemAt(p: { x: number; y: number }, margin: number): CardView | ZoneView | undefined {
+		const near = (i: CardView | ZoneView) =>
+			p.x >= i.x - margin && p.x <= i.x + i.w + margin && p.y >= i.y - margin && p.y <= i.y + i.h + margin;
+		return this.cards.findLast(near) ?? this.zones.findLast(near);
+	}
+
+	/** The card or zone on the canvas with this id, and which of the two it is. */
+	find(id: string) {
+		const card = this.#byId.get(id);
+		if (card) return { item: card, kind: 'card' as const };
+		const zone = this.zones.find((z) => z.id === id);
+		if (zone) return { item: zone, kind: 'zone' as const };
+	}
+
 	/** Whether a world point lies in a collapsed zone, where a card placed there would be hidden. */
 	hides(p: { x: number; y: number }) {
 		return this.collapsed && this.zones.some((z) => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h);

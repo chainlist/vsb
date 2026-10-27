@@ -213,6 +213,7 @@ Competitor scan
 - Moving or resizing a zone never changes what is inside it. Moving a zone over loose cards does not capture them.
 - A zone cannot be resized smaller than the area its contents cover. Resizing from the left or top keeps the contents in place, so its direct children's coordinates are rewritten.
 - Ctrl+drag (Cmd on macOS) on the paper draws a zone. A zone's name is its handle: click selects, drag moves, double-click renames. Its body behaves like the paper: dragging pans, double-clicking places a card inside.
+- **Resizing:** dragging a side or corner of a card or zone resizes it, selected or not. The card or zone under the pointer, and the single selected one, show a square on each corner; the sides are 10 screen pixels wide, half inside the item. A click on a side or corner selects the item, and a double-click on a card's side edits it.
 - **Snap to grid**, on by default: a card or zone being moved lands with its top-left corner on a crossing of the minor grid (20 world units). With several items selected, the one pressed snaps and the others keep their places around it. Resizing, the sides pulled land on grid lines; the minimum size and a zone's contents still win over the grid. Holding Alt (Option on macOS) while dragging moves or resizes freely. A drag that snaps back to where it started writes nothing. Turned off in Settings > Canvas, which writes `snap: false` to `vault.json`.
 
 ## Cards

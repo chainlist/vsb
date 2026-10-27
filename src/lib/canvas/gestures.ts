@@ -23,6 +23,8 @@ import { selection } from './selection.svelte.js';
 export const MIN = { w: 60, h: 40 };
 /** Size of a newly placed card, in world units: 12 by 7 squares. */
 export const NEW_CARD = { w: 240, h: 140 };
+/** Width of a resize handle on a side or corner, in screen pixels, half of it outside the item. */
+export const GRIP = 10;
 
 /** Where a new card lies, centered on a world point. */
 export function newCardAt(p: { x: number; y: number }) {
@@ -89,9 +91,10 @@ function stretch(length: number, pull: Pull, by: number, min: number) {
 
 export function startResize(down: PointerEvent, item: Item, kind: ItemState['kind'], px: Pull, py: Pull) {
 	if (down.button !== 0) return;
-	// Cancelling the press stops the mouse events that would take focus from an open editor.
-	down.preventDefault();
+	// Pressing a handle never pans the canvas or clears the selection. On the item being edited,
+	// cancelling the press stops the mouse events that would take focus from its editor.
 	down.stopPropagation();
+	if (selection.editing === item.id) down.preventDefault();
 	const from = { x: item.x, y: item.y, w: item.w, h: item.h };
 	// Where the pulled sides start.
 	const side = { x: px > 0 ? from.x + from.w : from.x, y: py > 0 ? from.y + from.h : from.y };
@@ -123,8 +126,15 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 		},
 		end(dragged) {
 			const { id, x, y, w, h } = item;
+			// A click on a side or corner selects the item, as a click inside it does.
+			if (!dragged) {
+				if (selection.editing === id) return;
+				if (down.shiftKey) selection.toggle(id);
+				else selection.only(id);
+				return;
+			}
 			// Back to its size, as a short drag can snap, nothing is written.
-			if (!dragged || (x === from.x && y === from.y && w === from.w && h === from.h)) return;
+			if (x === from.x && y === from.y && w === from.w && h === from.h) return;
 			history.edit(() => (kind === 'zone' ? resizeZone : resizeCard)(id, x, y, w, h));
 		}
 	});
