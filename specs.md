@@ -267,6 +267,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **Search** covers note text (titles and bodies) and zone names, through `notes_fts` and `zones_fts`. Every word typed must be there, each as the start of a word; case and accents are ignored. Matching zones come first, then notes, best match first. A note that has a card is marked "On the canvas".
 - **Clicking a result** with a place on the canvas, a placed note or a zone, frames and selects it: centered at 100%, or zoomed out until it fits but never below 40%, so the zones around it open. The panel stays open. Clicking an unplaced note does nothing; it is placed by dragging.
 - **Dragging a note onto the canvas** places its card where it is dropped. A ghost of the card, at the canvas's zoom, follows the pointer. The card has the size of a card placed by double-click, is centered on the drop point and joins the innermost zone under its center. A note without an ID gets its ULID first, then the card is written. The card is one undo step; undoing it keeps the ULID in the note, which goes back to the tray. Dropping back on the panel or the top bar places nothing.
+  - Dropped on a collapsed zone, the card joins it (or the zone inside it under the drop point), where it would be hidden: it is framed, as a click on a placed result does. A card dropped on the paper while zoomed out stays in view, so the camera does not move.
 - **One card per note until V3:** dragging a note that already has a card creates nothing and frames its card, as a click does.
 
 ## Batch creation

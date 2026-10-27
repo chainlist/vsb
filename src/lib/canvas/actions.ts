@@ -24,7 +24,7 @@ import {
 import { camera } from './camera.svelte.js';
 import { newCardAt } from './gestures.js';
 import { history } from './history.js';
-import { OPEN_ZOOM } from './items.svelte.js';
+import { items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
@@ -106,9 +106,12 @@ export async function show(kind: 'card' | 'zone', id: string) {
  * its card gets no other (one card per note until V3): its card is shown instead. */
 export function dropNote(path: string, at: { x: number; y: number }) {
 	const { x, y, w, h } = newCardAt(at);
+	// The card joins the zone under its center. In a collapsed zone it would be hidden: it is shown.
+	const [cx, cy] = [x + w / 2, y + h / 2];
+	const hidden = items.collapsed && items.zones.some((z) => cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h);
 	return history.edit(async () => {
 		const { id, undo } = await placeNote(path, x, y, w, h);
-		if (undo.length) selection.only(id);
+		if (undo.length && !hidden) selection.only(id);
 		else await show('card', id);
 		return undo;
 	});
