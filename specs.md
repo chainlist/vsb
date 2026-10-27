@@ -301,7 +301,7 @@ This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
   - Edges follow the [edge](#edges) rules: none from a card to itself, at most one between two cards, either way round.
   - The dialog lists the arrows, counts the cards and edges as they are typed, and shows `->` as typed, even in a font that draws it as an arrow.
 - **A preview map** under the text shows what the batch creates as it is typed, laid out as it will land: the cards by their titles only, and the edges with their arrowheads and lines. It fits the map, never drawing a card above half its size on the canvas.
-- **Layout** uses `@dagrejs/dagre`, left to right along the edges, and centers the whole batch on the point. Each card has the size of a card placed by double-click, with `halign: center` and `valign: center`.
+- **Layout** uses `@dagrejs/dagre` along the edges, and centers the whole batch on the point. The dialog picks the direction the edges run: left to right (the default), top to bottom, right to left or bottom to top. The pick stays for the next batches, and the preview map follows it. Each card has the size of a card placed by double-click, with `halign: center` and `valign: center`.
 - **Run inside a zone,** the cards all join the innermost zone under the point. A zone too small for them grows to hold them, like a resize, its contents staying in place: one graph-paper square of room on the sides and at the bottom, three at the top for its name.
 - **One command** writes the batch: the notes, then a grown zone, the cards and the edges.
 - **The new cards are selected.** Landing in a collapsed zone or partly off-screen, they are framed, zoomed in at least until the zones open.

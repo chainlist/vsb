@@ -24,7 +24,7 @@ import {
 	type VAlign,
 	type ZoneView
 } from '#lib/api.js';
-import { layOut, parse } from './batch.js';
+import { layOut, parse, type Direction } from './batch.js';
 import { camera } from './camera.svelte.js';
 import { newCardAt } from './gestures.js';
 import { history } from './history.js';
@@ -125,12 +125,13 @@ export function dropNote(path: string, at: { x: number; y: number }) {
 	});
 }
 
-/** Creates the cards and edges written in the batch syntax, centered on a world point, as one undo
- * step, and selects the cards. Hidden in a collapsed zone, or partly off-screen, they are framed. */
-export function createCards(text: string, at: { x: number; y: number }) {
+/** Creates the cards and edges written in the batch syntax, laid out in a direction and centered on a
+ * world point, as one undo step, and selects the cards. Hidden in a collapsed zone, or partly
+ * off-screen, they are framed. */
+export function createCards(text: string, at: { x: number; y: number }, direction: Direction) {
 	const plan = parse(text);
 	if (!plan.texts.length) return;
-	const boxes = layOut(plan, at);
+	const boxes = layOut(plan, at, direction);
 	const span = {
 		minX: Math.min(...boxes.map((b) => b.x)),
 		minY: Math.min(...boxes.map((b) => b.y)),
