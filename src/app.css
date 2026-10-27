@@ -83,6 +83,11 @@ body {
 	height: 100%;
 }
 
+/* Pinching zooms the canvas only, never the window, on a touchscreen too. */
+html {
+	touch-action: pan-x pan-y;
+}
+
 ::selection {
 	background: color-mix(in srgb, var(--pen) 22%, transparent);
 }

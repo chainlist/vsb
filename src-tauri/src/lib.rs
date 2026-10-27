@@ -22,6 +22,38 @@ pub fn new_id() -> String {
   ulid::Ulid::generate().to_string()
 }
 
+/// WebView2 drops a trackpad pinch while its pinch zoom is off, as Tauri leaves it without the zoom
+/// hotkeys. Turned on, the pinch reaches the page as a wheel turned with Ctrl held, which the canvas
+/// zooms on and the page cancels everywhere, so the window itself never zooms.
+///
+/// The setting applies from the next navigation. Called from `setup`, it runs at once, while the
+/// window's first navigation is still pending, so that navigation is the next one. Reloading here
+/// would cancel it and leave the window blank.
+#[cfg(windows)]
+fn enable_pinch(app: &tauri::App) -> tauri::Result<()> {
+  use tauri::Manager;
+  use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings5;
+  use windows_core::Interface;
+
+  let Some(window) = app.get_webview_window("main") else {
+    return Ok(());
+  };
+  window.with_webview(|webview| {
+    // SAFETY: called on the main thread with Tauri's live controller.
+    let enabled = unsafe {
+      webview
+        .controller()
+        .CoreWebView2()
+        .and_then(|core| core.Settings())
+        .and_then(|settings| settings.cast::<ICoreWebView2Settings5>())
+        .and_then(|settings| settings.SetIsPinchZoomEnabled(true))
+    };
+    if let Err(e) = enabled {
+      log::warn!("trackpad pinch stays off: {e}");
+    }
+  })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -76,6 +108,8 @@ pub fn run() {
             .build(),
         )?;
       }
+      #[cfg(windows)]
+      enable_pinch(app)?;
       Ok(())
     })
     .run(tauri::generate_context!())

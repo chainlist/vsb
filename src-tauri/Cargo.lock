@@ -3948,6 +3948,8 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "ulid",
+ "webview2-com",
+ "windows-core",
 ]
 
 [[package]]

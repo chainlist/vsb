@@ -13,6 +13,16 @@
 	$effect(() => {
 		document.documentElement.dataset.theme = theme.id;
 	});
+
+	// A trackpad pinch comes as a wheel turned with Ctrl held. The canvas zooms on it; anywhere else
+	// it would zoom the whole window.
+	$effect(() => {
+		const onwheel = (e: WheelEvent) => {
+			if (e.ctrlKey) e.preventDefault();
+		};
+		addEventListener('wheel', onwheel, { passive: false });
+		return () => removeEventListener('wheel', onwheel);
+	});
 </script>
 
 <svelte:head>
