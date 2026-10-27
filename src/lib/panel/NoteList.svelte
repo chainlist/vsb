@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import Locate from '@lucide/svelte/icons/locate';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
+	import { Portal } from 'bits-ui';
 	import type { Entry } from '#lib/api.js';
 	import { show } from '#lib/canvas/actions.js';
 	import { camera } from '#lib/canvas/camera.svelte.js';
@@ -89,18 +90,21 @@
 </div>
 
 {#if ghost.note}
-	<!-- The card as it will land: its size in the world, at the canvas's zoom. -->
-	<div
-		class="ghost index-card note-card"
-		style:left="{ghost.x}px"
-		style:top="{ghost.y}px"
-		style:width="{NEW_CARD.w}px"
-		style:height="{NEW_CARD.h}px"
-		style:transform="translate(-50%, -50%) scale({camera.zoom})"
-	>
-		<strong class="index-card-title">{ghost.note.title || 'Untitled'}</strong>
-		{markdownText(ghost.note.excerpt)}
-	</div>
+	<!-- The card as it will land: its size in the world, at the canvas's zoom. Out of the panel's
+	     sheet, whose layout containment would place it in the sheet instead of the window. -->
+	<Portal>
+		<div
+			class="ghost index-card note-card"
+			style:left="{ghost.x}px"
+			style:top="{ghost.y}px"
+			style:width="{NEW_CARD.w}px"
+			style:height="{NEW_CARD.h}px"
+			style:transform="translate(-50%, -50%) scale({camera.zoom})"
+		>
+			<strong class="index-card-title">{ghost.note.title || 'Untitled'}</strong>
+			{markdownText(ghost.note.excerpt)}
+		</div>
+	</Portal>
 {/if}
 
 <style>
@@ -173,7 +177,8 @@
 
 	.ghost {
 		position: fixed;
-		z-index: 10;
+		/* Over the sheet, at 50. */
+		z-index: 51;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
