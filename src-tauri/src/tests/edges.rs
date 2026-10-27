@@ -1,6 +1,6 @@
 use super::{files, move_to, open, put_card, put_zone, rtree, Fixture, WORLD};
 use crate::index::Rect;
-use crate::items::{self, Arrow, Edge, Kind, Shape};
+use crate::items::{self, Arrow, Edge, Kind, Shape, Stroke};
 use crate::session::Session;
 use serde_json::Value;
 
@@ -133,24 +133,26 @@ fn edge_bounds_follow_card_moves_resizes_and_zone_moves() {
 }
 
 #[test]
-fn shape_and_arrow_are_written_only_when_not_the_default() {
+fn shape_arrow_and_stroke_are_written_only_when_not_the_default() {
   let f = two_cards();
-  // A file from before edges had a style reads as curved, with its arrow at `to`.
+  // A file from before edges had a style reads as curved and solid, with its arrow at `to`.
   f.write(".canvas/edges/OLD.json", r#"{ "from": "A", "to": "B" }"#);
   let s = open(&f);
   let view = s.index.viewport(WORLD, 0.0, false).unwrap().edges.remove(0);
-  assert_eq!((view.shape.as_str(), view.arrow.as_str()), ("curved", "to"));
+  assert_eq!((view.shape.as_str(), view.arrow.as_str(), view.stroke.as_str()), ("curved", "to", "solid"));
 
   let ids = ["OLD".to_string()];
   let undo = s.shape_edges(&ids, Shape::Angled).unwrap();
   s.arrow_edges(&ids, Arrow::Both).unwrap();
+  let restroke = s.stroke_edges(&ids, Stroke::Dotted).unwrap();
   let raw: Value = serde_json::from_str(&f.read(".canvas/edges/OLD.json")).unwrap();
-  assert_eq!((raw["shape"].as_str(), raw["arrow"].as_str()), (Some("angled"), Some("both")));
+  assert_eq!((raw["shape"].as_str(), raw["arrow"].as_str(), raw["stroke"].as_str()), (Some("angled"), Some("both"), Some("dotted")));
   let view = s.index.viewport(WORLD, 0.0, false).unwrap().edges.remove(0);
-  assert_eq!((view.shape.as_str(), view.arrow.as_str()), ("angled", "both"));
+  assert_eq!((view.shape.as_str(), view.arrow.as_str(), view.stroke.as_str()), ("angled", "both", "dotted"));
 
+  s.apply(restroke).unwrap();
   s.apply(undo).unwrap();
-  assert_eq!(edge(&f, "OLD").shape, Shape::Curved);
+  assert_eq!((edge(&f, "OLD").shape, edge(&f, "OLD").stroke), (Shape::Curved, Stroke::Solid));
   s.arrow_edges(&ids, Arrow::To).unwrap();
   assert_eq!(serde_json::from_str::<Value>(&f.read(".canvas/edges/OLD.json")).unwrap(), serde_json::json!({ "from": "A", "to": "B" }));
 }

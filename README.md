@@ -6,14 +6,16 @@ Tauri 2 (Rust) with SvelteKit 3 and Svelte 5, built as a static single-page app.
 
 ## Developing
 
+With [pnpm](https://pnpm.io):
+
 ```sh
-npm install
-npm run tauri dev
+pnpm install
+pnpm tauri dev
 ```
 
 ## Checks
 
 ```sh
-npm run check
+pnpm check
 cd src-tauri && cargo test
 ```

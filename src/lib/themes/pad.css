@@ -21,6 +21,7 @@
 	--danger-paper: #fbeeec;
 	/* A sheet of paper resting on the pad: a hairline edge, contact shadow, soft lift. */
 	--lift: 0 0 0 1px rgb(38 50 56 / 0.08), 0 1px 2px rgb(38 50 56 / 0.08), 0 10px 20px -12px rgb(38 50 56 / 0.4);
+	--scrim: rgb(38 50 56 / 0.32);
 	--font-note: 'Literata Variable', Georgia, serif;
 	--font-ui: 'IBM Plex Sans Variable', system-ui, sans-serif;
 	--font-adjust: none;

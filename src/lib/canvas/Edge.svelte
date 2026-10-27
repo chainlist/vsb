@@ -12,6 +12,7 @@
 	const line = $derived(items.routeOf(edge));
 	const selected = $derived(selection.has(edge.id));
 	const editing = $derived(selection.editing === edge.id);
+	const dimmed = $derived(selection.dimsEdge(edge));
 
 	const press = (e: PointerEvent) => startMove(e, edge);
 
@@ -23,12 +24,13 @@
 </script>
 
 <!-- The line and its label: a press selects the edge, a double-click edits the label. -->
-<EdgeLine route={line} {selected} onpointerdown={press} ondblclick={open} />
+<EdgeLine route={line} stroke={edge.stroke} {selected} {dimmed} onpointerdown={press} ondblclick={open} />
 {#if editing || edge.label}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="label"
 		class:selected
+		class:dimmed
 		style:left="{line.mid.x}px"
 		style:top="{line.mid.y}px"
 		onpointerdown={press}
@@ -58,5 +60,9 @@
 
 	.selected {
 		color: var(--pen);
+	}
+
+	.dimmed {
+		color: var(--edge-dim);
 	}
 </style>

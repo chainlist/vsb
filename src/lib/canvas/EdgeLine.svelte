@@ -1,15 +1,21 @@
 <script lang="ts">
+	import type { Stroke } from '#lib/api.js';
 	import type { Route } from './route.js';
 
 	let {
 		route,
+		stroke = 'solid',
 		selected = false,
+		dimmed = false,
 		draft = false,
 		onpointerdown,
 		ondblclick
 	}: {
 		route: Route;
+		stroke?: Stroke;
 		selected?: boolean;
+		/** Faded, while the selected cards' links stand out. */
+		dimmed?: boolean;
 		/** Dashed, while it is being drawn. */
 		draft?: boolean;
 		/** Given these, a wide invisible line along the curve takes the pointer. */
@@ -19,12 +25,16 @@
 </script>
 
 <!-- A 1px SVG at the world origin, drawing past its edges: at zero size it would draw nothing. -->
-<svg class="edge-line" class:selected class:draft>
+<svg class="edge-line" class:selected class:dimmed class:draft data-stroke={stroke}>
 	{#if onpointerdown}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<path class="hit" d={route.path} {onpointerdown} {ondblclick} />
 	{/if}
 	<path class="line" d={route.path} />
+	{#if stroke === 'double'}
+		<!-- Paper down the middle of a wide line leaves two, as a label is pasted over the line. -->
+		<path class="gap" d={route.path} />
+	{/if}
 	{#each route.arrows as points (points)}
 		<polygon {points} />
 	{/each}
@@ -47,6 +57,10 @@
 		color: var(--pen);
 	}
 
+	.dimmed {
+		color: var(--edge-dim);
+	}
+
 	path {
 		fill: none;
 	}
@@ -58,6 +72,26 @@
 
 	.draft .line {
 		stroke-dasharray: 6 4;
+	}
+
+	[data-stroke='dashed'] .line {
+		stroke-dasharray: 8 5;
+	}
+
+	/* Dashes of no length, with round ends: dots. */
+	[data-stroke='dotted'] .line {
+		stroke-width: 2.25;
+		stroke-dasharray: 0 5;
+		stroke-linecap: round;
+	}
+
+	[data-stroke='double'] .line {
+		stroke-width: 5;
+	}
+
+	.gap {
+		stroke: var(--paper);
+		stroke-width: 2;
 	}
 
 	polygon {

@@ -40,13 +40,19 @@ impl Session {
     if card.note.is_some() {
       return msg("this card already has a note");
     }
+    let id = self.new_note(body)?;
+    card.note = Some(id.clone());
+    self.apply(vec![ItemState::of(card_id, &card)?])?;
+    Ok(id)
+  }
+
+  /// Writes a new note with a new ULID, named after its title, and returns the ID.
+  pub(crate) fn new_note(&self, body: &str) -> Result<String> {
     let id = crate::new_id();
     let mut note = NoteText { front: String::new(), body: body.to_string() };
     note.set_id(&id);
     let path = note::free_path(&self.vault.notes_dir(), &note::file_stem(&note::title(body)), None);
     self.write_note(&path, &note)?;
-    card.note = Some(id.clone());
-    self.apply(vec![ItemState::of(card_id, &card)?])?;
     Ok(id)
   }
 

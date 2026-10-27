@@ -1,3 +1,4 @@
+mod batch;
 mod commands;
 mod edges;
 mod error;
@@ -35,6 +36,7 @@ pub fn run() {
       commands::query_viewport,
       commands::create_card,
       commands::place_note,
+      commands::create_batch,
       commands::item_box,
       commands::unplaced_notes,
       commands::search,
@@ -55,6 +57,7 @@ pub fn run() {
       commands::label_edge,
       commands::shape_edges,
       commands::arrow_edges,
+      commands::stroke_edges,
       commands::delete_edges,
       commands::apply_states,
       commands::read_note,

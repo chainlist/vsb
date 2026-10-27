@@ -37,6 +37,7 @@ CREATE TABLE edges (
   label     TEXT,
   shape     TEXT NOT NULL DEFAULT 'curved',
   arrow     TEXT NOT NULL DEFAULT 'to',
+  stroke    TEXT NOT NULL DEFAULT 'solid',
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX edges_from ON edges(from_card);

@@ -51,6 +51,7 @@ pub struct EdgeView {
   pub label: Option<String>,
   pub shape: String,
   pub arrow: String,
+  pub stroke: String,
   /// The `from` card's box, then the `to` card's.
   pub ends: [Frame; 2],
 }

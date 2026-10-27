@@ -13,6 +13,7 @@
 	const missing = $derived(card.note !== null && !card.resolved);
 	const editing = $derived(selection.editing === card.id);
 	const selected = $derived(selection.has(card.id));
+	const dimmed = $derived(selection.dims(card.id));
 
 	// Mod+drag draws an edge from the card: the canvas handles it, as it handles drawing a zone.
 	function press(e: PointerEvent) {
@@ -32,6 +33,7 @@
 	class:missing
 	class:selected
 	class:editing
+	class:dimmed
 	style:left="{card.x}px"
 	style:top="{card.y}px"
 	style:width="{card.w}px"
@@ -69,5 +71,15 @@
 
 	.editing {
 		box-shadow: 0 0 0 2px var(--pen), var(--lift);
+	}
+
+	/* Faded back but still solid: a veil of the card's own stock over what it shows. */
+	.dimmed::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: inherit;
+		opacity: calc(1 - var(--dim));
+		pointer-events: none;
 	}
 </style>

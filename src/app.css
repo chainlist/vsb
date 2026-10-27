@@ -1,9 +1,62 @@
 /* Each theme is one set of design tokens, picked by the data-theme attribute on the root element
    (#lib/theme.svelte.ts). Everything on screen is drawn from these tokens. */
+
+/* Tailwind, for the shadcn-svelte components in #lib/components/ui, without its preflight reset:
+   the rest of the app is styled without it. Its layers lose to the app's own, unlayered, styles. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source('./');
+@import 'tw-animate-css';
+
 @import './lib/themes/studio.css';
 @import './lib/themes/pad.css';
 @import './lib/themes/orbit.css';
 @import './lib/themes/cairn.css';
+
+/* shadcn-svelte's colors, radii and shadows are the theme's tokens, so its components follow the
+   vault's theme like everything else. */
+@theme inline {
+	--color-background: var(--card);
+	--color-foreground: var(--ink);
+	--color-primary: var(--pen);
+	--color-primary-foreground: var(--on-pen);
+	--color-secondary: var(--paper);
+	--color-secondary-foreground: var(--ink);
+	--color-muted: var(--paper);
+	--color-muted-foreground: var(--ink-soft);
+	--color-accent: var(--paper);
+	--color-accent-foreground: var(--ink);
+	--color-destructive: var(--danger);
+	--color-border: var(--border);
+	--color-input: var(--border);
+	--color-ring: var(--pen);
+	--color-scrim: var(--scrim);
+	--radius-xs: var(--radius-mark);
+	--radius-sm: var(--radius-mark);
+	--radius-md: var(--radius-control);
+	--radius-lg: var(--radius-card);
+	--shadow-xs: 0 0 #0000;
+	--shadow-lg: var(--lift);
+	--font-sans: var(--font-ui);
+}
+
+/* The part of Tailwind's preflight the shadcn-svelte components rely on, given only to them: they
+   all carry a data-slot. In the base layer, under their utilities and the app's own styles. */
+@layer base {
+	:where([data-slot], [data-slot] *, [data-slot] ::before, [data-slot] ::after) {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+		border: 0 solid var(--color-border);
+	}
+
+	:where([data-slot] :is(button, input, textarea), :is(button, input, textarea)[data-slot]) {
+		border-radius: 0;
+		background-color: transparent;
+		color: inherit;
+		font: inherit;
+	}
+}
 
 /* The root, and any preview drawn in another theme. */
 [data-theme] {
@@ -12,6 +65,10 @@
 	font-size: 15px;
 	color: var(--ink);
 	background: var(--paper);
+	/* While the selected cards' links stand out, the others fade, still solid: how much of a card's
+	   content shows, and the color of an edge, mixed into the paper. */
+	--dim: 0.35;
+	--edge-dim: color-mix(in srgb, var(--ink-soft) calc(var(--dim) * 100%), var(--paper));
 }
 
 /* A theme whose fonts have a small x-height scales them up to the others' (--font-adjust). Every

@@ -1,8 +1,9 @@
 //! Tauri commands: the frontend's only way to the vault files and the index.
 
+use crate::batch::{Batch, BatchCard, BatchEdge};
 use crate::error::{msg, Error, Result};
 use crate::index::{Entry, Rect, Viewport};
-use crate::items::{Arrow, HAlign, Kind, Shape, VAlign};
+use crate::items::{Arrow, HAlign, Kind, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::states::{Created, ItemState};
 use crate::registry::{self, VaultEntry};
@@ -89,6 +90,11 @@ pub async fn create_card(state: State<'_, AppState>, x: f64, y: f64, w: f64, h: 
 #[tauri::command]
 pub async fn place_note(state: State<'_, AppState>, path: String, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
   state.with(|s| s.place_note(&path, x, y, w, h))
+}
+
+#[tauri::command]
+pub async fn create_batch(state: State<'_, AppState>, x: f64, y: f64, cards: Vec<BatchCard>, edges: Vec<BatchEdge>) -> Result<Batch> {
+  state.with(|s| s.create_batch(x, y, &cards, &edges))
 }
 
 #[tauri::command]
@@ -193,6 +199,11 @@ pub async fn shape_edges(state: State<'_, AppState>, ids: Vec<String>, shape: Sh
 #[tauri::command]
 pub async fn arrow_edges(state: State<'_, AppState>, ids: Vec<String>, arrow: Arrow) -> Result<Vec<ItemState>> {
   state.with(|s| s.arrow_edges(&ids, arrow))
+}
+
+#[tauri::command]
+pub async fn stroke_edges(state: State<'_, AppState>, ids: Vec<String>, stroke: Stroke) -> Result<Vec<ItemState>> {
+  state.with(|s| s.stroke_edges(&ids, stroke))
 }
 
 #[tauri::command]

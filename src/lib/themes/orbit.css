@@ -21,6 +21,7 @@
 	--danger-paper: #2a1a20;
 	/* A panel edged in light, floating over the table. */
 	--lift: 0 0 0 1px rgb(140 190 235 / 0.16), 0 12px 28px -14px rgb(0 0 0 / 0.85);
+	--scrim: rgb(2 6 14 / 0.6);
 	--font-note: 'Saira Variable', system-ui, sans-serif;
 	--font-ui: 'Saira Variable', system-ui, sans-serif;
 	--font-adjust: none;

@@ -25,6 +25,7 @@
 	--danger-paper: #36221f;
 	/* A slab of slate set on the moss. */
 	--lift: 0 0 0 1px rgb(228 230 220 / 0.07), 0 12px 26px -14px rgb(0 0 0 / 0.75);
+	--scrim: rgb(4 8 6 / 0.6);
 	--font-note: 'Alegreya Variable', Georgia, serif;
 	--font-ui: 'Alegreya Sans', system-ui, sans-serif;
 	/* Alegreya runs small: set to the other themes' x-height. */
