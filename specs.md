@@ -398,7 +398,8 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ## Rendering and zoom
 
 - Opening a vault frames everything on its canvas: centered, zoomed out until it all fits, never zoomed in past 100%. An empty canvas opens at 100% on the origin.
-- **Mouse and trackpad:** the mouse wheel zooms around the pointer. On a trackpad, scrolling with two fingers pans and pinching zooms around the pointer, following the fingers. Ctrl+wheel zooms on either. A wheel event comes from a mouse when it turns by whole notches; the first event of a gesture decides for the rest of it.
+- **Mouse and trackpad, like a map:** the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer; dragging the paper pans, in any direction. A pinch follows the fingers. Two-finger panning is left out because on Windows the touchpad locks each swipe to one axis before the page sees it. A pinch never zooms the window itself.
+  - On Windows, Tauri leaves WebView2's pinch zoom off, which drops the pinch before the page sees it; the app turns it on at startup, before the first page loads, so the pinch arrives as a wheel turned with Ctrl held. WebKit, on macOS, reports it as gesture events instead.
 - One viewport query per pan or zoom, with a margin so small pans don't need a new query.
 - Queries depend on zoom: zoomed out, nothing inside a zone is queried, and anything smaller than a few pixels on screen is skipped.
 - A card's title and excerpt come from the index. The `.md` is read only when a card is opened or zoomed in enough to show its body.

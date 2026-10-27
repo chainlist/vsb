@@ -23,5 +23,9 @@ rusqlite = { version = "0.41.0", features = ["bundled"] }
 ulid = "3.0.0"
 thiserror = "2.0.21"
 
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+windows-core = "0.62"
+
 [dev-dependencies]
 tempfile = "3.27.0"

@@ -22,10 +22,9 @@
 
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
 	const MIN_SQUARE = 8;
-	/** Wheel events closer together than this, in ms, are one gesture, made with one device. */
-	const GESTURE_GAP = 200;
-	/** Zoom per pixel of wheel travel: a mouse notch is 100 pixels, a trackpad pinch far fewer. */
-	const NOTCH_ZOOM = 0.0015;
+	/** Zoom per pixel of wheel travel. A pinch moves a few pixels per event where a mouse notch moves
+	 * 100, so it zooms faster, to follow the fingers. */
+	const WHEEL_ZOOM = 0.0015;
 	const PINCH_ZOOM = 0.01;
 
 	/** What the canvas holds, framed when it opens; null for an empty canvas. */
@@ -61,38 +60,57 @@
 		return { square, origin: camera.toScreen(0, 0), minor: Math.min(1, (square - MIN_SQUARE) / (2 * MIN_SQUARE)) };
 	});
 
-	// The mouse wheel zooms. On a trackpad two fingers pan, and a pinch zooms: browsers report it as
-	// a wheel turned with Ctrl held, like Ctrl+wheel on a mouse. Either must stop the page from
-	// scrolling, which a passive wheel listener cannot do.
+	// Like a map: the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer,
+	// and dragging pans in any direction. Chromium reports a pinch as a wheel turned with Ctrl held,
+	// WebKit as gesture events carrying the scale since it began. Zooming must stop the page from
+	// scrolling or zooming itself, which a passive listener cannot do.
 	$effect(() => {
-		let mouse = false;
-		let last = -Infinity;
+		/** The scale reached by the WebKit pinch under way, or null. */
+		let pinch: number | null = null;
 		const onwheel = (e: WheelEvent) => {
 			e.preventDefault();
-			// The first event of a gesture tells the device, so a long trackpad step later in it is
-			// not taken for a notch.
-			if (e.timeStamp - last > GESTURE_GAP) mouse = notched(e);
-			last = e.timeStamp;
+			if (pinch !== null) return;
 			const p = local(e);
-			if (mouse || e.ctrlKey) {
-				camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * (mouse ? NOTCH_ZOOM : PINCH_ZOOM)));
-			} else {
-				camera.panBy(-e.deltaX, -e.deltaY);
-			}
+			// Ctrl+wheel on a mouse still turns by notches, at the wheel's pace.
+			const rate = e.ctrlKey && !notched(e) ? PINCH_ZOOM : WHEEL_ZOOM;
+			camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * rate));
 			// What lies under the pointer changed without it moving.
 			if (!e.buttons) hover(p);
 		};
-		el.addEventListener('wheel', onwheel, { passive: false });
-		return () => el.removeEventListener('wheel', onwheel);
+		const onstart = (e: Event) => {
+			e.preventDefault();
+			pinch = 1;
+		};
+		const onchange = (e: Event) => {
+			e.preventDefault();
+			const g = e as Event & { scale: number; clientX: number; clientY: number };
+			const p = local(g);
+			camera.zoomAt(p.x, p.y, g.scale / (pinch ?? 1));
+			pinch = g.scale;
+		};
+		const onend = (e: Event) => {
+			e.preventDefault();
+			pinch = null;
+		};
+		const listeners = [
+			['wheel', onwheel],
+			['gesturestart', onstart],
+			['gesturechange', onchange],
+			['gestureend', onend]
+		] as const;
+		for (const [type, on] of listeners) el.addEventListener(type, on as EventListener, { passive: false });
+		return () => {
+			for (const [type, on] of listeners) el.removeEventListener(type, on as EventListener);
+		};
 	});
 
-	function local(e: MouseEvent) {
+	function local(e: { clientX: number; clientY: number }) {
 		const box = el.getBoundingClientRect();
 		return { x: e.clientX - box.left, y: e.clientY - box.top };
 	}
 
 	// A mouse wheel turns by notches, which Chromium and WebKit report as multiples of 120 in the
-	// legacy wheelDelta, and Firefox in lines. A trackpad scrolls by the pixel.
+	// legacy wheelDelta, and Firefox in lines. A trackpad scrolls and pinches by the pixel.
 	function notched(e: WheelEvent) {
 		const { wheelDeltaY } = e as WheelEvent & { wheelDeltaY?: number };
 		return e.deltaMode !== WheelEvent.DOM_DELTA_PIXEL || (!!wheelDeltaY && wheelDeltaY % 120 === 0);
