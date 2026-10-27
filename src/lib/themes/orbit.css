@@ -1,0 +1,35 @@
+@import '@fontsource-variable/saira/wdth.css';
+@import '@fontsource-variable/saira/wdth-italic.css';
+
+/* Orbit: a night plotting table. Deep navy, faint major lines with brighter nodes where they
+   cross, panels edged in light, one ice-blue accent. Saira throughout; zone names run narrower. */
+[data-theme='orbit'] {
+	--scheme: dark;
+	--paper: #0d1520;
+	--grid-line-major: #1a2736;
+	--grid-line-minor: #111b27;
+	--grid-dot-major: #4a6684;
+	--grid-dot-minor: transparent;
+	--border: #26384b;
+	--ink: #dce6f0;
+	--ink-soft: #8fa3b8;
+	--pen: #5ec4e6;
+	--on-pen: #07131c;
+	--rule: #23415a;
+	--card: #142030;
+	--danger: #ff8a80;
+	--danger-paper: #2a1a20;
+	/* A panel edged in light, floating over the table. */
+	--lift: 0 0 0 1px rgb(140 190 235 / 0.16), 0 12px 28px -14px rgb(0 0 0 / 0.85);
+	--font-note: 'Saira Variable', system-ui, sans-serif;
+	--font-ui: 'Saira Variable', system-ui, sans-serif;
+	--font-adjust: none;
+	--zone-default: #6a8199;
+	/* Highlighters need more color to show on dark paper. */
+	--zone-wash: 26%;
+	--zone-stretch: 87.5%;
+	--radius-mark: 1px;
+	--radius-control: 3px;
+	--radius-card: 4px;
+	--radius-zone: 6px;
+}

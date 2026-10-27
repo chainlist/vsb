@@ -1,0 +1,40 @@
+@import '@fontsource-variable/alegreya/wght.css';
+@import '@fontsource-variable/alegreya/wght-italic.css';
+@import '@fontsource/alegreya-sans/400.css';
+@import '@fontsource/alegreya-sans/500.css';
+@import '@fontsource/alegreya-sans/700.css';
+
+/* Cairn: a moor at dusk. Peat and moss under a faint speckle of lichen, slate cards, fog-pale
+   ink, a dim gold rule under each title and bog gold for the accent. Alegreya, a calligraphic
+   serif, for notes; its sans for controls. */
+[data-theme='cairn'] {
+	--scheme: dark;
+	--paper: #171f1b;
+	--grid-line-major: transparent;
+	--grid-line-minor: transparent;
+	--grid-dot-major: #3e4d44;
+	--grid-dot-minor: #29342e;
+	--border: #35443b;
+	--ink: #e4e6dc;
+	--ink-soft: #9ea99c;
+	--pen: #c9a45c;
+	--on-pen: #171f1b;
+	--rule: #5c5338;
+	--card: #212b25;
+	--danger: #e8907c;
+	--danger-paper: #36221f;
+	/* A slab of slate set on the moss. */
+	--lift: 0 0 0 1px rgb(228 230 220 / 0.07), 0 12px 26px -14px rgb(0 0 0 / 0.75);
+	--font-note: 'Alegreya Variable', Georgia, serif;
+	--font-ui: 'Alegreya Sans', system-ui, sans-serif;
+	/* Alegreya runs small: set to the other themes' x-height. */
+	--font-adjust: 0.51;
+	--zone-default: #7f8e82;
+	/* Highlighters need more color to show on dark paper. */
+	--zone-wash: 26%;
+	--zone-stretch: normal;
+	--radius-mark: 2px;
+	--radius-control: 4px;
+	--radius-card: 6px;
+	--radius-zone: 12px;
+}

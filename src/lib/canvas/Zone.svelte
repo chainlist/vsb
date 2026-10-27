@@ -62,7 +62,7 @@
 		box-sizing: border-box;
 		border: calc(1.5 * var(--px)) solid color-mix(in srgb, var(--zone-color) 70%, var(--ink));
 		border-radius: var(--radius-zone);
-		background: color-mix(in srgb, var(--zone-color) 18%, transparent);
+		background: color-mix(in srgb, var(--zone-color) var(--zone-wash), transparent);
 	}
 
 	/* Zoomed out, the zone is only its frame and its name, which keep their size on screen. */

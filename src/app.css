@@ -2,14 +2,22 @@
    (#lib/theme.svelte.ts). Everything on screen is drawn from these tokens. */
 @import './lib/themes/studio.css';
 @import './lib/themes/pad.css';
+@import './lib/themes/orbit.css';
+@import './lib/themes/cairn.css';
 
 /* The root, and any preview drawn in another theme. */
 [data-theme] {
-	color-scheme: light;
+	color-scheme: var(--scheme);
 	font-family: var(--font-ui);
 	font-size: 15px;
 	color: var(--ink);
 	background: var(--paper);
+}
+
+/* A theme whose fonts have a small x-height scales them up to the others' (--font-adjust). Every
+   font shorthand resets font-size-adjust, hence one rule on every element that wins over them. */
+[data-theme] * {
+	font-size-adjust: var(--font-adjust) !important;
 }
 
 html,
@@ -31,9 +39,9 @@ a {
 	color: var(--pen);
 }
 
-/* Graph paper, ruled with lines or dotted at their crossings: a theme colors one and leaves the
-   other transparent. The canvas moves it through --cell (minor square), --ox and --oy (offset)
-   and --minor (opacity of the minor marks); elsewhere it lies still. */
+/* Graph paper, ruled with lines, dotted at their crossings, or both: a theme leaves the marks it
+   does not draw transparent. The canvas moves it through --cell (minor square), --ox and --oy
+   (offset) and --minor (opacity of the minor marks); elsewhere it lies still. */
 .graph-paper {
 	--cell: 20px;
 	--ox: 0px;
@@ -57,7 +65,16 @@ a {
 		var(--cell) var(--cell),
 		var(--major) var(--major),
 		var(--cell) var(--cell);
-	background-position: var(--ox) var(--oy);
+	/* The dots sit 1.5px further in than the lines, so they are centered on the crossings. */
+	--dot-ox: calc(var(--ox) - 1.5px);
+	--dot-oy: calc(var(--oy) - 1.5px);
+	background-position:
+		var(--ox) var(--oy),
+		var(--ox) var(--oy),
+		var(--ox) var(--oy),
+		var(--ox) var(--oy),
+		var(--dot-ox) var(--dot-oy),
+		var(--dot-ox) var(--dot-oy);
 }
 
 /* An index card: white stock lifted off the paper, a rule under its heading. */

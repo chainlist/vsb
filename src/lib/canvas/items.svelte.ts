@@ -29,6 +29,8 @@ class Items {
 	edges = $state<EdgeView[]>([]);
 	/** Whether the zones above were queried zoomed out, without what lies inside them. */
 	collapsed = $state(false);
+	/** Counts edits to the vault, so the lists beside the canvas reload after each. */
+	revision = $state(0);
 	#byId = $derived(new Map(this.cards.map((c) => [c.id, c])));
 	#queried: Rect | null = null;
 	#zoom = 1;
@@ -71,6 +73,12 @@ class Items {
 		const crossed = collapsedAt(camera.zoom) !== collapsedAt(this.#zoom);
 		if (this.#queried && inside(camera.visible, this.#queried) && !zoomed && !crossed) return;
 		void this.refresh();
+	}
+
+	/** Redraws after an edit to the vault. */
+	changed() {
+		this.revision++;
+		return this.refresh();
 	}
 
 	/** Queries the area around the screen now. Answers to older queries are dropped. */

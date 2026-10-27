@@ -6,7 +6,9 @@ export type Theme = { id: string; name: string };
 
 export const THEMES: Theme[] = [
 	{ id: 'studio', name: 'Studio' },
-	{ id: 'pad', name: 'Engineering pad' }
+	{ id: 'pad', name: 'Engineering pad' },
+	{ id: 'orbit', name: 'Orbit' },
+	{ id: 'cairn', name: 'Cairn' }
 ];
 
 export const DEFAULT_THEME = THEMES[0].id;

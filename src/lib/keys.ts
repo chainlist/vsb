@@ -18,6 +18,9 @@ const layers: Layer[] = [];
 /** Whether Mod (Ctrl, or Cmd on macOS) is held, for keys and pointer gestures alike. */
 export const isMod = (e: KeyboardEvent | MouseEvent) => e.ctrlKey || e.metaKey;
 
+/** How Mod reads on this platform, in tooltips. */
+export const MOD_NAME = /Mac|iPhone|iPad/.test(navigator.userAgent) ? 'Cmd' : 'Ctrl';
+
 function combo(e: KeyboardEvent) {
 	const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
 	const mods = [isMod(e) ? 'Mod' : '', e.altKey ? 'Alt' : '', e.shiftKey ? 'Shift' : ''];

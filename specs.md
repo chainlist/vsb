@@ -66,8 +66,10 @@ src/routes/
     +layout.svelte            # the canvas, mounted for every child route
     +layout.ts                # opens the vault
     +page.svelte              # canvas with no panel open
-    unplaced/+page.svelte     # Unplaced tray
-    search/+page.svelte       # search
+    (panel)/
+      +layout.svelte          # the panel shell, shared by the tray and search
+      unplaced/+page.svelte   # Unplaced tray
+      search/+page.svelte     # search
     settings/
       +layout.svelte          # settings: a full page over the canvas, one tab per child route
       +page.ts                # opens the first tab
@@ -243,6 +245,8 @@ Notes with no card (never placed, created outside the app, or whose cards were a
 - search
 - dragging one onto the canvas, which creates its card and writes its ULID if it has none
 
+See [Unplaced tray and search](#unplaced-tray-and-search).
+
 ## Edges
 
 - Mod+drag (Ctrl, Cmd on macOS) from a card draws an edge: releasing on another card connects them, `from` the first, `to` the second. Started on the paper, the same gesture draws a zone. Releasing on the paper or on the starting card creates nothing.
@@ -253,6 +257,17 @@ Notes with no card (never placed, created outside the app, or whose cards were a
   - A straight line runs along the line between the two cards' centers, from border to border.
 - Pressing the line or its label selects the edge. Double-clicking it, or Enter while it is selected, edits the label in place at the curve's middle. New edges have no label; clearing a label removes it from the file.
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
+
+## Unplaced tray and search
+
+- **Panels beside the canvas.** The tray and search are child routes in the vault's `(panel)` route group, whose layout is their shell: a panel docked on the right, full height. The canvas stays mounted and usable beside it, keys included: the panel is not modal.
+- **Opening and closing.** The top bar has an Unplaced and a Search button, icon beside text, between the vault name and the settings gear. Mod+U opens the tray and Mod+F opens search (Ctrl, Cmd on macOS), also while typing. The same key or button again, Close, or Escape while the focus is in the panel goes back to the canvas.
+- **One note list.** Each line shows the title and the excerpt from the index, the excerpt as plain text without Markdown marks. Lines are fetched 50 at a time as the list scrolls, never all at once. After any edit to the vault (an undo step, the end of a card edit), the lines shown are fetched again.
+- **The tray** lists the notes with no card, most recently changed first: notes never placed, created outside the app, or whose cards were all deleted, and `(conflict).md` copies.
+- **Search** covers note text (titles and bodies) and zone names, through `notes_fts` and `zones_fts`. Every word typed must be there, each as the start of a word; case and accents are ignored. Matching zones come first, then notes, best match first. A note that has a card is marked "On the canvas".
+- **Clicking a result** with a place on the canvas, a placed note or a zone, frames and selects it: centered at 100%, or zoomed out until it fits but never below 40%, so the zones around it open. The panel stays open. Clicking an unplaced note does nothing; it is placed by dragging.
+- **Dragging a note onto the canvas** places its card where it is dropped. A ghost of the card, at the canvas's zoom, follows the pointer. The card has the size of a card placed by double-click, is centered on the drop point and joins the innermost zone under its center. A note without an ID gets its ULID first, then the card is written. The card is one undo step; undoing it keeps the ULID in the note, which goes back to the tray. Dropping back on the panel or the top bar places nothing.
+- **One card per note until V3:** dragging a note that already has a card creates nothing and frames its card, as a click does.
 
 ## Batch creation
 
@@ -337,6 +352,7 @@ CREATE VIRTUAL TABLE card_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 CREATE VIRTUAL TABLE edge_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 
 CREATE VIRTUAL TABLE notes_fts USING fts5(title, body);   -- rowid = notes.key
+CREATE VIRTUAL TABLE zones_fts USING fts5(name);          -- rowid = zones.key
 
 -- per device, not derived from files: viewport, zoom, last opened zone
 CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
@@ -377,14 +393,18 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ## Appearance
 
 - **Settings is a full page** at `vault/[vaultId]/settings/`, drawn over the canvas, which stays mounted underneath. Each tab is a child route; only Appearance exists so far. Escape or Close goes back to the canvas.
-- **Two themes:** Studio, the default, and Engineering pad.
+- **Four themes:** Studio, the default, Engineering pad, and two dark ones, Orbit and Cairn.
   - Studio: a cool gray canvas dotted at the grid crossings, white cards with a hairline edge, graphite text and a petrol accent. Instrument Sans for notes and controls; zone names are set narrower.
   - Engineering pad: sage graph paper, index cards with a red rule under the title, fountain-pen blue. Literata for notes, IBM Plex Sans for controls.
+  - Orbit (futuristic): a deep navy canvas with faint major lines and brighter nodes where they cross, cards edged in light, an ice-blue accent. Saira for notes and controls; zone names are set narrower.
+  - Cairn (eerie, Celtic): a peat-moss canvas with a faint speckle, slate cards with a dim gold rule under the title, fog-pale text and a bog-gold accent. Alegreya for notes, Alegreya Sans for controls.
 - **A theme is a set of design tokens:** CSS custom properties, picked by the `data-theme` attribute on the root element. A new theme, or a dark variant, is a new set of values with no component changes.
+  - The tokens also set whether the theme is light or dark (for scrollbars and form controls), how strongly zones are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
+  - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **Screens outside a vault** (the vault picker, errors) use the default theme.
 - Zone colors live in the zone files, so they are the same in every theme. The default zone gray, for a zone with no color, comes from the theme.
-- Later: a dark variant.
+- Later: a dark mode (Orbit and Cairn are dark themes of their own, not that feature).
 
 ## Sync
 

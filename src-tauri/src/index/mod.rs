@@ -1,6 +1,7 @@
 //! The SQLite index: a cache in the app-data folder, rebuilt from the vault files at will.
 
 mod bounds;
+mod notes;
 mod rows;
 mod stamps;
 mod viewport;
@@ -8,6 +9,7 @@ mod views;
 mod zones;
 
 pub use bounds::Scope;
+pub use notes::Entry;
 pub use rows::NoteRow;
 pub use views::Viewport;
 
@@ -40,7 +42,7 @@ impl Rect {
 }
 
 /// Bump on any schema change: a mismatch drops the index and rebuilds it.
-pub(crate) const VERSION: i32 = 2;
+pub(crate) const VERSION: i32 = 3;
 const SCHEMA: &str = include_str!("schema.sql");
 
 pub struct Index {

@@ -5,8 +5,10 @@ mod layout;
 mod note;
 mod scan;
 mod scan_notes;
+mod search;
 mod session;
 mod storage;
+mod unplaced;
 mod zones;
 
 use crate::index::{Index, Rect};

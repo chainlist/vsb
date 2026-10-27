@@ -5,7 +5,7 @@ use crate::error::Result;
 use crate::index::Rect;
 use crate::items::{Card, HAlign, Kind, VAlign};
 use crate::session::Session;
-use crate::states::ItemState;
+use crate::states::{Created, ItemState};
 use serde::Deserialize;
 
 /// A card or zone dropped with its top-left corner at a world position.
@@ -25,11 +25,26 @@ impl Session {
 
   /// Places an empty card on a world rectangle. It joins the innermost zone under its center.
   pub fn create_card(&self, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
+    Ok(self.place(None, x, y, w, h)?.id)
+  }
+
+  /// Places a card for the note at vault path `path`, like an empty card, and gives the note its
+  /// ID if it has none. Until V3 a note has one card: when it already has it, that card comes
+  /// back with nothing to undo.
+  pub fn place_note(&self, path: &str, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
+    let note = self.note_id(path)?;
+    if let Some(id) = self.index.card_of_note(&note)? {
+      return Ok(Created { id, undo: Vec::new() });
+    }
+    self.place(Some(note), x, y, w, h)
+  }
+
+  fn place(&self, note: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
     let (zone, ox, oy) = self.landing(x, y, w, h)?;
-    let card = Card { note: None, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default() };
+    let card = Card { note, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default() };
     let id = crate::new_id();
-    self.apply(vec![ItemState::of(&id, &card)?])?;
-    Ok(id)
+    let undo = self.apply(vec![ItemState::of(&id, &card)?])?;
+    Ok(Created { id, undo })
   }
 
   /// Drops cards at new world positions. Each joins the innermost zone under its center, or the canvas.

@@ -34,7 +34,7 @@
 	});
 
 	// However edit mode ends, the session finishes: last save, then the blur rules.
-	onDestroy(() => session?.finish().then(() => items.refresh()));
+	onDestroy(() => session?.finish().then(() => items.changed()));
 </script>
 
 <textarea

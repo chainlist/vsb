@@ -64,12 +64,16 @@ impl Index {
   }
 
   pub fn put_zone(&self, id: &str, z: &Zone, stamp: Stamp) -> Result<()> {
-    self.db.execute(
+    let key: i64 = self.db.query_row(
       "INSERT INTO zones (id, parent, name, color, x, y, w, h, mtime, size) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
        ON CONFLICT (id) DO UPDATE SET parent = excluded.parent, name = excluded.name, color = excluded.color,
-         x = excluded.x, y = excluded.y, w = excluded.w, h = excluded.h, mtime = excluded.mtime, size = excluded.size",
+         x = excluded.x, y = excluded.y, w = excluded.w, h = excluded.h, mtime = excluded.mtime, size = excluded.size
+       RETURNING key",
       params![id, z.parent, z.name, z.color, z.x, z.y, z.w, z.h, stamp.mtime, stamp.size],
+      |r| r.get(0),
     )?;
+    self.db.execute("DELETE FROM zones_fts WHERE rowid = ?1", [key])?;
+    self.db.execute("INSERT INTO zones_fts (rowid, name) VALUES (?1, ?2)", params![key, z.name])?;
     Ok(())
   }
 
@@ -132,6 +136,9 @@ impl Index {
 
   pub fn remove_item(&self, kind: Kind, id: &str) -> Result<()> {
     let (table, bounds) = tables(kind);
+    if kind == Kind::Zone {
+      self.db.execute("DELETE FROM zones_fts WHERE rowid = (SELECT key FROM zones WHERE id = ?1)", [id])?;
+    }
     self.db.execute(&format!("DELETE FROM {bounds} WHERE key = (SELECT key FROM {table} WHERE id = ?1)"), [id])?;
     self.db.execute(&format!("DELETE FROM {table} WHERE id = ?1"), [id])?;
     Ok(())

@@ -18,7 +18,7 @@ function push(stack: ItemState[][], step: ItemState[]) {
 function enqueue(step: () => Promise<void>) {
 	queue = queue
 		.then(step)
-		.then(() => items.refresh())
+		.then(() => items.changed())
 		.catch((e) => console.error(e));
 	return queue;
 }

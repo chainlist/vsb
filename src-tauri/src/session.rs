@@ -90,6 +90,24 @@ impl Session {
     self.index.remove_note(&self.vault.rel(&path))
   }
 
+  /// The ULID of the note at vault path `rel`, written into its frontmatter first if it has none:
+  /// a note gets its ID with its first card, never just because the app saw it.
+  pub(crate) fn note_id(&self, rel: &str) -> Result<String> {
+    let path = self.vault.abs(rel);
+    // Only a note the index knows, never any path, read as it is on disk now.
+    if self.index.note_stamp(rel)?.is_none() || (self.changed_outside(&path)? && !path.exists()) {
+      return msg("note not found");
+    }
+    let mut note = NoteText::read(&path)?;
+    if let Some(id) = note.id() {
+      return Ok(id);
+    }
+    let id = crate::new_id();
+    note.set_id(&id);
+    self.write_note(&path, &note)?;
+    Ok(id)
+  }
+
   /// Renames the note's file after its title, if the title changed.
   pub fn rename_note(&self, id: &str) -> Result<()> {
     let path = self.note_file(id)?;

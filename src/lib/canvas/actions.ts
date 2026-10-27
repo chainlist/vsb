@@ -8,7 +8,9 @@ import {
 	deleteCards,
 	deleteEdges,
 	deleteZones,
+	itemBox,
 	labelEdge,
+	placeNote,
 	renameZone,
 	shapeEdges,
 	type Arrow,
@@ -19,7 +21,10 @@ import {
 	type VAlign,
 	type ZoneView
 } from '#lib/api.js';
+import { camera } from './camera.svelte.js';
+import { newCardAt } from './gestures.js';
 import { history } from './history.js';
+import { OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
@@ -87,4 +92,24 @@ export function label(id: string, text: string) {
 /** Turns an unresolved card into an empty one. */
 export function clear(card: CardView) {
 	return history.edit(() => clearCard(card.id));
+}
+
+/** Frames a card or a zone, zoomed in at least until zones open, and selects it. */
+export async function show(kind: 'card' | 'zone', id: string) {
+	const box = await itemBox(kind, id);
+	if (!box) return;
+	camera.fit(box, OPEN_ZOOM);
+	selection.only(id);
+}
+
+/** Places a card for a note, centered on a world point, and selects it. A note that already has
+ * its card gets no other (one card per note until V3): its card is shown instead. */
+export function dropNote(path: string, at: { x: number; y: number }) {
+	const { x, y, w, h } = newCardAt(at);
+	return history.edit(async () => {
+		const { id, undo } = await placeNote(path, x, y, w, h);
+		if (undo.length) selection.only(id);
+		else await show('card', id);
+		return undo;
+	});
 }

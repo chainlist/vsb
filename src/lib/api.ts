@@ -69,6 +69,11 @@ export type Created = { id: string; undo: ItemState[] };
 /** A card or zone dropped with its top-left corner at a world position. */
 export type Move = { id: string; x: number; y: number };
 
+/** One line of a list beside the canvas: a note, with its card when it has one, or a zone. */
+export type Entry =
+	| { kind: 'note'; path: string; title: string; excerpt: string; card: string | null }
+	| { kind: 'zone'; id: string; name: string };
+
 export const listVaults = () => invoke<VaultEntry[]>('list_vaults');
 
 /** Asks for a folder and makes it a vault if needed. Null if the dialog was cancelled. */
@@ -91,6 +96,23 @@ export const queryViewport = (rect: Rect, minSize: number, collapsed: boolean) =
 /** Places an empty card on a world rectangle and returns its ID. */
 export const createCard = (x: number, y: number, w: number, h: number) =>
 	invoke<string>('create_card', { x, y, w, h });
+
+/** Places a card for the note at vault path `path` on a world rectangle, and gives the note its ID
+ * if it has none. A note that already has its card gets no other: that card comes back, with
+ * nothing to undo. */
+export const placeNote = (path: string, x: number, y: number, w: number, h: number) =>
+	invoke<Created>('place_note', { path, x, y, w, h });
+
+/** A card's or a zone's box in the world, or null when it is gone. */
+export const itemBox = (kind: 'card' | 'zone', id: string) => invoke<Rect | null>('item_box', { kind, id });
+
+/** A page of the notes with no card, most recently changed first. */
+export const unplacedNotes = (offset: number, limit: number) =>
+	invoke<Entry[]>('unplaced_notes', { offset, limit });
+
+/** A page of the zones, then the notes, holding every word typed, best matches first. */
+export const search = (text: string, offset: number, limit: number) =>
+	invoke<Entry[]>('search', { text, offset, limit });
 
 /** Drops cards with their top-left corners at world positions; each joins the zone under its center. */
 export const moveCards = (moves: Move[]) =>

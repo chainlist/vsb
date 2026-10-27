@@ -1,8 +1,8 @@
 //! Tauri commands: the frontend's only way to the vault files and the index.
 
 use crate::error::{msg, Error, Result};
-use crate::index::{Rect, Viewport};
-use crate::items::{Arrow, HAlign, Shape, VAlign};
+use crate::index::{Entry, Rect, Viewport};
+use crate::items::{Arrow, HAlign, Kind, Shape, VAlign};
 use crate::layout::Move;
 use crate::states::{Created, ItemState};
 use crate::registry::{self, VaultEntry};
@@ -84,6 +84,28 @@ pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f6
 #[tauri::command]
 pub async fn create_card(state: State<'_, AppState>, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
   state.with(|s| s.create_card(x, y, w, h))
+}
+
+#[tauri::command]
+pub async fn place_note(state: State<'_, AppState>, path: String, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
+  state.with(|s| s.place_note(&path, x, y, w, h))
+}
+
+#[tauri::command]
+pub async fn item_box(state: State<'_, AppState>, kind: Kind, id: String) -> Result<Option<Rect>> {
+  state.with(|s| s.index.item_box(kind, &id))
+}
+
+// The lists beside the canvas come a page at a time.
+
+#[tauri::command]
+pub async fn unplaced_notes(state: State<'_, AppState>, offset: u32, limit: u32) -> Result<Vec<Entry>> {
+  state.with(|s| s.index.unplaced(offset, limit))
+}
+
+#[tauri::command]
+pub async fn search(state: State<'_, AppState>, text: String, offset: u32, limit: u32) -> Result<Vec<Entry>> {
+  state.with(|s| s.index.search(&text, offset, limit))
 }
 
 // Layout edits return the item states they replaced: the frontend's undo history applies them.

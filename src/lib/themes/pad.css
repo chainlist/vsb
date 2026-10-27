@@ -4,6 +4,7 @@
 
 /* Engineering pad: sage graph paper, white index cards, fountain-pen blue. */
 [data-theme='pad'] {
+	--scheme: light;
 	--paper: #f2f5f0;
 	--grid-line-major: #b6ccc1;
 	--grid-line-minor: #d7e3dc;
@@ -22,7 +23,9 @@
 	--lift: 0 0 0 1px rgb(38 50 56 / 0.08), 0 1px 2px rgb(38 50 56 / 0.08), 0 10px 20px -12px rgb(38 50 56 / 0.4);
 	--font-note: 'Literata Variable', Georgia, serif;
 	--font-ui: 'IBM Plex Sans Variable', system-ui, sans-serif;
+	--font-adjust: none;
 	--zone-default: #5d6b70;
+	--zone-wash: 18%;
 	--zone-stretch: normal;
 	--radius-mark: 2px;
 	--radius-control: 3px;

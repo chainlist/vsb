@@ -2,7 +2,9 @@
 //! always recomputed from those exact values, never shifted by offsets inside the R*Tree.
 
 use super::{Index, Rect};
-use crate::error::Result;
+use crate::error::{msg, Result};
+use crate::items::Kind;
+use rusqlite::OptionalExtension;
 
 /// `zabs`: absolute origin and nesting depth of every zone, walking `parent` down from the
 /// canvas. A zone whose parent is missing (not synced yet) sits on the canvas.
@@ -100,6 +102,18 @@ impl Index {
   /// The world area covered by every zone and card. None for an empty canvas.
   pub fn canvas_contents(&self) -> Result<Option<Rect>> {
     self.contents(Scope::All)
+  }
+
+  /// A card's or a zone's own box in the world. None when it is not indexed.
+  pub fn item_box(&self, kind: Kind, id: &str) -> Result<Option<Rect>> {
+    match kind {
+      Kind::Card => self.contents(Scope::Card(id)),
+      Kind::Zone => {
+        let sql = format!("WITH RECURSIVE {ZONE_ABS} SELECT ax, ay, w, h FROM zabs JOIN zones USING (id) WHERE id = ?1");
+        Ok(self.db.query_row(&sql, [id], |r| Ok(Rect::of(r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))).optional()?)
+      }
+      Kind::Edge => msg("an edge has no box of its own"),
+    }
   }
 
   /// What a scope's zones (other than a scoped zone itself) and cards cover, from the exact coordinates.

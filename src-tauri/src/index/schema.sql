@@ -48,6 +48,7 @@ CREATE VIRTUAL TABLE card_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 CREATE VIRTUAL TABLE edge_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 
 CREATE VIRTUAL TABLE notes_fts USING fts5(title, body);   -- rowid = notes.key
+CREATE VIRTUAL TABLE zones_fts USING fts5(name);          -- rowid = zones.key
 
 -- per device, not derived from files: viewport, zoom, last opened zone
 CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);

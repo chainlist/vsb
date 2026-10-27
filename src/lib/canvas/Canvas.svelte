@@ -4,6 +4,7 @@
 	import { camera } from './camera.svelte.js';
 	import { draft, startDraw } from './draw.svelte.js';
 	import { track } from './drag.js';
+	import { newCardAt } from './gestures.js';
 	import { history } from './history.js';
 	import { items } from './items.svelte.js';
 	import { NEW_EDGE, route } from './route.js';
@@ -18,8 +19,6 @@
 
 	/** World size of a minor graph-paper square; major lines fall every 5 squares. */
 	const GRID = 20;
-	/** Size of a newly placed card, in world units: 12 by 7 squares. */
-	const NEW_CARD = { w: 240, h: 140 };
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
 	const MIN_SQUARE = 8;
 
@@ -70,10 +69,12 @@
 	}
 
 	// Dragging the paper pans, Mod+dragging draws an edge from a card or a zone on the paper; a plain
-	// click on the paper clears the selection.
+	// click on the paper clears the selection. The middle button pans wherever it is pressed: cards,
+	// zones and edges leave it to the canvas, and it never selects anything.
 	function down(e: PointerEvent) {
-		if (e.button !== 0) return;
-		if (isMod(e)) {
+		const middle = e.button === 1;
+		if (e.button !== 0 && !middle) return;
+		if (isMod(e) && !middle) {
 			const p = local(e);
 			return startDraw(e, camera.toWorld(p.x, p.y));
 		}
@@ -86,16 +87,16 @@
 			},
 			end(dragged) {
 				panning = false;
-				if (!dragged) selection.clear();
+				if (!dragged && !middle) selection.clear();
 			}
 		});
 	}
 
 	function place(e: MouseEvent) {
 		const p = local(e);
-		const at = camera.toWorld(p.x, p.y);
+		const { x, y, w, h } = newCardAt(camera.toWorld(p.x, p.y));
 		return history.edit(async () => {
-			const id = await createCard(Math.round(at.x - NEW_CARD.w / 2), Math.round(at.y - NEW_CARD.h / 2), NEW_CARD.w, NEW_CARD.h);
+			const id = await createCard(x, y, w, h);
 			selection.only(id);
 			selection.editing = id;
 			return [{ kind: 'card', id, value: null }];

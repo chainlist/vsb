@@ -20,6 +20,13 @@ import { selection } from './selection.svelte.js';
 
 /** Smallest card or zone, in world units: 3 by 2 graph-paper squares. */
 export const MIN = { w: 60, h: 40 };
+/** Size of a newly placed card, in world units: 12 by 7 squares. */
+export const NEW_CARD = { w: 240, h: 140 };
+
+/** Where a new card lies, centered on a world point. */
+export function newCardAt(p: { x: number; y: number }) {
+	return { x: Math.round(p.x - NEW_CARD.w / 2), y: Math.round(p.y - NEW_CARD.h / 2), ...NEW_CARD };
+}
 
 type Item = CardView | ZoneView;
 
