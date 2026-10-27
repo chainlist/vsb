@@ -1,0 +1,30 @@
+@import '@fontsource-variable/instrument-sans/wdth.css';
+
+/* Studio: a cool mineral canvas dotted at the grid crossings, crisp white cards with a hairline
+   edge, graphite ink and one petrol accent. One sans for notes and controls; zone names run
+   narrower, like the regions on a map. */
+[data-theme='studio'] {
+	--paper: #eef1f3;
+	--grid-line-major: transparent;
+	--grid-line-minor: transparent;
+	--grid-dot-major: #a9b3bc;
+	--grid-dot-minor: #c9d0d6;
+	--border: #d3d9de;
+	--ink: #1b2126;
+	--ink-soft: #5b6670;
+	--pen: #0b6e79;
+	--on-pen: #fff;
+	--rule: #e4e8eb;
+	--card: #ffffff;
+	--danger: #b42318;
+	--danger-paper: #fdeeec;
+	--lift: 0 0 0 1px rgb(27 33 38 / 0.08), 0 1px 2px rgb(27 33 38 / 0.06), 0 8px 20px -10px rgb(27 33 38 / 0.22);
+	--font-note: 'Instrument Sans Variable', system-ui, sans-serif;
+	--font-ui: 'Instrument Sans Variable', system-ui, sans-serif;
+	--zone-default: #8d99a4;
+	--zone-stretch: 85%;
+	--radius-mark: 3px;
+	--radius-control: 6px;
+	--radius-card: 8px;
+	--radius-zone: 14px;
+}

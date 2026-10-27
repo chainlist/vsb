@@ -1,0 +1,3 @@
+# The index needs SQLite's math functions (floor() for clustering); the bundled build leaves them out.
+[env]
+LIBSQLITE3_FLAGS = "SQLITE_ENABLE_MATH_FUNCTIONS"

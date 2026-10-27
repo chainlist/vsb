@@ -1,0 +1,31 @@
+@import '@fontsource-variable/literata/opsz.css';
+@import '@fontsource-variable/literata/opsz-italic.css';
+@import '@fontsource-variable/ibm-plex-sans/index.css';
+
+/* Engineering pad: sage graph paper, white index cards, fountain-pen blue. */
+[data-theme='pad'] {
+	--paper: #f2f5f0;
+	--grid-line-major: #b6ccc1;
+	--grid-line-minor: #d7e3dc;
+	--grid-dot-major: transparent;
+	--grid-dot-minor: transparent;
+	--border: #b6ccc1;
+	--ink: #263238;
+	--ink-soft: #5d6b70;
+	--pen: #2b59c3;
+	--on-pen: #fff;
+	--rule: #e5606b;
+	--card: #ffffff;
+	--danger: #b3382f;
+	--danger-paper: #fbeeec;
+	/* A sheet of paper resting on the pad: a hairline edge, contact shadow, soft lift. */
+	--lift: 0 0 0 1px rgb(38 50 56 / 0.08), 0 1px 2px rgb(38 50 56 / 0.08), 0 10px 20px -12px rgb(38 50 56 / 0.4);
+	--font-note: 'Literata Variable', Georgia, serif;
+	--font-ui: 'IBM Plex Sans Variable', system-ui, sans-serif;
+	--zone-default: #5d6b70;
+	--zone-stretch: normal;
+	--radius-mark: 2px;
+	--radius-control: 3px;
+	--radius-card: 3px;
+	--radius-zone: 8px;
+}

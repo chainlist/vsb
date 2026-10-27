@@ -1,0 +1,124 @@
+/* Each theme is one set of design tokens, picked by the data-theme attribute on the root element
+   (#lib/theme.svelte.ts). Everything on screen is drawn from these tokens. */
+@import './lib/themes/studio.css';
+@import './lib/themes/pad.css';
+
+/* The root, and any preview drawn in another theme. */
+[data-theme] {
+	color-scheme: light;
+	font-family: var(--font-ui);
+	font-size: 15px;
+	color: var(--ink);
+	background: var(--paper);
+}
+
+html,
+body {
+	margin: 0;
+	height: 100%;
+}
+
+::selection {
+	background: color-mix(in srgb, var(--pen) 22%, transparent);
+}
+
+:focus-visible {
+	outline: 2px solid var(--pen);
+	outline-offset: 2px;
+}
+
+a {
+	color: var(--pen);
+}
+
+/* Graph paper, ruled with lines or dotted at their crossings: a theme colors one and leaves the
+   other transparent. The canvas moves it through --cell (minor square), --ox and --oy (offset)
+   and --minor (opacity of the minor marks); elsewhere it lies still. */
+.graph-paper {
+	--cell: 20px;
+	--ox: 0px;
+	--oy: 0px;
+	--minor: 1;
+	--major: calc(var(--cell) * 5);
+	--minor-line: color-mix(in srgb, var(--grid-line-minor) calc(var(--minor) * 100%), transparent);
+	--minor-dot: color-mix(in srgb, var(--grid-dot-minor) calc(var(--minor) * 100%), transparent);
+	background-color: var(--paper);
+	background-image:
+		linear-gradient(var(--grid-line-major) 1px, transparent 1px),
+		linear-gradient(90deg, var(--grid-line-major) 1px, transparent 1px),
+		linear-gradient(var(--minor-line) 1px, transparent 1px),
+		linear-gradient(90deg, var(--minor-line) 1px, transparent 1px),
+		radial-gradient(circle at 2px 2px, var(--grid-dot-major) 1.1px, transparent 1.7px),
+		radial-gradient(circle at 2px 2px, var(--minor-dot) 0.7px, transparent 1.3px);
+	background-size:
+		var(--major) var(--major),
+		var(--major) var(--major),
+		var(--cell) var(--cell),
+		var(--cell) var(--cell),
+		var(--major) var(--major),
+		var(--cell) var(--cell);
+	background-position: var(--ox) var(--oy);
+}
+
+/* An index card: white stock lifted off the paper, a rule under its heading. */
+.index-card {
+	box-sizing: border-box;
+	background: var(--card);
+	border-radius: var(--radius-card);
+	box-shadow: var(--lift);
+}
+
+/* A note written on an index card. */
+.note-card {
+	padding: 12px 14px;
+	font: 14px/1.5 var(--font-note);
+}
+
+.index-card-title {
+	display: block;
+	margin: 0 -14px 8px;
+	padding: 0 14px 6px;
+	border-bottom: 1px solid var(--rule);
+	font-family: var(--font-note);
+	font-weight: 600;
+	font-size: 15.5px;
+	/* Whole pixels keep the rule on one pixel row instead of blurring across two. */
+	line-height: 21px;
+}
+
+/* An icon beside its text. */
+.icon-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45em;
+}
+
+.button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 18px;
+	border: none;
+	border-radius: var(--radius-control);
+	background: var(--pen);
+	color: var(--on-pen);
+	font: 500 15px var(--font-ui);
+	cursor: pointer;
+}
+
+.button:hover {
+	background: color-mix(in srgb, var(--pen) 85%, var(--ink));
+}
+
+/* Screens outside the canvas (vault picker, errors) lie on the same pad, without scrolling
+   unless their content needs it. */
+.page {
+	box-sizing: border-box;
+	min-height: 100%;
+	/* A centered 560px column, at least 24px from the window edges. */
+	padding: 18vh max(24px, calc(50% - 280px)) 64px;
+}
+
+.error {
+	color: var(--danger);
+}
