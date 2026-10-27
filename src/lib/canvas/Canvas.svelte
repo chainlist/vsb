@@ -22,6 +22,11 @@
 
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
 	const MIN_SQUARE = 8;
+	/** Wheel events closer together than this, in ms, are one gesture, made with one device. */
+	const GESTURE_GAP = 200;
+	/** Zoom per pixel of wheel travel: a mouse notch is 100 pixels, a trackpad pinch far fewer. */
+	const NOTCH_ZOOM = 0.0015;
+	const PINCH_ZOOM = 0.01;
 
 	/** What the canvas holds, framed when it opens; null for an empty canvas. */
 	let { contents }: { contents: Rect | null } = $props();
@@ -56,12 +61,26 @@
 		return { square, origin: camera.toScreen(0, 0), minor: Math.min(1, (square - MIN_SQUARE) / (2 * MIN_SQUARE)) };
 	});
 
-	// Zooming must stop the page from scrolling, which a passive wheel listener cannot do.
+	// The mouse wheel zooms. On a trackpad two fingers pan, and a pinch zooms: browsers report it as
+	// a wheel turned with Ctrl held, like Ctrl+wheel on a mouse. Either must stop the page from
+	// scrolling, which a passive wheel listener cannot do.
 	$effect(() => {
+		let mouse = false;
+		let last = -Infinity;
 		const onwheel = (e: WheelEvent) => {
 			e.preventDefault();
+			// The first event of a gesture tells the device, so a long trackpad step later in it is
+			// not taken for a notch.
+			if (e.timeStamp - last > GESTURE_GAP) mouse = notched(e);
+			last = e.timeStamp;
 			const p = local(e);
-			camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * 0.0015));
+			if (mouse || e.ctrlKey) {
+				camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * (mouse ? NOTCH_ZOOM : PINCH_ZOOM)));
+			} else {
+				camera.panBy(-e.deltaX, -e.deltaY);
+			}
+			// What lies under the pointer changed without it moving.
+			if (!e.buttons) hover(p);
 		};
 		el.addEventListener('wheel', onwheel, { passive: false });
 		return () => el.removeEventListener('wheel', onwheel);
@@ -70,6 +89,13 @@
 	function local(e: MouseEvent) {
 		const box = el.getBoundingClientRect();
 		return { x: e.clientX - box.left, y: e.clientY - box.top };
+	}
+
+	// A mouse wheel turns by notches, which Chromium and WebKit report as multiples of 120 in the
+	// legacy wheelDelta, and Firefox in lines. A trackpad scrolls by the pixel.
+	function notched(e: WheelEvent) {
+		const { wheelDeltaY } = e as WheelEvent & { wheelDeltaY?: number };
+		return e.deltaMode !== WheelEvent.DOM_DELTA_PIXEL || (!!wheelDeltaY && wheelDeltaY % 120 === 0);
 	}
 
 	// Dragging the paper pans, Mod+dragging draws an edge from a card or a zone on the paper; a plain
@@ -98,10 +124,13 @@
 	}
 
 	// While a button is down the item keeps its handles, so they stay with it as it moves or resizes.
-	function hover(e: PointerEvent) {
+	function move(e: PointerEvent) {
 		const p = local(e);
 		batchDialog.pointer = p;
-		if (e.buttons) return;
+		if (!e.buttons) hover(p);
+	}
+
+	function hover(p: { x: number; y: number }) {
 		// Within half a handle of an item, the pointer is on its handle.
 		hovered = items.itemAt(camera.toWorld(p.x, p.y), GRIP / 2 / camera.zoom)?.id ?? null;
 	}
@@ -135,7 +164,7 @@
 	bind:clientWidth={camera.width}
 	bind:clientHeight={camera.height}
 	onpointerdown={down}
-	onpointermove={hover}
+	onpointermove={move}
 	onpointerleave={leave}
 	ondblclick={place}
 >
