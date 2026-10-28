@@ -59,6 +59,9 @@ class Items {
 	/** Counts edits to the vault, so the lists beside the canvas reload after each. */
 	revision = $state(0);
 	#byId = $derived(new Map(this.cards.map((c) => [c.id, c])));
+	/** The cards as plain boxes, for edges to route around: one value every edge reads, rather than
+	 * every edge watching every card. */
+	#boxes = $derived(this.cards.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })));
 	#queried: Rect | null = null;
 	#zoom = 1;
 	#latest = 0;
@@ -94,9 +97,11 @@ class Items {
 	}
 
 	/** Where an edge runs, between its cards as they are on the canvas, so it follows a drag, or
-	 * as the query found them when they are off-screen. */
+	 * as the query found them when they are off-screen. It misses the other cards on the canvas
+	 * when it can. */
 	routeOf(edge: EdgeView) {
-		return route(this.#byId.get(edge.from) ?? edge.ends[0], this.#byId.get(edge.to) ?? edge.ends[1], edge);
+		const others = this.#boxes.filter((c) => c.id !== edge.from && c.id !== edge.to);
+		return route(this.#byId.get(edge.from) ?? edge.ends[0], this.#byId.get(edge.to) ?? edge.ends[1], edge, 1, others);
 	}
 
 	/** The zones and cards on the canvas lying inside these zones, at any depth. */

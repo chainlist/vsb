@@ -268,7 +268,8 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - No edge from a card to itself, and at most one edge between two cards, in either direction. Connecting a pair that is already connected selects its edge.
 - Each edge has a style, picked for the selected edges in the selection bar: its shape, its arrowheads and its line. New edges are curved and solid, with an arrowhead at `to`.
   - Curved and angled lines leave each card square to the side that faces the other card, from the middle of that side. An angled line bends at right angles halfway across.
-  - A straight line runs along the line between the two cards' centers, from border to border.
+  - When that line would run through another card on the canvas, the edge takes the other pair of sides (top and bottom instead of left and right, or the reverse) if that line misses every card; when neither does, it keeps the first. Only cards count: crossing another edge or a zone's frame is fine. A line moves as soon as a card is dragged into or out of its way.
+  - A straight line runs along the line between the two cards' centers, from border to border, whatever lies between.
 - Pressing the line or its label selects the edge. Double-clicking it, or Enter while it is selected, edits the label in place at the curve's middle. New edges have no label; clearing a label removes it from the file.
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
 - Selecting cards brings out their links: every other card that no edge joins to one of them dims, and so does every edge that touches none of them. They stay solid, nothing shows through: a card's content fades into its stock, an edge's color into the paper. Zones never dim. A card with no edges dims all the others.
