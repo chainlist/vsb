@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import Locate from '@lucide/svelte/icons/locate';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import { Portal } from 'bits-ui';
@@ -7,53 +6,21 @@
 	import { show } from '#lib/canvas/actions.js';
 	import { camera } from '#lib/canvas/camera.svelte.js';
 	import { NEW_CARD } from '#lib/canvas/gestures.js';
-	import { items } from '#lib/canvas/items.svelte.js';
 	import { markdownText } from '#lib/markdown.js';
 	import { ghost, startDrag } from './noteDrag.svelte.js';
-
-	/** Lines fetched at a time: the list holds only the pages scrolled to, never every note. */
-	const PAGE = 50;
+	import { Paged } from './paged.svelte.js';
 
 	let { load, empty }: { load: (offset: number, limit: number) => Promise<Entry[]>; empty: string } = $props();
 
-	let entries = $state<Entry[]>([]);
-	let more = $state(false);
-	let loaded = $state(false);
-	let shown: typeof load | undefined;
-	let latest = 0;
-
-	/** Fetches `limit` lines from `offset` on. Answers to older fetches are dropped. */
-	async function fetch(offset: number, limit: number) {
-		const query = ++latest;
-		const found = await load(offset, limit);
-		if (query !== latest) return;
-		entries = offset ? [...entries, ...found] : found;
-		more = found.length === limit;
-		loaded = true;
-	}
-
-	// A new list starts at its first page. After an edit to the vault, the lines shown are fetched
-	// again: a placed note leaves the tray, and comes back when the placing is undone.
-	$effect(() => {
-		void items.revision;
-		const fresh = load !== shown;
-		shown = load;
-		untrack(() => fetch(0, fresh ? PAGE : Math.max(PAGE, entries.length)));
-	});
-
-	/** Fetches the next page once the end of the list scrolls into view. */
-	function atEnd(end: HTMLElement) {
-		const seen = new IntersectionObserver(([e]) => e.isIntersecting && fetch(entries.length, PAGE));
-		seen.observe(end);
-		return () => seen.disconnect();
-	}
+	// The pages scrolled to, never every note.
+	const list = new Paged(() => load);
 
 	const key = (e: Entry) => (e.kind === 'note' ? `note:${e.path}` : `zone:${e.id}`);
 </script>
 
 <div class="list">
 	<ul>
-		{#each entries as entry (key(entry))}
+		{#each list.lines as entry (key(entry))}
 			<li>
 				{#if entry.kind === 'zone'}
 					<button class="entry" title="Show on the canvas" onclick={() => show('zone', entry.id)}>
@@ -80,11 +47,11 @@
 				{/if}
 			</li>
 		{/each}
-		{#if more}
-			<li class="status" {@attach atEnd}>Loading…</li>
+		{#if list.more}
+			<li class="status" {@attach list.atEnd}>Loading…</li>
 		{/if}
 	</ul>
-	{#if loaded && !entries.length}
+	{#if list.loaded && !list.lines.length}
 		<p class="status">{empty}</p>
 	{/if}
 </div>

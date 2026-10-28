@@ -12,7 +12,7 @@ fn edge(f: &Fixture, id: &str) -> Edge {
 
 /// The (x, y, w, h) boxes of both cards of the only edge in `rect`.
 fn ends(s: &Session, rect: Rect) -> [Frame; 2] {
-  let mut edges = s.index.viewport(rect, 0.0, false).unwrap().edges;
+  let mut edges = s.index.viewport(rect, 0.0, None).unwrap().edges;
   assert_eq!(edges.len(), 1);
   edges.remove(0).ends.map(|e| (e.x, e.y, e.w, e.h))
 }
@@ -37,10 +37,10 @@ fn creating_an_edge_writes_its_file_and_undo_removes_it() {
 
   let redo = s.apply(created.undo).unwrap();
   assert!(!f.exists(&rel));
-  assert!(s.index.viewport(WORLD, 0.0, false).unwrap().edges.is_empty());
+  assert!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.is_empty());
   s.apply(redo).unwrap();
   assert_eq!(edge(&f, &created.id).to, "B");
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().edges.len(), 1);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.len(), 1);
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn labeling_an_edge_writes_it_and_an_empty_label_removes_it() {
   let id = s.create_edge("A", "B").unwrap().id;
   let undo = s.label_edge(&id, "  needs ").unwrap();
   assert_eq!(edge(&f, &id).label.as_deref(), Some("needs"));
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().edges[0].label.as_deref(), Some("needs"));
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().edges[0].label.as_deref(), Some("needs"));
   let redo = s.apply(undo).unwrap();
   assert_eq!(edge(&f, &id).label, None);
   s.apply(redo).unwrap();
@@ -84,13 +84,13 @@ fn deleting_edges_with_one_of_their_cards_is_undone_in_one_step() {
   let mut undo = s.delete_edges(std::slice::from_ref(&ab)).unwrap();
   undo.extend(s.delete_cards(&["B".into()]).unwrap());
   assert_eq!(files(&f).keys().collect::<Vec<_>>(), ["cards/A.json", "cards/C.json"]);
-  assert!(s.index.viewport(WORLD, 0.0, false).unwrap().edges.is_empty());
+  assert!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.is_empty());
   let count: i64 = s.index.db.query_row("SELECT count(*) FROM edge_bounds", [], |r| r.get(0)).unwrap();
   assert_eq!(count, 0);
 
   s.apply(undo).unwrap();
   assert_eq!(files(&f), before);
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().edges.len(), 2);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.len(), 2);
 }
 
 #[test]
@@ -101,9 +101,9 @@ fn an_edge_crossing_the_viewport_is_found_with_both_cards_off_screen() {
   let s = open(&f);
   s.create_edge("A", "B").unwrap();
   let middle = Rect { min_x: 900.0, min_y: -100.0, max_x: 1100.0, max_y: 100.0 };
-  assert!(s.index.viewport(middle, 0.0, false).unwrap().cards.is_empty());
+  assert!(s.index.viewport(middle, 0.0, None).unwrap().cards.is_empty());
   assert_eq!(ends(&s, middle)[1], (2000.0, 0.0, 100.0, 50.0));
-  let below = s.index.viewport(Rect { min_x: 900.0, min_y: 100.0, max_x: 1100.0, max_y: 300.0 }, 0.0, false).unwrap();
+  let below = s.index.viewport(Rect { min_x: 900.0, min_y: 100.0, max_x: 1100.0, max_y: 300.0 }, 0.0, None).unwrap();
   assert!(below.edges.is_empty());
 }
 
@@ -138,7 +138,7 @@ fn shape_arrow_and_stroke_are_written_only_when_not_the_default() {
   // A file from before edges had a style reads as curved and solid, with its arrow at `to`.
   f.write(".canvas/edges/OLD.json", r#"{ "from": "A", "to": "B" }"#);
   let s = open(&f);
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap().edges.remove(0);
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap().edges.remove(0);
   assert_eq!((view.shape.as_str(), view.arrow.as_str(), view.stroke.as_str()), ("curved", "to", "solid"));
 
   let ids = ["OLD".to_string()];
@@ -147,7 +147,7 @@ fn shape_arrow_and_stroke_are_written_only_when_not_the_default() {
   let restroke = s.stroke_edges(&ids, Stroke::Dotted).unwrap();
   let raw: Value = serde_json::from_str(&f.read(".canvas/edges/OLD.json")).unwrap();
   assert_eq!((raw["shape"].as_str(), raw["arrow"].as_str(), raw["stroke"].as_str()), (Some("angled"), Some("both"), Some("dotted")));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap().edges.remove(0);
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap().edges.remove(0);
   assert_eq!((view.shape.as_str(), view.arrow.as_str(), view.stroke.as_str()), ("angled", "both", "dotted"));
 
   s.apply(restroke).unwrap();

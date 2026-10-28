@@ -18,7 +18,7 @@ fn an_undo_on_a_card_changed_outside_reverts_only_what_it_changed() {
   s.apply(undo).unwrap();
   let c = card_file(&f, &id);
   assert_eq!((c.x, c.y, c.note.as_deref(), c.halign), (0.0, 0.0, Some("N9"), HAlign::Center));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].x, view.cards[0].note.as_deref(), view.cards[0].halign.as_str()), (0.0, Some("N9"), "center"));
 }
 
@@ -48,7 +48,7 @@ fn moving_a_zone_renamed_outside_keeps_its_new_name() {
   s.move_zones(&[move_to(&id, 1000.0, 0.0)]).unwrap();
   let z: Zone = items::read(&items::path(&f.vault, Kind::Zone, &id)).unwrap();
   assert_eq!((z.name.as_str(), z.color.as_deref(), z.x), ("Pricing", Some("#f5d76e"), 1000.0));
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().zones[0].name, "Pricing");
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().zones[0].name, "Pricing");
 }
 
 #[test]
@@ -76,7 +76,7 @@ fn saving_a_note_changed_outside_keeps_it_and_puts_the_text_in_a_conflict_note()
   assert!(!s.save_note(&note, "Plan\nv2").unwrap());
   assert_eq!(f.read("notes/Plan.md"), theirs);
   assert_eq!(f.read("notes/Plan (conflict).md"), "Plan\nv2");
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!(view.cards[0].excerpt.as_deref(), Some("v9"), "the card shows the version on disk");
   let id: Option<String> = s.index.db.query_row("SELECT id FROM notes WHERE path = 'notes/Plan (conflict).md'", [], |r| r.get(0)).unwrap();
   assert_eq!(id, None, "no ID: the conflict note lands in the Unplaced tray");
@@ -91,7 +91,7 @@ fn saving_a_note_deleted_outside_does_not_bring_it_back() {
   fs::remove_file(f.dir.path().join("notes/Plan.md")).unwrap();
   assert!(!s.save_note(&note, "Plan\nv2").unwrap());
   assert_eq!(names(&f.vault.notes_dir()), ["Plan (conflict).md"]);
-  assert!(!s.index.viewport(WORLD, 0.0, false).unwrap().cards[0].resolved);
+  assert!(!s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].resolved);
 }
 
 #[test]

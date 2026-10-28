@@ -3,10 +3,13 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Settings from '@lucide/svelte/icons/settings';
+	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import Canvas from '#lib/canvas/Canvas.svelte';
 	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { bindKeys, MOD_NAME } from '#lib/keys.js';
 	import { PANELS } from '#lib/panel/panels.js';
+	import { zoneList } from '#lib/panel/zoneList.svelte.js';
+	import ZoneList from '#lib/panel/ZoneList.svelte';
 	import { theme } from '#lib/theme.svelte.js';
 	import type { LayoutProps } from './$types';
 
@@ -22,6 +25,9 @@
 	$effect(() => {
 		snap.on = data.snap;
 	});
+	$effect(() => {
+		zoneList.open = data.zoneList;
+	});
 
 	/** Where a panel's button and key lead: the panel, or back to the canvas when it is open. */
 	function toggle(panel: Panel) {
@@ -29,7 +35,12 @@
 		return page.route.id === panel.route ? resolve('/vault/[vaultId]', { vaultId }) : resolve(panel.route, { vaultId });
 	}
 
-	$effect(() => bindKeys(PANELS.map((p) => ({ keys: [`Mod+${p.key}`], inText: true, run: () => goto(toggle(p)) }))));
+	$effect(() =>
+		bindKeys([
+			...PANELS.map((p) => ({ keys: [`Mod+${p.key}`], inText: true, run: () => goto(toggle(p)) })),
+			{ keys: ['Mod+l'], inText: true, run: () => zoneList.toggle() }
+		])
+	);
 </script>
 
 <!-- The canvas stays mounted while panels open and close as child routes. -->
@@ -42,6 +53,16 @@
 	<span class="sep">/</span>
 	<span>{data.vault.name}</span>
 	<span class="panels">
+		<!-- Not a route like the panels: the zone list stays open beside them. -->
+		<button
+			class="icon-label"
+			aria-pressed={zoneList.open}
+			title="Zones ({MOD_NAME}+L)"
+			onclick={() => zoneList.toggle()}
+		>
+			<SquareDashed />
+			Zones
+		</button>
 		{#each PANELS as panel (panel.route)}
 			<a
 				class="icon-label"
@@ -63,6 +84,10 @@
 		<Settings />
 	</a>
 </nav>
+
+{#if zoneList.open}
+	<ZoneList />
+{/if}
 
 {@render children()}
 
@@ -99,21 +124,29 @@
 		padding-left: 8px;
 	}
 
-	.panels a {
+	.panels a,
+	.panels button {
 		margin: -3px 0;
 		padding: 3px 8px;
+		border: none;
 		border-radius: var(--radius-control);
+		background: none;
 		color: var(--ink-soft);
+		font: inherit;
 		font-weight: 500;
+		cursor: pointer;
 	}
 
-	.panels a:hover {
+	.panels a:hover,
+	.panels button:hover {
 		background: var(--paper);
 		color: var(--ink);
 	}
 
 	.panels [aria-current='page'],
-	.panels [aria-current='page']:hover {
+	.panels [aria-current='page']:hover,
+	.panels [aria-pressed='true'],
+	.panels [aria-pressed='true']:hover {
 		background: color-mix(in srgb, var(--pen) 10%, transparent);
 		color: var(--pen);
 	}

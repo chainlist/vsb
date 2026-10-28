@@ -53,6 +53,7 @@ The frontend never reads files or SQLite directly. It calls typed Tauri commands
 ### Routing
 
 - Every screen and panel is a SvelteKit route. No view flags or `{#if}` chains to switch screens; navigation uses `<a href>` and `goto`.
+  - The one exception is the [zone list](#zone-list), a card floating beside the canvas that stays open with the tray or search: it is canvas chrome, opened and closed by a state remembered on the device.
 - The canvas lives in the vault layout, so it stays mounted while panels open and close as child routes.
 - Route data is loaded in `+layout.ts` and `+page.ts` `load` functions, through `#lib/api`.
 - No server code: no `+page.server.ts`, `+server.ts` or form actions, since Tauri has no Node server. SSR is off.
@@ -87,7 +88,7 @@ src/routes/
   - selection and focus
   - world-to-screen conversion: one module owns the pan and zoom transform
   - undo
-- **Repeated UI is one component.** For example, the Unplaced tray and search results both list notes, so they share one note list component; the tray and search share one panel shell.
+- **Repeated UI is one component.** For example, the Unplaced tray and search results both list notes, so they share one note list component; the tray and search share one panel shell. Every list beside the canvas pages through one helper.
 - **Design tokens:** every color, font, radius and shadow comes from a theme's tokens (see [Appearance](#appearance)). Components never hard-code them.
 - **shadcn-svelte components** live in `#lib/components/ui`, copied from its registry. `app.css` maps their colors, radii and shadows onto the theme's tokens, so they follow the vault's theme. Tailwind comes without its preflight reset, which the rest of the app is not styled for, and without `dark:` variants: a theme, not the OS, decides whether it is dark.
 - **Icons are Lucide icons**, drawn in the color of their text, at a size set once in the root layout. An icon Lucide lacks (the angled edge shape) is drawn through Lucide's own `Icon` component, so it matches.
@@ -276,8 +277,18 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **Search** covers note text (titles and bodies) and zone names, through `notes_fts` and `zones_fts`. Every word typed must be there, each as the start of a word; case and accents are ignored. Matching zones come first, then notes, best match first. A note that has a card is marked "On the canvas".
 - **Clicking a result** with a place on the canvas, a placed note or a zone, frames and selects it: centered at 100%, or zoomed out until it fits but never below 40%, so the zones around it open. The panel stays open. Clicking an unplaced note does nothing; it is placed by dragging.
 - **Dragging a note onto the canvas** places its card where it is dropped. A ghost of the card, at the canvas's zoom, follows the pointer. The card has the size of a card placed by double-click, is centered on the drop point and joins the innermost zone under its center. A note without an ID gets its ULID first, then the card is written. The card is one undo step; undoing it keeps the ULID in the note, which goes back to the tray. Dropping back on the panel or the top bar places nothing.
-  - Dropped on a collapsed zone, the card joins it (or the zone inside it under the drop point), where it would be hidden: it is framed, as a click on a placed result does. A card dropped on the paper while zoomed out stays in view, so the camera does not move.
+  - Dropped while zoomed out, the card would be hidden, in a collapsed zone (it joins it, or the zone inside it under the drop point) or in a cluster on the paper: it is framed, as a click on a placed result does.
 - **One card per note until V3:** dragging a note that already has a card creates nothing and frames its card, as a click does.
+
+## Zone list
+
+- **A card floating on the left**, under the top bar, listing the vault's zones as a tree. It is canvas chrome, not a route, so it can stay open beside the tray or search, and the canvas keeps its keys.
+- **Opening and closing.** A Zones button in the top bar, icon beside text, before Unplaced and Search; Mod+L (Ctrl, Cmd on macOS), also while typing; or the card's close cross. Whether it is open is remembered for each vault on this device, in the index's `ui_state`, never in `vault.json`. It starts closed.
+- **It slides in** from the left while fading in, in 0.2 s, and slides back out. Each level unrolls once its first rows are in, its rows arriving in a quick cascade; a zone's inner zones unfold under it the same way, and fold back up when its chevron closes.
+- **The tree.** The outermost zones, by name, ignoring case. A zone holding other zones has a chevron that lists them, indented under it and by name too; closed by default. Cards are never rows.
+- **One level at a time.** The outermost zones are fetched when the card opens, and a zone's inner zones when its chevron opens, 50 rows at a time as the list scrolls, never every zone. After any edit to the vault, the rows shown are fetched again.
+- **A row** shows the zone's color as a dot, as in the selection bar's color picker; its name, set like zone names on the canvas; a dot in the accent color while any part of the zone is on screen, following pans and zooms; and how many cards it holds, its inner zones' included. The selected zone's row is tinted with the accent.
+- **Clicking a row** frames and selects the zone, as a zone search result does. **Double-clicking** it renames the zone in the row, not on the canvas: Enter, Escape or a click elsewhere ends it, keeping what was typed. A rename is one undo step.
 
 ## Batch creation
 
@@ -296,18 +307,48 @@ This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
   - Each line is one card, or a chain of cards joined by arrows. Blank lines and empty steps (`A -> -> B`, a trailing `->`) are skipped.
   - An arrow is a line with a head at one end or both. The heads set the arrowheads: `A -> B` points at B, `A <- B` at A (the edge runs from B), `A <-> B` at both.
   - The line sets the stroke: one `-` is solid, `--` (or longer) dashed, any `.` dotted (`.->`, `<-.`, `-.->`), `=` double (`=>`, `<=`, `<=>`). Each arrow in a chain keeps its own.
-  - Without a head, `-`, `.` and `=` are text: a hyphenated word stays one card.
+  - A line with no head draws an edge with no arrowheads when it has three marks or more: `---` solid, `-.-` dotted, `===` double, as Mermaid's open links. There is no dashed one. Shorter, or anything else, a line with no head is text: a hyphenated word, `--` or `...` stays in its card.
   - The text is the note's content. The same text twice in one block is the same card.
+  - A card's text in double quotes is taken as written, arrows included: `"Build -> ship" -> Release`. A quote inside it is doubled.
   - Edges follow the [edge](#edges) rules: none from a card to itself, at most one between two cards, either way round.
   - The dialog lists the arrows, counts the cards and edges as they are typed, and shows `->` as typed, even in a font that draws it as an arrow.
 - **A preview map** under the text shows what the batch creates as it is typed, laid out as it will land: the cards by their titles only, and the edges with their arrowheads and lines. It fits the map, never drawing a card above half its size on the canvas.
-- **Layout** uses `@dagrejs/dagre` along the edges, and centers the whole batch on the point. The dialog picks the direction the edges run: left to right (the default), top to bottom, right to left or bottom to top. The pick stays for the next batches, and the preview map follows it. Each card has the size of a card placed by double-click, with `halign: center` and `valign: center`.
+- **Layout** uses `@dagrejs/dagre` along the edges, and centers the whole batch on the point. The dialog picks the direction the edges run: left to right (the default), top to bottom, right to left or bottom to top. The pick stays for the next batches and for [arranging](#arranging-cards) the selected cards, and the preview map follows it. Each card has the size of a card placed by double-click, with `halign: center` and `valign: center`.
 - **Run inside a zone,** the cards all join the innermost zone under the point. A zone too small for them grows to hold them, like a resize, its contents staying in place: one graph-paper square of room on the sides and at the bottom, three at the top for its name.
 - **One command** writes the batch: the notes, then a grown zone, the cards and the edges.
-- **The new cards are selected.** Landing in a collapsed zone or partly off-screen, they are framed, zoomed in at least until the zones open.
+- **The new cards are selected.** Made zoomed out, where they would be hidden in a collapsed zone or a cluster, or landing partly off-screen, they are framed, zoomed in at least until the zones open.
 - **One-shot:** the text creates the cards once and is not kept or linked to them.
 - **The whole batch is one undo step.** Undoing it removes the cards and edges and gives a grown zone back its size. The notes stay, in the Unplaced tray, as for any deleted card; redo places them again.
 - Not supported yet: edge labels, empty cards, zones.
+
+### Editing edges with the builder
+
+- **Opening it on cards of the canvas.** With a zone selected alone, or one card or more, Mod+B or the selection bar's Builder button (icon beside text) opens the builder on them, titled "Edit edges, add cards", with Apply in place of Create. With nothing selected it makes new cards, as above.
+  - A zone brings every card inside it, its inner zones' included.
+  - Selected cards bring every card an edge joins to one of them, with the edges between all those cards.
+  - Cards with no title (empty, unresolved, or a note whose first line is blank) cannot be written, so they are left out, and so are their edges.
+- **The text it opens with** writes each edge between those cards on a line of its own, from its first card, then each card no edge joins on a line of its own, cards top to bottom, then left to right.
+  - A card is written by its title, the first line of its note. Its note is never rewritten from the builder; new cards are one line, as above.
+  - Titles that repeat stay distinct: the later cards are numbered (`Idea #2`), skipping numbers another card's title holds.
+  - A title holding an arrow, or starting with a quote, is written in quotes.
+  - A dashed edge with no heads, which the syntax cannot write, is written `---` and keeps its dashes while its line stays as written.
+- **The text is the truth for the edges between those cards.** Applying it is one undo step:
+  - a line removed deletes its edge;
+  - an arrow changed restyles its edge (arrowheads, line, direction), keeping its label and shape;
+  - a new arrow creates an edge, and a new name a new card;
+  - edges to cards the builder did not open with are neither shown nor touched.
+  - Cards are never deleted, renamed or moved. A card's name changed in the text is a new card, and the edges of the card it named go.
+- **The preview** shows the cards of the canvas where they are and the new cards where they will land, in the accent color, the new and restyled edges in the accent color, and the edges to be removed in red. Beside the directions, the dialog counts the new cards, new edges, changed and removed edges as the text is typed, checked by the backend without writing anything.
+- **New cards** join the selected zone, or the zone all the selected cards share, else the canvas; a zone too small grows to hold them, as above. Each group of new cards joined by edges is laid out like a batch, then set beside a card of the canvas it joins, or beside them all, in the picked direction, and moved along until clear of the cards there. They are selected after Apply, and framed where they would be hidden or off-screen.
+- The batch rules still hold: at most one edge between two cards, either way round, none from a card to itself, and the text is not kept after Apply.
+
+### Arranging cards
+
+- With two cards or more selected, the selection bar's Arrange button (icon beside text) lays them out as the builder lays out a batch: with dagre, along the edges between them, in the direction last picked in the builder (left to right until then).
+- With a zone selected alone, Arrange lays out what is directly in it: its own cards and its inner zones together. An inner zone moves as one block with everything in it, and an edge to a card inside it, at any depth, counts as an edge to it.
+- Each card and inner zone keeps its size. The group stays centered where it was, each one landing on the grid when snapping is on.
+- Each stays in its zone, which grows where needed to hold them, its contents staying in place, as for a batch. Cards not selected are not moved out of the way.
+- It is one undo step.
 
 ## Index (SQLite)
 
@@ -400,17 +441,35 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 - Opening a vault frames everything on its canvas: centered, zoomed out until it all fits, never zoomed in past 100%. An empty canvas opens at 100% on the origin.
 - **Mouse and trackpad, like a map:** the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer; dragging the paper pans, in any direction. A pinch follows the fingers. Two-finger panning is left out because on Windows the touchpad locks each swipe to one axis before the page sees it. A pinch never zooms the window itself.
   - On Windows, Tauri leaves WebView2's pinch zoom off, which drops the pinch before the page sees it; the app turns it on at startup, before the first page loads, so the pinch arrives as a wheel turned with Ctrl held. WebKit, on macOS, reports it as gesture events instead.
+- **Framing glides.** Every jump that frames something (a zone list row, a search result, a cluster marker, a bundle, double-clicking a collapsed zone, new cards framed while zoomed out) glides there like a map: a far jump zooms out, travels and zooms back in, along the path that feels shortest (van Wijk and Nuij's, as d3 draws it). It takes 0.25 to 0.8 s, by the length of the path, eased in and out. Opening a vault frames everything at once. The wheel, a pinch and dragging stay direct, and stop a glide where it is.
+- **Reduced motion.** When the system asks for reduced motion, glides jump and the panels' animations are off.
 - One viewport query per pan or zoom, with a margin so small pans don't need a new query.
 - Queries depend on zoom: zoomed out, nothing inside a zone is queried, and anything smaller than a few pixels on screen is skipped.
 - A card's title and excerpt come from the index. The `.md` is read only when a card is opened or zoomed in enough to show its body.
-- Zoomed out below 40%, where 14px card text would be under 6px on screen, every zone collapses at once:
+- Zoomed out below 40%, where 14px card text would be under 6px on screen, every zone collapses at once, and loose cards cluster:
   - A collapsed zone draws only its frame and its name, centered. The name keeps its size on screen (20px) at any zoom and is cut with an ellipsis at the zone's sides. The frame keeps its line width and corners on screen too.
-  - Nothing inside a collapsed zone is queried or drawn, child zones included, so only the outermost zones show. Edges with an end inside a collapsed zone are not drawn.
+  - Nothing inside a collapsed zone is queried or drawn, child zones included, so only the outermost zones show. Its cards' edges are drawn as [bundles](#bundles).
   - The name is still the handle: click selects, drag moves (the contents come along), double-click renames. Double-clicking the body frames the zone, zoomed in at least until it opens, instead of placing a card it would hide. Drawing a zone inside a collapsed zone creates nothing.
+  - A collapsed zone smaller on screen than a cluster's marker (96 by 32 pixels, either way) is drawn as a marker instead of its frame, so big zones keep the map's shape and small ones stay readable. The zone marker is centered on the zone and keeps its size on screen: the name on the zone's wash, edged in the zone's color, 32 pixels high and as wide as the name from 96 to 192 pixels, cut with an ellipsis. It is a flat tag, where a cluster's marker is a lifted stack of cards. The name is still the handle; the marker's rim around it is the body, so double-clicking the rim frames the zone. A zone marker has no resize handles, and bundles end at its sides.
   - Zooming back in past 40% queries and draws what is inside the zones again.
-- Later, in the semantic zoom milestone:
-  - Loose cards (no zone) are grouped into grid cells, each drawn as one marker with a count ("14 notes"). Clicking a marker zooms in. The cell is computed with `floor()`, not `CAST(... AS INTEGER)`, which rounds toward zero and makes the cells around 0 twice as wide. Until then, loose cards are drawn as usual when zoomed out.
-  - Edges between zones are drawn as one line per pair of zones, with a count. A loose card's edges attach to its cluster marker.
+
+### Clusters
+
+- Zoomed out, loose cards (in no zone) are counted per cell of a square grid, each card in the cell holding its center. Each cell is drawn as one marker: "14 notes", or "1 note" for a lone card. No card is drawn.
+- The query returns a count per cell and the box around each cell's cards, never the cards themselves. A cell at the edge of the queried area comes back whole.
+- A cell is a power of two world units wide, picked so it measures 160 to 320 pixels on screen: as the zoom halves, four cells merge into one, and the new size is queried.
+- The cell is computed with `floor()`, not `CAST(... AS INTEGER)`, which rounds toward zero and makes the cells around 0 twice as wide.
+- The marker is a small stack of cards in the theme's card stock, with the count in the controls font, centered on the box around its cards. It keeps its size on screen (96 by 32 pixels) at any zoom. Markers of neighboring cells can touch when their cards sit near the line between the cells, and far out, markers of clusters and zones can overlap.
+- Clicking a marker frames its cards, zoomed in at least until they show. Dragging from it pans, as on the paper.
+- A card placed by double-click, dropped from a panel or batch-created while zoomed out would be hidden in a cluster or a collapsed zone: it is framed, zoomed in until it shows. A double-click whose first click zoomed in (on a marker or a bundle) places nothing.
+
+### Bundles
+
+- Zoomed out, each end of an edge is drawn at the outermost zone holding its card (its frame, or its marker when it is drawn as one) or, for a loose card, at its cell's marker. The edges between two ends are drawn as one line, a bundle. An edge with both cards at the same end lies inside it and is not drawn.
+- A bundle is drawn like a new edge, curved and solid, from the middle of the sides facing each other. Its line and arrowheads keep their size on screen. It has an arrowhead at each end that at least one of its edges points to: edges both ways give heads at both ends, edges without heads add none.
+- The count sits on the line, like an edge's label, when it is 2 or more.
+- Clicking the line or its count frames both ends, zoomed in at least until their edges show. Dragging from it pans. While a collapsed zone is dragged, its bundles follow it.
+- A bundle is found through its edges' bounds: it is drawn when one of its edges crosses the queried area.
 
 ## Appearance
 
@@ -455,5 +514,4 @@ The model already supports it:
 ## Open questions
 
 - How conflict copies are detected (`.sync-conflict-`, `(conflicted copy)`, `(1)`) and resolved (per field, or last write wins).
-- The zoom where loose cards cluster, and the clustering cell size.
 - AI assistance and paper import are not covered by this spec.

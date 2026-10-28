@@ -15,7 +15,7 @@ fn scan_reads_only_what_changed() {
   f.write("notes/b.md", "Beta, longer");
   fs::remove_file(f.dir.path().join(".canvas/cards/C1.json")).unwrap();
   assert_eq!(scan(&f.vault, &index).unwrap(), Stats { read: 1, removed: 1 });
-  assert!(index.viewport(WORLD, 0.0, false).unwrap().cards.is_empty());
+  assert!(index.viewport(WORLD, 0.0, None).unwrap().cards.is_empty());
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn layout_files_added_or_changed_outside_are_read() {
   f.write(".canvas/edges/E2.json", r#"{ "from": "C2", "to": "C3" }"#);
   assert_eq!(scan(&f.vault, &index).unwrap(), Stats { read: 5, removed: 0 });
 
-  let view = index.viewport(WORLD, 0.0, false).unwrap();
+  let view = index.viewport(WORLD, 0.0, None).unwrap();
   let mut cards: Vec<_> = view.cards.iter().map(|c| (c.id.as_str(), c.x, c.y)).collect();
   cards.sort_by_key(|c| c.0);
   assert_eq!(cards, [("C1", 510.0, 10.0), ("C2", 3000.0, 0.0), ("C3", 0.0, 2000.0)]);
@@ -78,7 +78,7 @@ fn layout_files_deleted_outside_are_dropped() {
     fs::remove_file(f.dir.path().join(rel)).unwrap();
   }
   assert_eq!(scan(&f.vault, &index).unwrap(), Stats { read: 0, removed: 3 });
-  let view = index.viewport(WORLD, 0.0, false).unwrap();
+  let view = index.viewport(WORLD, 0.0, None).unwrap();
   assert!(view.zones.is_empty() && view.edges.is_empty());
   // A card whose zone is gone sits on the canvas.
   assert_eq!(view.cards.iter().map(|c| (c.id.as_str(), c.x)).collect::<Vec<_>>(), [("C1", 10.0)]);

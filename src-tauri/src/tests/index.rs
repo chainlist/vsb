@@ -46,17 +46,17 @@ fn viewport_returns_absolute_positions_through_nested_zones() {
   f.write("notes/n.md", "---\nid: N1\n---\nHello\nworld");
   scan(&f.vault, &index).unwrap();
 
-  let all = index.viewport(WORLD, 0.0, false).unwrap();
+  let all = index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!(all.zones.iter().map(|z| (z.id.as_str(), z.x, z.y)).collect::<Vec<_>>(), [("Z1", 1000.0, 0.0), ("Z2", 1100.0, 100.0)]);
   let c1 = all.cards.iter().find(|c| c.id == "C1").unwrap();
   assert_eq!((c1.x, c1.y, c1.title.as_deref(), c1.resolved), (1110.0, 120.0, Some("Hello"), true));
   let c2 = all.cards.iter().find(|c| c.id == "C2").unwrap();
   assert_eq!((c2.note.as_deref(), c2.resolved), (None, false));
 
-  let left = index.viewport(Rect { min_x: -10.0, min_y: -10.0, max_x: 200.0, max_y: 200.0 }, 0.0, false).unwrap();
+  let left = index.viewport(Rect { min_x: -10.0, min_y: -10.0, max_x: 200.0, max_y: 200.0 }, 0.0, None).unwrap();
   assert_eq!(left.cards.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(), ["C2"]);
   assert!(left.zones.is_empty());
-  let tiny = index.viewport(WORLD, 500.0, false).unwrap();
+  let tiny = index.viewport(WORLD, 500.0, None).unwrap();
   assert_eq!(tiny.zones.len(), 1);
   assert!(tiny.cards.is_empty());
 }
@@ -74,8 +74,8 @@ fn collapsed_viewport_leaves_out_everything_inside_zones() {
   f.write(".canvas/edges/E1.json", r#"{ "from": "L1", "to": "L2" }"#);
   f.write(".canvas/edges/E2.json", r#"{ "from": "L1", "to": "IN2" }"#);
   scan(&f.vault, &index).unwrap();
-  let ids = |collapsed| {
-    let v = index.viewport(WORLD, 0.0, collapsed).unwrap();
+  let ids = |cell| {
+    let v = index.viewport(WORLD, 0.0, cell).unwrap();
     let sorted = |mut ids: Vec<String>| {
       ids.sort();
       ids
@@ -87,10 +87,10 @@ fn collapsed_viewport_leaves_out_everything_inside_zones() {
     ]
   };
 
-  // Zoomed out: the outer zone alone, the loose cards and the edge between them.
-  assert_eq!(ids(true), [vec!["Z1"], vec!["L1", "L2"], vec!["E1"]]);
+  // Zoomed out: the outer zone alone. Loose cards and edges come back as clusters and bundles.
+  assert_eq!(ids(Some(1000.0)), [vec!["Z1"], vec![], vec![]]);
   // Zoomed back in: everything inside the zones again.
-  assert_eq!(ids(false), [vec!["Z1", "Z2"], vec!["IN1", "IN2", "L1", "L2"], vec!["E1", "E2"]]);
+  assert_eq!(ids(None), [vec!["Z1", "Z2"], vec!["IN1", "IN2", "L1", "L2"], vec!["E1", "E2"]]);
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn card_pointing_at_a_missing_note_is_unresolved() {
   let index = f.index();
   f.write(".canvas/cards/C1.json", &card(None, 0.0, 0.0, Some("GONE")));
   scan(&f.vault, &index).unwrap();
-  let cards = index.viewport(WORLD, 0.0, false).unwrap().cards;
+  let cards = index.viewport(WORLD, 0.0, None).unwrap().cards;
   assert_eq!((cards[0].note.as_deref(), cards[0].resolved), (Some("GONE"), false));
 }
 

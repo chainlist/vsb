@@ -6,13 +6,13 @@ use crate::error::{msg, Result};
 use crate::items::Kind;
 use rusqlite::OptionalExtension;
 
-/// `zabs`: absolute origin and nesting depth of every zone, walking `parent` down from the
-/// canvas. A zone whose parent is missing (not synced yet) sits on the canvas.
+/// `zabs`: absolute origin, nesting depth and outermost zone of every zone, walking `parent` down
+/// from the canvas. A zone whose parent is missing (not synced yet) sits on the canvas.
 pub(super) const ZONE_ABS: &str = "
-  zabs (id, ax, ay, depth) AS (
-    SELECT id, x, y, 0 FROM zones WHERE parent IS NULL OR parent NOT IN (SELECT id FROM zones)
+  zabs (id, ax, ay, depth, root) AS (
+    SELECT id, x, y, 0, id FROM zones WHERE parent IS NULL OR parent NOT IN (SELECT id FROM zones)
     UNION ALL
-    SELECT z.id, zabs.ax + z.x, zabs.ay + z.y, zabs.depth + 1 FROM zones z JOIN zabs ON z.parent = zabs.id
+    SELECT z.id, zabs.ax + z.x, zabs.ay + z.y, zabs.depth + 1, zabs.root FROM zones z JOIN zabs ON z.parent = zabs.id
     WHERE zabs.depth < 64
   )";
 

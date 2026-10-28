@@ -21,7 +21,7 @@ fn zone(f: &Fixture, id: &str) -> Zone {
 
 /// Every card's absolute position, from the viewport query.
 fn positions(s: &Session) -> BTreeMap<String, (f64, f64)> {
-  s.index.viewport(WORLD, 0.0, false).unwrap().cards.into_iter().map(|c| (c.id, (c.x, c.y))).collect()
+  s.index.viewport(WORLD, 0.0, None).unwrap().cards.into_iter().map(|c| (c.id, (c.x, c.y))).collect()
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn a_batch_writes_a_note_and_a_centered_card_for_each_text_and_its_edges_in_one_
   s.apply(redo).unwrap();
   assert_eq!(files(&f), after);
   assert!(s.index.unplaced(0, 50).unwrap().is_empty());
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().edges.len(), 3);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.len(), 3);
 }
 
 #[test]

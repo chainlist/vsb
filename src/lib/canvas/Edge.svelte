@@ -28,7 +28,7 @@
 {#if editing || edge.label}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="label"
+		class="line-label"
 		class:selected
 		class:dimmed
 		style:left="{line.mid.x}px"
@@ -45,19 +45,6 @@
 {/if}
 
 <style>
-	/* Pasted over the line, centered on its middle. */
-	.label {
-		position: absolute;
-		transform: translate(-50%, -50%);
-		padding: 1px 6px;
-		border-radius: var(--radius-control);
-		background: var(--paper);
-		color: var(--ink-soft);
-		font: 500 13px/1.4 var(--font-ui);
-		text-align: center;
-		white-space: nowrap;
-	}
-
 	.selected {
 		color: var(--pen);
 	}

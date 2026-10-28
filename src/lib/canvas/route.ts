@@ -29,11 +29,12 @@ const halfway = (p: Point, q: Point) => ({ x: (p.x + q.x) / 2, y: (p.y + q.y) / 
 const center = (f: Frame) => ({ x: f.x + f.w / 2, y: f.y + f.h / 2 });
 const xy = (p: Point) => `${p.x},${p.y}`;
 
-/** An arrowhead with its tip at `tip`, pointing along `d`. */
-function head(tip: Point, d: Point) {
-	const base = step(tip, d, -ARROW.length);
+/** An arrowhead with its tip at `tip`, pointing along `d`, `px` world units per pixel. */
+function head(tip: Point, d: Point, px: number) {
+	const base = step(tip, d, -ARROW.length * px);
 	const side = { x: -d.y, y: d.x };
-	return [tip, step(base, side, ARROW.width / 2), step(base, side, -ARROW.width / 2)].map(xy).join(' ');
+	const half = (ARROW.width / 2) * px;
+	return [tip, step(base, side, half), step(base, side, -half)].map(xy).join(' ');
 }
 
 /** Where the line leaves `a` and reaches `b`, and its direction at both. */
@@ -56,13 +57,15 @@ function ends(a: Frame, b: Frame, shape: Shape) {
 	return { start: step(ca, d, across ? a.w / 2 : a.h / 2), tip: step(cb, d, across ? -b.w / 2 : -b.h / 2), d };
 }
 
-export function route(a: Frame, b: Frame, { shape, arrow }: Style): Route {
+/** The route between two boxes. Its arrowheads and bends are sized in pixels of `px` world units:
+ * 1 for an edge, which zooms with its cards, or one screen pixel for a bundle, which does not. */
+export function route(a: Frame, b: Frame, { shape, arrow }: Style, px = 1): Route {
 	const { start, tip, d } = ends(a, b, shape);
-	const p = arrow === 'both' ? step(start, d, ARROW.length) : start;
-	const q = arrow === 'none' ? tip : step(tip, d, -ARROW.length);
+	const p = arrow === 'both' ? step(start, d, ARROW.length * px) : start;
+	const q = arrow === 'none' ? tip : step(tip, d, -ARROW.length * px);
 	const arrows = [
-		...(arrow === 'none' ? [] : [head(tip, d)]),
-		...(arrow === 'both' ? [head(start, { x: -d.x, y: -d.y })] : [])
+		...(arrow === 'none' ? [] : [head(tip, d, px)]),
+		...(arrow === 'both' ? [head(start, { x: -d.x, y: -d.y }, px)] : [])
 	];
 	if (shape === 'straight') return { path: `M${xy(p)} L${xy(q)}`, arrows, mid: halfway(p, q) };
 	if (shape === 'angled') {
@@ -71,7 +74,7 @@ export function route(a: Frame, b: Frame, { shape, arrow }: Style): Route {
 		const path = d.x ? `M${xy(p)} H${m.x} V${q.y} H${q.x}` : `M${xy(p)} V${m.y} H${q.x} V${q.y}`;
 		return { path, arrows, mid: m };
 	}
-	const bend = Math.min(MAX_BEND, Math.hypot(q.x - p.x, q.y - p.y) / 2);
+	const bend = Math.min(MAX_BEND * px, Math.hypot(q.x - p.x, q.y - p.y) / 2);
 	const c1 = step(p, d, bend);
 	const c2 = step(q, d, -bend);
 	return {

@@ -1,4 +1,4 @@
-// Pointer tracking shared by panning, moving and resizing. Reports the travel since the press
+// Pointer tracking shared by panning, moving, resizing and tapping. Reports the travel since the press
 // only once it passes a small threshold, so plain clicks and double-clicks still work.
 
 /** Pointer travel, in pixels, before a press becomes a drag. */
@@ -27,4 +27,16 @@ export function track(down: PointerEvent, on: Handlers) {
 	addEventListener('pointermove', move);
 	addEventListener('pointerup', up);
 	addEventListener('pointercancel', up);
+}
+
+/** Runs `then` when a press is released without dragging. The press goes on to the canvas, which
+ * pans while it drags. */
+export function tap(down: PointerEvent, then: () => void) {
+	if (down.button !== 0) return;
+	track(down, {
+		move() {},
+		end(dragged) {
+			if (!dragged) then();
+		}
+	});
 }

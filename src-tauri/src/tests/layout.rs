@@ -21,7 +21,7 @@ fn dropping_into_a_zone_joins_it_and_dropping_outside_leaves_it() {
   s.move_cards(&[move_to(&id, 1100.0, 50.0)]).unwrap();
   let c = card_file(&f, &id);
   assert_eq!((c.zone.as_deref(), c.x, c.y), (Some("Z"), 100.0, 50.0));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].x, view.cards[0].y), (1100.0, 50.0));
   s.move_cards(&[move_to(&id, 300.0, 40.0)]).unwrap();
   let c = card_file(&f, &id);
@@ -39,7 +39,7 @@ fn applying_the_returned_states_undoes_and_redoes_an_edit() {
   let moved = raw(&f, &rel);
   let redo = s.apply(undo).unwrap();
   assert_eq!(raw(&f, &rel), original);
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().cards[0].x, 0.0, "the index follows");
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].x, 0.0, "the index follows");
   s.apply(redo).unwrap();
   assert_eq!(raw(&f, &rel), moved);
 }
@@ -51,9 +51,9 @@ fn undoing_a_placement_removes_the_card() {
   let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
   let redo = s.apply(vec![crate::states::ItemState { kind: Kind::Card, id: id.clone(), value: None }]).unwrap();
   assert!(!f.exists(&format!(".canvas/cards/{id}.json")));
-  assert!(s.index.viewport(WORLD, 0.0, false).unwrap().cards.is_empty());
+  assert!(s.index.viewport(WORLD, 0.0, None).unwrap().cards.is_empty());
   s.apply(redo).unwrap();
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().cards.len(), 1);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards.len(), 1);
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn deleting_a_card_removes_its_edges_and_keeps_its_note() {
   assert!(!f.exists(&format!(".canvas/cards/{a}.json")));
   assert!(!f.exists(".canvas/edges/E.json"));
   assert!(f.exists("notes/Kept.md"));
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().cards.len(), 1);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards.len(), 1);
   s.apply(undo).unwrap();
   assert!(f.exists(".canvas/edges/E.json"));
   assert!(card_file(&f, &a).note.is_some());
@@ -96,7 +96,7 @@ fn resizing_from_the_top_left_moves_the_corner_but_not_the_zone() {
   s.resize_card(&id, 950.0, 80.0, 350.0, 120.0).unwrap();
   let c = card_file(&f, &id);
   assert_eq!((c.zone.as_deref(), c.x, c.y, c.w, c.h), (Some("Z"), -50.0, 80.0, 350.0, 120.0));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].x, view.cards[0].y), (950.0, 80.0));
 }
 
@@ -108,7 +108,7 @@ fn aligning_writes_alignment_and_default_drops_it_again() {
   let rel = format!(".canvas/cards/{id}.json");
   s.align_cards(std::slice::from_ref(&id), HAlign::Center, VAlign::Bottom).unwrap();
   assert_eq!((raw(&f, &rel)["halign"].as_str(), raw(&f, &rel)["valign"].as_str()), (Some("center"), Some("bottom")));
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().cards[0].halign, "center");
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].halign, "center");
   s.align_cards(std::slice::from_ref(&id), HAlign::Left, VAlign::Top).unwrap();
   assert!(raw(&f, &rel).get("halign").is_none() && raw(&f, &rel).get("valign").is_none());
 }
@@ -120,7 +120,7 @@ fn clearing_an_unresolved_card_makes_it_empty() {
   let s = open(&f);
   s.clear_card("C").unwrap();
   assert_eq!(card_file(&f, "C").note, None);
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].note.as_deref(), view.cards[0].resolved), (None, false));
 }
 
@@ -137,5 +137,5 @@ fn deleting_both_ends_of_an_edge_and_undoing_restores_all_three() {
   assert!(fs::read_dir(f.dir.path().join(".canvas/cards")).unwrap().next().is_none());
   s.apply(undo).unwrap();
   assert!(f.exists(".canvas/edges/E.json"));
-  assert_eq!(s.index.viewport(WORLD, 0.0, false).unwrap().cards.len(), 2);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards.len(), 2);
 }

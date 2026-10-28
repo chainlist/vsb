@@ -8,12 +8,15 @@
 	import { GRIP, newCardAt } from './gestures.js';
 	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
-	import { items } from './items.svelte.js';
+	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
 	import { NEW_EDGE, route } from './route.js';
 	import { selection } from './selection.svelte.js';
 	import { shortcuts } from './shortcuts.js';
+	import { pointIn, zoomOn } from './zoom.js';
 	import BatchDialog from './BatchDialog.svelte';
+	import Bundle from './Bundle.svelte';
 	import Card from './Card.svelte';
+	import Cluster from './Cluster.svelte';
 	import EdgeLine from './EdgeLine.svelte';
 	import Edge from './Edge.svelte';
 	import ResizeHandles from './ResizeHandles.svelte';
@@ -22,10 +25,6 @@
 
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
 	const MIN_SQUARE = 8;
-	/** Zoom per pixel of wheel travel. A pinch moves a few pixels per event where a mouse notch moves
-	 * 100, so it zooms faster, to follow the fingers. */
-	const WHEEL_ZOOM = 0.0015;
-	const PINCH_ZOOM = 0.01;
 
 	/** What the canvas holds, framed when it opens; null for an empty canvas. */
 	let { contents }: { contents: Rect | null } = $props();
@@ -35,6 +34,9 @@
 	/** The card or zone under the pointer, which shows its resize handles. */
 	let hovered = $state<string | null>(null);
 	let framed = false;
+	/** The camera at the last two presses. A double-click whose first click moved it, zooming in on a
+	 * cluster or a bundle, ends somewhere else, and places nothing. */
+	let views = ['', ''];
 
 	camera.reset();
 	items.reset();
@@ -51,6 +53,7 @@
 	});
 	$effect(() => items.update());
 	$effect(() => bindKeys(shortcuts));
+	$effect(() => zoomOn(el, hover));
 
 	// The paper moves with the world. Its minor lines fade out as squares shrink, then the grid
 	// steps up so the old major lines become the new minor ones.
@@ -60,66 +63,15 @@
 		return { square, origin: camera.toScreen(0, 0), minor: Math.min(1, (square - MIN_SQUARE) / (2 * MIN_SQUARE)) };
 	});
 
-	// Like a map: the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer,
-	// and dragging pans in any direction. Chromium reports a pinch as a wheel turned with Ctrl held,
-	// WebKit as gesture events carrying the scale since it began. Zooming must stop the page from
-	// scrolling or zooming itself, which a passive listener cannot do.
-	$effect(() => {
-		/** The scale reached by the WebKit pinch under way, or null. */
-		let pinch: number | null = null;
-		const onwheel = (e: WheelEvent) => {
-			e.preventDefault();
-			if (pinch !== null) return;
-			const p = local(e);
-			// Ctrl+wheel on a mouse still turns by notches, at the wheel's pace.
-			const rate = e.ctrlKey && !notched(e) ? PINCH_ZOOM : WHEEL_ZOOM;
-			camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * rate));
-			// What lies under the pointer changed without it moving.
-			if (!e.buttons) hover(p);
-		};
-		const onstart = (e: Event) => {
-			e.preventDefault();
-			pinch = 1;
-		};
-		const onchange = (e: Event) => {
-			e.preventDefault();
-			const g = e as Event & { scale: number; clientX: number; clientY: number };
-			const p = local(g);
-			camera.zoomAt(p.x, p.y, g.scale / (pinch ?? 1));
-			pinch = g.scale;
-		};
-		const onend = (e: Event) => {
-			e.preventDefault();
-			pinch = null;
-		};
-		const listeners = [
-			['wheel', onwheel],
-			['gesturestart', onstart],
-			['gesturechange', onchange],
-			['gestureend', onend]
-		] as const;
-		for (const [type, on] of listeners) el.addEventListener(type, on as EventListener, { passive: false });
-		return () => {
-			for (const [type, on] of listeners) el.removeEventListener(type, on as EventListener);
-		};
-	});
-
 	function local(e: { clientX: number; clientY: number }) {
-		const box = el.getBoundingClientRect();
-		return { x: e.clientX - box.left, y: e.clientY - box.top };
-	}
-
-	// A mouse wheel turns by notches, which Chromium and WebKit report as multiples of 120 in the
-	// legacy wheelDelta, and Firefox in lines. A trackpad scrolls and pinches by the pixel.
-	function notched(e: WheelEvent) {
-		const { wheelDeltaY } = e as WheelEvent & { wheelDeltaY?: number };
-		return e.deltaMode !== WheelEvent.DOM_DELTA_PIXEL || (!!wheelDeltaY && wheelDeltaY % 120 === 0);
+		return pointIn(el, e);
 	}
 
 	// Dragging the paper pans, Mod+dragging draws an edge from a card or a zone on the paper; a plain
 	// click on the paper clears the selection. The middle button pans wherever it is pressed: cards,
 	// zones and edges leave it to the canvas, and it never selects anything.
 	function down(e: PointerEvent) {
+		views = [views[1], camera.transform];
 		const middle = e.button === 1;
 		if (e.button !== 0 && !middle) return;
 		if (isMod(e) && !middle) {
@@ -159,10 +111,14 @@
 	}
 
 	function place(e: MouseEvent) {
+		if (views[0] !== camera.transform) return;
 		const p = local(e);
 		const { x, y, w, h } = newCardAt(camera.toWorld(p.x, p.y));
+		// Zoomed out, the card would be hidden in a cluster: it is framed, zoomed in until it shows.
+		const hidden = items.collapsed;
 		return history.edit(async () => {
 			const id = await createCard(x, y, w, h);
+			if (hidden) camera.glide(cover([{ x, y, w, h }]), OPEN_ZOOM);
 			selection.only(id);
 			selection.editing = id;
 			return [{ kind: 'card', id, value: null }];
@@ -187,18 +143,24 @@
 	ondblclick={place}
 >
 	<!-- --scale: one screen pixel in world units, for marks drawn at a constant size on screen. -->
-	<div class="world" style:transform={camera.transform} style:--scale={1 / camera.zoom}>
+	<div class="world" class:collapsed={items.collapsed} style:transform={camera.transform} style:--scale={1 / camera.zoom}>
 		{#each items.zones as zone (zone.id)}
 			<Zone {zone} />
 		{/each}
 		{#each items.edges as edge (edge.id)}
 			<Edge {edge} />
 		{/each}
+		{#each items.bundles as bundle}
+			<Bundle {bundle} />
+		{/each}
 		{#if draft.link}
 			<EdgeLine route={route(...draft.link, NEW_EDGE)} draft />
 		{/if}
 		{#each items.cards as card (card.id)}
 			<Card {card} />
+		{/each}
+		{#each items.clusters as cluster (cluster.cell.join())}
+			<Cluster {cluster} />
 		{/each}
 		{#if draft.box}
 			<div
@@ -229,10 +191,16 @@
 	}
 
 	.world {
+		/* One pixel, for frames and lines: in world units while open, on screen once zones collapse. */
+		--px: 1px;
 		position: absolute;
 		left: 0;
 		top: 0;
 		transform-origin: 0 0;
+	}
+
+	.collapsed {
+		--px: calc(1px * var(--scale));
 	}
 
 	.draft {

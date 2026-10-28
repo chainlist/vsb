@@ -1,4 +1,5 @@
-//! What the viewport query returns: zones, cards and edges in absolute coordinates.
+//! What the viewport query returns: zones, cards and edges, or zoomed out clusters and bundles,
+//! in absolute coordinates.
 
 use serde::Serialize;
 
@@ -56,9 +57,44 @@ pub struct EdgeView {
   pub ends: [Frame; 2],
 }
 
+/// Zoomed out, the loose cards whose centers lie in one square of the grid: how many, never which.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct ClusterView {
+  /// The square's column and row, counted in squares from the world origin.
+  pub cell: [i64; 2],
+  pub count: i64,
+  /// The box around its cards.
+  pub x: f64,
+  pub y: f64,
+  pub w: f64,
+  pub h: f64,
+}
+
+/// One end of a bundle: an outermost zone and its box, or, with no zone, the box of a cluster.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct BundleEnd {
+  pub zone: Option<String>,
+  pub x: f64,
+  pub y: f64,
+  pub w: f64,
+  pub h: f64,
+}
+
+/// Zoomed out, the edges between two ends drawn as one line.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct BundleView {
+  pub ends: [BundleEnd; 2],
+  pub count: i64,
+  /// Where the line has arrowheads, as for an edge: at the end some edge points to, the second.
+  pub arrow: String,
+}
+
+/// Open, the zones, cards and edges; zoomed out, the outermost zones, the clusters and the bundles.
 #[derive(Serialize, Debug)]
 pub struct Viewport {
   pub zones: Vec<ZoneView>,
   pub cards: Vec<CardView>,
   pub edges: Vec<EdgeView>,
+  pub clusters: Vec<ClusterView>,
+  pub bundles: Vec<BundleView>,
 }

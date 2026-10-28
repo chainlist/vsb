@@ -16,7 +16,7 @@ fn placing_a_card_saves_an_empty_card() {
   let id = s.create_card(10.0, 20.0, 200.0, 80.0).unwrap();
   let card = card_file(&f, &id);
   assert_eq!((card.note, card.zone, card.x, card.y), (None, None, 10.0, 20.0));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!(view.cards.len(), 1);
 }
 
@@ -28,7 +28,7 @@ fn a_card_placed_in_a_zone_joins_it_with_relative_coordinates() {
   let id = s.create_card(600.0, 650.0, 100.0, 50.0).unwrap();
   let card = card_file(&f, &id);
   assert_eq!((card.zone.as_deref(), card.x, card.y), (Some("Z"), 100.0, 150.0));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].x, view.cards[0].y), (600.0, 650.0));
 }
 
@@ -41,7 +41,7 @@ fn first_save_writes_the_note_then_points_the_card_at_it() {
   assert_eq!(card_file(&f, &card).note.as_deref(), Some(note.as_str()));
   let text = NoteText::parse(&f.read("notes/Competitor scan.md"));
   assert_eq!((text.id(), text.body.as_str()), (Some(note.clone()), "Competitor scan\n\nPrices"));
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].title.as_deref(), view.cards[0].resolved), (Some("Competitor scan"), true));
   assert!(s.create_note_for_card(&card, "again").is_err());
 }

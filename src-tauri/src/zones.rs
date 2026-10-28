@@ -10,6 +10,11 @@ use crate::states::{Created, ItemState};
 use std::collections::HashMap;
 use std::iter;
 
+/// Room a zone grown to hold cards leaves around them, in world units: a graph-paper square on the
+/// sides and at the bottom, three at the top, where the zone's name is.
+const MARGIN: f64 = 20.0;
+const NAME_ROOM: f64 = 60.0;
+
 impl Session {
   /// Draws a zone on a world rectangle, inside the innermost zone that fully contains it. The
   /// cards and zones at that level lying fully inside the new zone join it, staying in place.
@@ -62,6 +67,18 @@ impl Session {
       }
     }
     Ok(states)
+  }
+
+  /// The states that grow a zone where needed to hold cards covering the world rectangle `span`, its
+  /// contents staying in place, and the zone's world origin then.
+  pub(crate) fn holding(&self, id: &str, span: Rect) -> Result<((f64, f64), Vec<ItemState>)> {
+    let Some(frame) = self.index.item_box(Kind::Zone, id)? else {
+      return msg("zone not found");
+    };
+    let room = Rect { min_x: span.min_x - MARGIN, min_y: span.min_y - NAME_ROOM, max_x: span.max_x + MARGIN, max_y: span.max_y + MARGIN };
+    let grown = frame.union(room);
+    let states = if grown == frame { Vec::new() } else { self.reshaped(id, grown)? };
+    Ok(((grown.min_x, grown.min_y), states))
   }
 
   pub fn rename_zone(&self, id: &str, name: &str) -> Result<Vec<ItemState>> {

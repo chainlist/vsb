@@ -2,8 +2,14 @@
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { selection } from './selection.svelte.js';
 
-	// Edits a zone's name or an edge's label in place, while that item is in edit mode.
-	let { value, placeholder, save }: { value: string; placeholder: string; save: (text: string) => void } = $props();
+	// Edits a zone's name or an edge's label in place. Enter or a click elsewhere calls `done`, which
+	// by default leaves the item's edit mode; the zone list ends its own renaming instead.
+	let {
+		value,
+		placeholder,
+		save,
+		done = () => (selection.editing = null)
+	}: { value: string; placeholder: string; save: (text: string) => void; done?: () => void } = $props();
 
 	let text = $state('');
 	let before = '';
@@ -27,14 +33,14 @@
 <form
 	onsubmit={(e) => {
 		e.preventDefault();
-		selection.editing = null;
+		done();
 	}}
 >
 	<input
 		bind:this={field}
 		bind:value={text}
 		{placeholder}
-		onblur={() => (selection.editing = null)}
+		onblur={done}
 		onpointerdown={stop}
 		ondblclick={stop}
 	/>

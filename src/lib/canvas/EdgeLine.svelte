@@ -65,9 +65,10 @@
 		fill: none;
 	}
 
+	/* --px: a world pixel while open, a screen pixel once zones collapse and lines stand for bundles. */
 	.line {
 		stroke: currentColor;
-		stroke-width: 1.5;
+		stroke-width: calc(1.5 * var(--px));
 	}
 
 	.draft .line {
@@ -100,7 +101,7 @@
 
 	.hit {
 		stroke: transparent;
-		stroke-width: 14;
+		stroke-width: calc(14 * var(--px));
 		pointer-events: stroke;
 	}
 </style>

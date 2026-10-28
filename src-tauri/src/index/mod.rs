@@ -1,17 +1,26 @@
 //! The SQLite index: a cache in the app-data folder, rebuilt from the vault files at will.
 
+mod batch_scope;
 mod bounds;
+mod bundles;
+mod clusters;
 mod notes;
 mod rows;
 mod stamps;
+mod ui_state;
 mod viewport;
 mod views;
+mod zone_list;
+mod zone_nodes;
 mod zones;
 
+pub use batch_scope::{BatchScope, ScopeEdge};
 pub use bounds::Scope;
 pub use notes::Entry;
 pub use rows::NoteRow;
 pub use views::Viewport;
+pub use zone_list::ZoneRow;
+pub use zone_nodes::ZoneNodes;
 
 use crate::error::Result;
 use rusqlite::Connection;

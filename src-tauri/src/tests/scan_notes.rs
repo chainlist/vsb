@@ -46,7 +46,7 @@ fn a_renamed_note_keeps_its_id_and_its_card() {
   assert_eq!(scan(&f.vault, &index).unwrap(), Stats { read: 1, removed: 1 });
   assert_eq!(index.note_path("N1").unwrap().as_deref(), Some("notes/Alpha.md"));
   assert_eq!(f.read(".canvas/cards/C.json"), CARD_ON_N1);
-  let cards = index.viewport(WORLD, 0.0, false).unwrap().cards;
+  let cards = index.viewport(WORLD, 0.0, None).unwrap().cards;
   assert_eq!((cards[0].title.as_deref(), cards[0].resolved), (Some("Alpha"), true));
 }
 
@@ -72,7 +72,7 @@ fn a_deleted_note_leaves_its_card_unresolved() {
   scan(&f.vault, &index).unwrap();
   fs::remove_file(f.dir.path().join("notes/a.md")).unwrap();
   assert_eq!(scan(&f.vault, &index).unwrap(), Stats { read: 0, removed: 1 });
-  let cards = index.viewport(WORLD, 0.0, false).unwrap().cards;
+  let cards = index.viewport(WORLD, 0.0, None).unwrap().cards;
   assert_eq!((cards[0].note.as_deref(), cards[0].resolved), (Some("N1"), false));
   assert_eq!(f.read(".canvas/cards/C.json"), CARD_ON_N1);
 }
@@ -105,7 +105,7 @@ fn a_copy_made_while_the_app_was_closed_gets_a_fresh_id() {
   let copy = NoteText::parse(&f.read("notes/a copy.md")).id().unwrap();
   assert_ne!(copy, "N1");
   assert_eq!(index.note_path(&copy).unwrap().as_deref(), Some("notes/a copy.md"));
-  assert!(index.viewport(WORLD, 0.0, false).unwrap().cards[0].resolved);
+  assert!(index.viewport(WORLD, 0.0, None).unwrap().cards[0].resolved);
 }
 
 #[test]

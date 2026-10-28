@@ -1,4 +1,5 @@
 mod batch;
+mod batch_edit;
 mod commands;
 mod edges;
 mod error;
@@ -74,7 +75,15 @@ pub fn run() {
       commands::item_box,
       commands::unplaced_notes,
       commands::search,
+      commands::batch_scope,
+      commands::plan_links,
+      commands::edit_batch,
+      commands::zone_rows,
+      commands::ui_state,
+      commands::set_ui_state,
       commands::move_cards,
+      commands::arrange,
+      commands::zone_nodes,
       commands::resize_card,
       commands::align_cards,
       commands::clear_card,

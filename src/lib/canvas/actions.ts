@@ -5,7 +5,6 @@ import {
 	arrowEdges,
 	clearCard,
 	colorZones,
-	createBatch,
 	deleteCards,
 	deleteEdges,
 	deleteZones,
@@ -24,11 +23,10 @@ import {
 	type VAlign,
 	type ZoneView
 } from '#lib/api.js';
-import { layOut, parse, type Direction } from './batch.js';
 import { camera } from './camera.svelte.js';
 import { newCardAt } from './gestures.js';
 import { history } from './history.js';
-import { inside, items, OPEN_ZOOM } from './items.svelte.js';
+import { items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
@@ -103,11 +101,11 @@ export function clear(card: CardView) {
 	return history.edit(() => clearCard(card.id));
 }
 
-/** Frames a card or a zone, zoomed in at least until zones open, and selects it. */
+/** Glides to frame a card or a zone, zoomed in at least until zones open, and selects it. */
 export async function show(kind: 'card' | 'zone', id: string) {
 	const box = await itemBox(kind, id);
 	if (!box) return;
-	camera.fit(box, OPEN_ZOOM);
+	camera.glide(box, OPEN_ZOOM);
 	selection.only(id);
 }
 
@@ -115,35 +113,13 @@ export async function show(kind: 'card' | 'zone', id: string) {
  * its card gets no other (one card per note until V3): its card is shown instead. */
 export function dropNote(path: string, at: { x: number; y: number }) {
 	const { x, y, w, h } = newCardAt(at);
-	// The card joins the zone under its center. In a collapsed zone it would be hidden: it is shown.
-	const hidden = items.hides({ x: x + w / 2, y: y + h / 2 });
+	// The card joins the zone under its center. Zoomed out it would be hidden, in a collapsed zone or
+	// a cluster: it is shown.
+	const hidden = items.collapsed;
 	return history.edit(async () => {
 		const { id, undo } = await placeNote(path, x, y, w, h);
 		if (undo.length && !hidden) selection.only(id);
 		else await show('card', id);
-		return undo;
-	});
-}
-
-/** Creates the cards and edges written in the batch syntax, laid out in a direction and centered on a
- * world point, as one undo step, and selects the cards. Hidden in a collapsed zone, or partly
- * off-screen, they are framed. */
-export function createCards(text: string, at: { x: number; y: number }, direction: Direction) {
-	const plan = parse(text);
-	if (!plan.texts.length) return;
-	const boxes = layOut(plan, at, direction);
-	const span = {
-		minX: Math.min(...boxes.map((b) => b.x)),
-		minY: Math.min(...boxes.map((b) => b.y)),
-		maxX: Math.max(...boxes.map((b) => b.x + b.w)),
-		maxY: Math.max(...boxes.map((b) => b.y + b.h))
-	};
-	const framed = items.hides(at) || !inside(span, camera.visible);
-	return history.edit(async () => {
-		const cards = boxes.map((box, i) => ({ ...box, text: plan.texts[i] }));
-		const { cards: ids, undo } = await createBatch(at.x, at.y, cards, plan.edges);
-		selection.ids = ids;
-		if (framed) camera.fit(span, OPEN_ZOOM);
 		return undo;
 	});
 }

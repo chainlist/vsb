@@ -3,10 +3,11 @@
 
 use crate::error::Result;
 use crate::index::Rect;
-use crate::items::{Card, HAlign, Kind, VAlign};
+use crate::items::{Card, HAlign, Kind, VAlign, Zone};
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// A card or zone dropped with its top-left corner at a world position.
 #[derive(Deserialize, Clone, Debug)]
@@ -58,6 +59,43 @@ impl Session {
       card.y = to.y - oy;
       Ok(())
     })
+  }
+
+  /// Moves cards and zones to new world positions, each staying in its zone, which grows where
+  /// needed to hold them, its contents staying in place. A zone brings everything in it. Arranging
+  /// selected cards, or a zone's contents, does this.
+  pub fn arrange(&self, cards: &[Move], zones: &[Move]) -> Result<Vec<ItemState>> {
+    let mut card_items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
+    let mut zone_items = zones.iter().map(|m| self.read::<Zone>(&m.id)).collect::<Result<Vec<_>>>()?;
+    let boxes = cards.iter().zip(&card_items).map(|(m, c)| (&c.zone, Rect::of(m.x, m.y, c.w, c.h)));
+    let boxes = boxes.chain(zones.iter().zip(&zone_items).map(|(m, z)| (&z.parent, Rect::of(m.x, m.y, z.w, z.h))));
+    let mut spans: BTreeMap<String, Rect> = BTreeMap::new();
+    for (inside, r) in boxes {
+      if let Some(zone) = inside {
+        spans.entry(zone.clone()).and_modify(|s| *s = s.union(r)).or_insert(r);
+      }
+    }
+    let (mut states, mut origins) = (Vec::new(), BTreeMap::new());
+    for (zone, span) in &spans {
+      let (origin, grown) = self.holding(zone, *span)?;
+      origins.insert(zone.clone(), origin);
+      states.extend(grown);
+    }
+    // A zone grown leftward shifts its contents back; those arranged get their own place instead.
+    let moved = |kind, id: &str| (if kind == Kind::Card { cards } else { zones }).iter().any(|m| m.id == id);
+    states.retain(|s| s.kind == Kind::Edge || !moved(s.kind, &s.id));
+    let origin = |inside: &Option<String>| inside.as_ref().map_or((0.0, 0.0), |z| origins[z]);
+    for (m, zone) in zones.iter().zip(&mut zone_items) {
+      let (ox, oy) = origin(&zone.parent);
+      (zone.x, zone.y) = (m.x - ox, m.y - oy);
+      states.push(ItemState::of(&m.id, zone)?);
+    }
+    for (m, card) in cards.iter().zip(&mut card_items) {
+      let (ox, oy) = origin(&card.zone);
+      (card.x, card.y) = (m.x - ox, m.y - oy);
+      states.push(ItemState::of(&m.id, card)?);
+    }
+    self.apply(states)
   }
 
   /// Gives a card a new world rectangle. Resizing from the left or top moves its corner too, but

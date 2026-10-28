@@ -1,11 +1,16 @@
 // The one owner of the pan and zoom transform: everything converting between world and
 // screen coordinates goes through here. Screen coordinates are relative to the canvas element.
+import { cubicInOut } from 'svelte/easing';
 import type { Rect } from '#lib/api.js';
+import { motion } from '#lib/motion.js';
+import { flight, type View } from './flight.js';
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 4;
 /** Room left around content framed by `fit`, in screen pixels. */
 const FIT_MARGIN = 64;
+/** How long a glide takes, in ms: by the length of its path, within bounds. */
+const GLIDE = { perStep: 500, min: 250, max: 800 };
 
 class Camera {
 	/** World point at the canvas's top-left corner. */
@@ -15,8 +20,11 @@ class Camera {
 	/** Canvas size in screen pixels. */
 	width = $state(0);
 	height = $state(0);
+	/** The animation frame of the glide under way, or 0. */
+	#gliding = 0;
 
 	reset() {
+		this.stop();
 		this.x = 0;
 		this.y = 0;
 		this.zoom = 1;
@@ -31,12 +39,14 @@ class Camera {
 	}
 
 	panBy(dx: number, dy: number) {
+		this.stop();
 		this.x -= dx / this.zoom;
 		this.y -= dy / this.zoom;
 	}
 
 	/** Zooms by `factor`, keeping the world point under (sx, sy) in place. */
 	zoomAt(sx: number, sy: number, factor: number) {
+		this.stop();
 		const p = this.toWorld(sx, sy);
 		this.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, this.zoom * factor));
 		this.x = p.x - sx / this.zoom;
@@ -46,14 +56,52 @@ class Camera {
 	/** Centers a world rectangle on screen, zoomed out until it fits, but never zoomed in past 100%
 	 * nor out below `least`. */
 	fit(r: Rect, least = MIN_ZOOM) {
+		this.stop();
+		this.#show(this.#framing(r, least));
+	}
+
+	/** Frames a world rectangle as `fit` does, gliding there like a map: a far jump zooms out,
+	 * travels and zooms back in. Panning or zooming stops it. */
+	glide(r: Rect, least = MIN_ZOOM) {
+		this.stop();
+		const to = this.#framing(r, least);
+		const path = flight(this.#view(), to);
+		const ms = motion(Math.min(GLIDE.max, Math.max(GLIDE.min, path.length * GLIDE.perStep)));
+		const start = performance.now();
+		const step = (now: number) => {
+			const t = ms ? Math.min(1, (now - start) / ms) : 1;
+			this.#show(t < 1 ? path.at(cubicInOut(t)) : to);
+			this.#gliding = t < 1 ? requestAnimationFrame(step) : 0;
+		};
+		this.#gliding = requestAnimationFrame(step);
+	}
+
+	/** Stops a glide where it is. */
+	stop() {
+		cancelAnimationFrame(this.#gliding);
+		this.#gliding = 0;
+	}
+
+	/** The view that frames a world rectangle, as `fit` describes. */
+	#framing(r: Rect, least: number): View {
 		const zoom = Math.min(
 			1,
 			(this.width - 2 * FIT_MARGIN) / (r.maxX - r.minX),
 			(this.height - 2 * FIT_MARGIN) / (r.maxY - r.minY)
 		);
-		this.zoom = Math.max(least, zoom);
-		this.x = (r.minX + r.maxX - this.width / this.zoom) / 2;
-		this.y = (r.minY + r.maxY - this.height / this.zoom) / 2;
+		return { x: (r.minX + r.maxX) / 2, y: (r.minY + r.maxY) / 2, w: this.width / Math.max(least, zoom) };
+	}
+
+	/** The view on screen: its middle in the world, and its width in world units. */
+	#view(): View {
+		const w = this.width / this.zoom;
+		return { x: this.x + w / 2, y: this.y + this.height / this.zoom / 2, w };
+	}
+
+	#show(v: View) {
+		this.zoom = this.width / v.w;
+		this.x = v.x - v.w / 2;
+		this.y = v.y - this.height / this.zoom / 2;
 	}
 
 	/** The world rectangle on screen. */

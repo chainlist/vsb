@@ -1,18 +1,17 @@
 <script lang="ts">
+	import Network from '@lucide/svelte/icons/network';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import type { HAlign, VAlign } from '#lib/api.js';
-	import { alignSelected, colorSelected, deleteSelected } from './actions.js';
+	import Workflow from '@lucide/svelte/icons/workflow';
+	import { MOD_NAME } from '#lib/keys.js';
+	import { colorSelected, deleteSelected } from './actions.js';
+	import { arrangeSelected } from './arrange.js';
+	import { batchDialog } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { items } from './items.svelte.js';
 	import { selection } from './selection.svelte.js';
+	import AlignGrid from './AlignGrid.svelte';
 	import EdgeStyle from './EdgeStyle.svelte';
 
-	const rows: [VAlign, string][] = [
-		['top', 'Top'],
-		['center', 'Middle'],
-		['bottom', 'Bottom']
-	];
-	const columns: HAlign[] = ['left', 'center', 'right'];
 	/** Half an edge label's height, in world units: the bar clears a label on the edge's middle. */
 	const LABEL_HALF = 11;
 	/** Highlighter colors for zones; null is the default gray. */
@@ -28,6 +27,7 @@
 
 	const cards = $derived(selection.cards);
 	const zones = $derived(selection.zones);
+	const zone = $derived(zones.length === 1 && selection.ids.length === 1);
 	// An edge counts by its middle, where its label is (its ends lie on its cards).
 	const mids = $derived(selection.edges.map((e) => items.routeOf(e).mid));
 	// In screen space, so the bar keeps its size at any zoom: above the top-left corner of the
@@ -41,9 +41,6 @@
 		if (boxes.length) return { ...camera.toScreen(Math.min(...xs), top), centered: false };
 		return { ...camera.toScreen((Math.min(...xs) + Math.max(...xs)) / 2, top - LABEL_HALF), centered: true };
 	});
-	const shared = $derived(
-		cards.every((c) => c.halign === cards[0].halign && c.valign === cards[0].valign) ? cards[0] : null
-	);
 	const color = $derived(zones.every((z) => z.color === zones[0].color) ? zones[0]?.color : undefined);
 </script>
 
@@ -58,23 +55,13 @@
 		ondblclick={(e) => e.stopPropagation()}
 	>
 		{#if cards.length}
-			<div class="align" role="group" aria-label="Text alignment">
-				{#each rows as [valign, row] (valign)}
-					{#each columns as halign (halign)}
-						<button
-							aria-label="{row} {halign}"
-							title="{row} {halign}"
-							class:on={shared?.halign === halign && shared?.valign === valign}
-							onclick={() => alignSelected(halign, valign)}
-						></button>
-					{/each}
-				{/each}
-			</div>
+			<AlignGrid {cards} />
 		{/if}
 		{#if zones.length}
 			<div class="colors" role="group" aria-label="Zone color">
 				{#each colors as [value, label] (label)}
 					<button
+						class="swatch"
 						aria-label={label}
 						title={label}
 						class:on={color === value}
@@ -86,6 +73,17 @@
 		{/if}
 		{#if mids.length}
 			<EdgeStyle />
+		{/if}
+		<!-- Arranging and the builder work on the selected cards, or on a lone selected zone's contents. -->
+		{#if cards.length > 1 || zone}
+			<button class="tool icon-label" title="Arrange along their edges, in the builder's direction" onclick={arrangeSelected}>
+				<Network /> Arrange
+			</button>
+		{/if}
+		{#if cards.length || zone}
+			<button class="tool icon-label" title="Edit edges, add cards ({MOD_NAME}+B)" onclick={() => batchDialog.open()}>
+				<Workflow /> Builder
+			</button>
 		{/if}
 		<button class="delete" aria-label="Delete" title="Delete" onclick={deleteSelected}><Trash2 /></button>
 	</div>
@@ -105,43 +103,13 @@
 		transform: translate(-50%, -100%);
 	}
 
-	.align {
-		display: grid;
-		grid-template-columns: repeat(3, 9px);
-		gap: 3px;
-	}
-
-	.align button {
-		width: 9px;
-		height: 9px;
-		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-mark);
-		background: var(--card);
-		cursor: pointer;
-	}
-
-	.align button:hover {
-		border-color: var(--pen);
-	}
-
-	.align .on {
-		border-color: var(--ink);
-		background: var(--ink);
-	}
-
 	.colors {
 		display: flex;
 		gap: 4px;
 	}
 
 	.colors button {
-		width: 16px;
-		height: 16px;
 		padding: 0;
-		border: 1.5px solid color-mix(in srgb, var(--swatch) 70%, var(--ink));
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--swatch) 45%, var(--card));
 		cursor: pointer;
 	}
 
@@ -162,5 +130,20 @@
 
 	.delete:hover {
 		background: var(--danger-paper);
+	}
+
+	.tool {
+		padding: 3px 8px;
+		border: none;
+		border-radius: var(--radius-control);
+		background: none;
+		color: var(--ink-soft);
+		font: 500 13px var(--font-ui);
+		cursor: pointer;
+	}
+
+	.tool:hover {
+		background: var(--paper);
+		color: var(--ink);
 	}
 </style>

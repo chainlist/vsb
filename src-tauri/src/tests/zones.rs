@@ -15,7 +15,7 @@ fn card(f: &Fixture, id: &str) -> Card {
 
 /// Every item's absolute position, from the viewport query.
 fn positions(s: &Session) -> BTreeMap<String, (f64, f64)> {
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   let zones = view.zones.into_iter().map(|z| (z.id, (z.x, z.y)));
   zones.chain(view.cards.into_iter().map(|c| (c.id, (c.x, c.y)))).collect()
 }
@@ -221,7 +221,7 @@ fn renaming_and_recoloring_a_zone_write_its_file() {
   let s = open(&f);
   let undo = s.rename_zone("Z", "Pricing").unwrap();
   s.color_zones(&["Z".into()], Some("#f5d76e".into())).unwrap();
-  let view = s.index.viewport(WORLD, 0.0, false).unwrap();
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.zones[0].name.as_str(), view.zones[0].color.as_deref()), ("Pricing", Some("#f5d76e")));
   s.color_zones(&["Z".into()], None).unwrap();
   assert!(!f.read(".canvas/zones/Z.json").contains("color"), "the default color is left out");

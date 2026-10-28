@@ -60,7 +60,24 @@ export type EdgeView = {
 	ends: [Frame, Frame];
 };
 
-export type Viewport = { zones: ZoneView[]; cards: CardView[]; edges: EdgeView[] };
+/** Zoomed out, the loose cards whose centers lie in one square of the grid: the box around them,
+ * how many, and the square's column and row counted from the world origin. Never the cards. */
+export type Cluster = Frame & { cell: [number, number]; count: number };
+
+/** One end of a bundle: an outermost zone and its box, or, with no zone, the box of a cluster. */
+export type BundleEnd = Frame & { zone: string | null };
+
+/** Zoomed out, the edges between two ends drawn as one line: how many, and where they point. */
+export type Bundle = { ends: [BundleEnd, BundleEnd]; count: number; arrow: Arrow };
+
+/** Open, the zones, cards and edges; zoomed out, the outermost zones, the clusters and the bundles. */
+export type Viewport = {
+	zones: ZoneView[];
+	cards: CardView[];
+	edges: EdgeView[];
+	clusters: Cluster[];
+	bundles: Bundle[];
+};
 
 /** One zone, card or edge file: its JSON, or null for no file. Layout edits return the states
  * they replaced, and applying those reverses the edit. */
@@ -78,8 +95,30 @@ export type BatchEdge = { from: number; to: number; arrow: Arrow; stroke: Stroke
 /** The new cards' IDs, in the order they were given, with the states that undo the batch. */
 export type Batch = { cards: string[]; undo: ItemState[] };
 
+/** What the batch builder opens with: cards by their titles, top to bottom, the edges between them,
+ * and the zone new cards join (null for the canvas). */
+export type BatchScope = {
+	zone: string | null;
+	cards: (Frame & { id: string; title: string })[];
+	edges: { id: string; from: string; to: string; arrow: Arrow; stroke: Stroke }[];
+};
+
+/** An end of a link the builder's text draws: a card it opened with, or one of its new cards. */
+export type LinkEnd = { card: string } | { new: number };
+
+export type Link = { from: LinkEnd; to: LinkEnd; arrow: Arrow; stroke: Stroke };
+
+/** What a text does to the edges between the cards the builder opened with: the edges it removes,
+ * those it restyles (each with the link that does it, an index into the links), and the links that
+ * make new edges. */
+export type LinkPlan = { removed: string[]; restyled: [string, number][]; created: number[] };
+
 /** A card or zone dropped with its top-left corner at a world position. */
 export type Move = { id: string; x: number; y: number };
+
+/** One line of the zone list: a zone, whether zones lie inside it, how many cards it holds at any
+ * depth, and its box in the world. */
+export type ZoneRow = Frame & { id: string; name: string; color: string | null; inner: boolean; cards: number };
 
 /** One line of a list beside the canvas: a note, with its card when it has one, or a zone. */
 export type Entry =
@@ -106,10 +145,11 @@ export const vaultSnap = () => invoke<boolean>('vault_snap');
 /** Turns snapping to the grid on or off in the open vault's `vault.json`. */
 export const setVaultSnap = (snap: boolean) => invoke<void>('set_vault_snap', { snap });
 
-/** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. When
- * `collapsed`, nothing inside a zone comes back: only the outermost zones and the loose cards. */
-export const queryViewport = (rect: Rect, minSize: number, collapsed: boolean) =>
-	invoke<Viewport>('query_viewport', { rect, minSize, collapsed });
+/** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. Zoomed
+ * out, given the size of a `cell` of the clusters' grid, nothing inside a zone comes back: only the
+ * outermost zones, the loose cards counted per cell and the edges bundled. */
+export const queryViewport = (rect: Rect, minSize: number, cell: number | null) =>
+	invoke<Viewport>('query_viewport', { rect, minSize, cell });
 
 /** Places an empty card on a world rectangle and returns its ID. */
 export const createCard = (x: number, y: number, w: number, h: number) =>
@@ -126,6 +166,28 @@ export const placeNote = (path: string, x: number, y: number, w: number, h: numb
 export const createBatch = (x: number, y: number, cards: BatchCard[], edges: BatchEdge[]) =>
 	invoke<Batch>('create_batch', { x, y, cards, edges });
 
+/** The cards inside `zone` at any depth, or else the cards `cards`, as the batch builder opens with them. */
+export const batchScope = (zone: string | null, cards: string[]) => invoke<BatchScope>('batch_scope', { zone, cards });
+
+/** What applying the links would do to the edges between the `scope` cards, without doing it. */
+export const planLinks = (scope: string[], links: Link[]) => invoke<LinkPlan>('plan_links', { scope, links });
+
+/** Writes new cards in `zone` (or on the canvas) and brings the edges between them and the `scope`
+ * cards to what the links draw, as one edit. */
+export const editBatch = (zone: string | null, scope: string[], cards: BatchCard[], links: Link[]) =>
+	invoke<Batch>('edit_batch', { zone, scope, cards, links });
+
+/** What arranging a zone lays out: its own cards and its inner zones (`zone` true), each with its
+ * box in the world, and the edges between them as indexes into them. An edge to a card inside an
+ * inner zone joins that zone. */
+export type ZoneNodes = { nodes: (Frame & { id: string; zone: boolean })[]; edges: { from: number; to: number }[] };
+
+export const zoneNodes = (zone: string) => invoke<ZoneNodes>('zone_nodes', { zone });
+
+/** Moves cards and zones to world positions, each staying in its zone, which grows to hold them; a
+ * zone brings everything in it. */
+export const arrangeItems = (cards: Move[], zones: Move[]) => invoke<ItemState[]>('arrange', { cards, zones });
+
 /** A card's or a zone's box in the world, or null when it is gone. */
 export const itemBox = (kind: 'card' | 'zone', id: string) => invoke<Rect | null>('item_box', { kind, id });
 
@@ -136,6 +198,15 @@ export const unplacedNotes = (offset: number, limit: number) =>
 /** A page of the zones, then the notes, holding every word typed, best matches first. */
 export const search = (text: string, offset: number, limit: number) =>
 	invoke<Entry[]>('search', { text, offset, limit });
+
+/** A page of the zones directly inside `parent`, or on the canvas for null, by name ignoring case. */
+export const zoneRows = (parent: string | null, offset: number, limit: number) =>
+	invoke<ZoneRow[]>('zone_rows', { parent, offset, limit });
+
+/** A value of this device's state for the open vault, kept in its index, never in a synced file. */
+export const uiState = (key: string) => invoke<string | null>('ui_state', { key });
+
+export const setUiState = (key: string, value: string) => invoke<void>('set_ui_state', { key, value });
 
 /** Drops cards with their top-left corners at world positions; each joins the zone under its center. */
 export const moveCards = (moves: Move[]) =>

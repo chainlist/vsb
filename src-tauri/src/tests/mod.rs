@@ -1,5 +1,8 @@
+mod arrange;
 mod batch;
+mod batch_edit;
 mod check;
+mod clusters;
 mod edges;
 mod index;
 mod layout;
@@ -10,6 +13,7 @@ mod search;
 mod session;
 mod storage;
 mod unplaced;
+mod zone_list;
 mod zones;
 
 use crate::index::{Index, Rect};

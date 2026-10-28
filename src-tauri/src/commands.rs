@@ -1,8 +1,9 @@
 //! Tauri commands: the frontend's only way to the vault files and the index.
 
 use crate::batch::{Batch, BatchCard, BatchEdge};
+use crate::batch_edit::{Link, LinkPlan};
 use crate::error::{msg, Error, Result};
-use crate::index::{Entry, Rect, Viewport};
+use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
 use crate::items::{Arrow, HAlign, Kind, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::states::{Created, ItemState};
@@ -88,8 +89,8 @@ pub async fn set_vault_snap(state: State<'_, AppState>, snap: bool) -> Result<()
 }
 
 #[tauri::command]
-pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f64, collapsed: bool) -> Result<Viewport> {
-  state.with(|s| s.index.viewport(rect, min_size, collapsed))
+pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f64, cell: Option<f64>) -> Result<Viewport> {
+  state.with(|s| s.index.viewport(rect, min_size, cell))
 }
 
 #[tauri::command]
@@ -105,6 +106,27 @@ pub async fn place_note(state: State<'_, AppState>, path: String, x: f64, y: f64
 #[tauri::command]
 pub async fn create_batch(state: State<'_, AppState>, x: f64, y: f64, cards: Vec<BatchCard>, edges: Vec<BatchEdge>) -> Result<Batch> {
   state.with(|s| s.create_batch(x, y, &cards, &edges))
+}
+
+#[tauri::command]
+pub async fn batch_scope(state: State<'_, AppState>, zone: Option<String>, cards: Vec<String>) -> Result<BatchScope> {
+  state.with(|s| s.index.batch_scope(zone.as_deref(), &cards))
+}
+
+#[tauri::command]
+pub async fn plan_links(state: State<'_, AppState>, scope: Vec<String>, links: Vec<Link>) -> Result<LinkPlan> {
+  state.with(|s| s.plan_links(&scope, &links))
+}
+
+#[tauri::command]
+pub async fn edit_batch(
+  state: State<'_, AppState>,
+  zone: Option<String>,
+  scope: Vec<String>,
+  cards: Vec<BatchCard>,
+  links: Vec<Link>,
+) -> Result<Batch> {
+  state.with(|s| s.edit_batch(zone.as_deref(), &scope, &cards, &links))
 }
 
 #[tauri::command]
@@ -124,11 +146,36 @@ pub async fn search(state: State<'_, AppState>, text: String, offset: u32, limit
   state.with(|s| s.index.search(&text, offset, limit))
 }
 
+#[tauri::command]
+pub async fn zone_rows(state: State<'_, AppState>, parent: Option<String>, offset: u32, limit: u32) -> Result<Vec<ZoneRow>> {
+  state.with(|s| s.index.zone_rows(parent.as_deref(), offset, limit))
+}
+
+#[tauri::command]
+pub async fn ui_state(state: State<'_, AppState>, key: String) -> Result<Option<String>> {
+  state.with(|s| s.index.ui_state(&key))
+}
+
+#[tauri::command]
+pub async fn set_ui_state(state: State<'_, AppState>, key: String, value: String) -> Result<()> {
+  state.with(|s| s.index.set_ui_state(&key, &value))
+}
+
 // Layout edits return the item states they replaced: the frontend's undo history applies them.
 
 #[tauri::command]
 pub async fn move_cards(state: State<'_, AppState>, moves: Vec<Move>) -> Result<Vec<ItemState>> {
   state.with(|s| s.move_cards(&moves))
+}
+
+#[tauri::command]
+pub async fn arrange(state: State<'_, AppState>, cards: Vec<Move>, zones: Vec<Move>) -> Result<Vec<ItemState>> {
+  state.with(|s| s.arrange(&cards, &zones))
+}
+
+#[tauri::command]
+pub async fn zone_nodes(state: State<'_, AppState>, zone: String) -> Result<ZoneNodes> {
+  state.with(|s| s.index.zone_nodes(&zone))
 }
 
 #[tauri::command]
