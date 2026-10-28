@@ -29,7 +29,11 @@
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
-		"#lib/*": "./src/lib/*"
+		"#lib/*": "./src/lib/*",
+		"#platform": {
+			"web": "./src/lib/platform/browser/index.ts",
+			"default": "./src/lib/platform/tauri.ts"
+		}
 	},
 	"dependencies": {
 		"@dagrejs/dagre": "^3.1.1",
