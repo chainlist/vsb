@@ -102,6 +102,7 @@ pub fn run() {
       commands::delete_zones,
       commands::create_edge,
       commands::insert_card,
+      commands::add_child,
       commands::label_edge,
       commands::shape_edges,
       commands::arrow_edges,

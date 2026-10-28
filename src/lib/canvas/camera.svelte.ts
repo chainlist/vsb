@@ -74,8 +74,27 @@ class Camera {
 	/** Frames a world rectangle as `fit` does, gliding there like a map: a far jump zooms out,
 	 * travels and zooms back in. Panning or zooming stops it. */
 	glide(r: Rect, least = MIN_ZOOM) {
+		this.#fly(this.#framing(r, least));
+	}
+
+	/** Glides just far enough to bring a world rectangle on screen, at the same zoom, as clear of the
+	 * chrome as `fit` leaves it; centers it when it cannot fit. One already there stays put. */
+	reveal(r: Rect) {
+		const margin = (FIT_MARGIN * interfaceSize.percent) / 100 / this.zoom;
+		const v = this.visible;
+		// How far the view moves along one axis to bring the span from `min` to `max` within `lo` to `hi`.
+		const by = (min: number, max: number, lo: number, hi: number) =>
+			max - min > hi - lo ? (min + max - lo - hi) / 2 : Math.min(0, min - lo) + Math.max(0, max - hi);
+		const dx = by(r.minX, r.maxX, v.minX + margin, v.maxX - margin);
+		const dy = by(r.minY, r.maxY, v.minY + margin, v.maxY - margin);
+		if (!dx && !dy) return;
+		const view = this.#view();
+		this.#fly({ x: view.x + dx, y: view.y + dy, w: view.w });
+	}
+
+	/** Glides to a view, as `glide` describes. */
+	#fly(to: View) {
 		this.stop();
-		const to = this.#framing(r, least);
 		const path = flight(this.#view(), to);
 		const ms = motion(Math.min(GLIDE.max, Math.max(GLIDE.min, path.length * GLIDE.perStep)));
 		const start = performance.now();

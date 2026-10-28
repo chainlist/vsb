@@ -266,6 +266,11 @@ pub async fn insert_card(state: State<'_, AppState>, edge: String, zone: Option<
 }
 
 #[tauri::command]
+pub async fn add_child(state: State<'_, AppState>, from: String, at: Rect) -> Result<Created> {
+  state.with(|s| s.add_child(&from, at))
+}
+
+#[tauri::command]
 pub async fn label_edge(state: State<'_, AppState>, id: String, label: String) -> Result<Vec<ItemState>> {
   state.with(|s| s.label_edge(&id, &label))
 }

@@ -2,6 +2,7 @@ mod arrange;
 mod batch;
 mod batch_edit;
 mod check;
+mod child;
 mod clusters;
 mod edges;
 mod index;

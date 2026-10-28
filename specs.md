@@ -247,6 +247,19 @@ Competitor scan
    - A note created during this edit session that is now empty: the `.md` is deleted and the card goes back to `note: null`.
    - A note that existed before this edit session is kept, even if empty. Deleting a note always takes an explicit action.
 
+### Tab: a linked card
+
+- **Tab on a lone selected card,** or while typing in a card, adds a linked card after it: an empty card, with a new edge from the card to it. Typed text is saved first, as when the edit ends. With no card, several or a zone selected, Tab does what it did before.
+- **Which way:** the way the card's edges already flow, by the sides their lines leave or reach it as drawn, after any switch around other cards.
+  - Where its outgoing edges leave it.
+  - With none, on past where its incoming edges arrive: an edge arriving on its top puts the new card below it.
+  - With no edges, the direction last picked in the builder, as Arrange takes it (right until then).
+  - When the edges that decide leave or arrive on several sides, a small picker over the card's middle, kept on screen, asks: four arrow buttons around it. An arrow key or a click picks, Enter is not needed; Escape or a press anywhere else adds nothing. The canvas's keys are off meanwhile.
+- **Where:** beside the card's children that way (the cards its edges leaving that way reach), one gap after the last of them in reading order and centered on it: below it when they stand in a column (a way to a side), right of it in a row (a way up or down). The gap is 40 world units, as between the cards of a rank in a batch. With no children there, it goes 80 past the card (the gap between ranks), centered on it.
+  - If that spot comes nearer than a gap to any card, on screen or not, at any depth, the new card slides on down its column or right along its row to the first spot that does not. Nothing else moves.
+- **The card** has the size of a card placed by double-click and lands on the grid when snapping is on. It stays in the selected card's zone, whatever lies under it, and the zone grows to hold it, as for a batch. The edge has the new-edge style. The card and its edge are one undo step.
+- **Then** the new card is selected and opens for typing, so Tab there chains the next one. Landing off screen, or under the chrome, it is shown: the canvas glides just far enough, at the same zoom (at once under reduced motion).
+
 ### Color
 
 - A card can take a color, as a zone can: one of the same seven highlighters, from one list shared by both, kept in its card file and the same in every theme. Without one it stays on the theme's plain stock.

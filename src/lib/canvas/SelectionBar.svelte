@@ -11,6 +11,7 @@
 	import { items } from './items.svelte.js';
 	import { LABEL_HALF } from './route.js';
 	import { selection } from './selection.svelte.js';
+	import { picker } from './tab.svelte.js';
 	import AlignGrid from './AlignGrid.svelte';
 	import EdgeStyle from './EdgeStyle.svelte';
 	import StyleSelect from './StyleSelect.svelte';
@@ -41,7 +42,8 @@
 	<span class="swatch" class:none={value === null} style:--swatch={value ?? 'var(--card)'}></span>
 {/snippet}
 
-{#if at && !selection.editing}
+<!-- Not while the card is edited, or while Tab's picker asks where its new card goes. -->
+{#if at && !selection.editing && !picker.card}
 	<!-- The anchor holds the bar's place on screen; the bar inside it is drawn at the interface size. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div

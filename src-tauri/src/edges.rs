@@ -1,6 +1,6 @@
-//! Edge edits: connecting two cards, inserting a card on an edge, labeling, styling (shape,
-//! arrowheads, line) and deleting. Like card and zone edits, each hands the target item states to
-//! `apply`, so every edit can be undone.
+//! Edge edits: connecting two cards, inserting a card on an edge, adding a linked card after one,
+//! labeling, styling (shape, arrowheads, line) and deleting. Like card and zone edits, each hands
+//! the target item states to `apply`, so every edit can be undone.
 
 use crate::error::{msg, Result};
 use crate::index::Rect;
@@ -23,8 +23,7 @@ impl Session {
     self.read::<Card>(from)?;
     self.read::<Card>(to)?;
     let id = crate::new_id();
-    let edge = Edge { from: from.to_string(), to: to.to_string(), label: None, shape: Shape::default(), arrow: Arrow::default(), stroke: Stroke::default() };
-    let undo = self.apply(vec![ItemState::of(&id, &edge)?])?;
+    let undo = self.apply(vec![ItemState::of(&id, &new_edge(from, to))?])?;
     Ok(Created { id, undo })
   }
 
@@ -35,15 +34,27 @@ impl Session {
   pub fn insert_card(&self, edge: &str, zone: Option<&str>, at: Rect, cards: &[Move], zones: &[Move]) -> Result<Created> {
     let old: Edge = self.read(edge)?;
     let id = crate::new_id();
-    let (x, y, w, h) = (at.min_x, at.min_y, at.max_x - at.min_x, at.max_y - at.min_y);
     let mut moves = cards.to_vec();
     let mut items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
-    moves.push(Move { id: id.clone(), x, y });
-    items.push(Card { note: None, zone: zone.map(str::to_string), x, y, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None });
+    let (place, card) = empty_card(&id, zone.map(str::to_string), at);
+    moves.push(place);
+    items.push(card);
     let mut states = self.placed(&moves, items, zones)?;
     let first = Edge { to: id.clone(), ..old.clone() };
     let second = Edge { from: id.clone(), label: None, ..old };
     states.extend([ItemState::of(&crate::new_id(), &first)?, ItemState::of(&crate::new_id(), &second)?, ItemState::gone(Kind::Edge, edge)]);
+    let undo = self.apply(states)?;
+    Ok(Created { id, undo })
+  }
+
+  /// Adds an empty card on the world rectangle `at`, in the zone of the card `from` whatever lies
+  /// under it, with a new edge from that card to it. The zone grows where needed to hold it.
+  pub fn add_child(&self, from: &str, at: Rect) -> Result<Created> {
+    let parent: Card = self.read(from)?;
+    let id = crate::new_id();
+    let (place, card) = empty_card(&id, parent.zone, at);
+    let mut states = self.placed(&[place], vec![card], &[])?;
+    states.push(ItemState::of(&crate::new_id(), &new_edge(from, &id))?);
     let undo = self.apply(states)?;
     Ok(Created { id, undo })
   }
@@ -84,4 +95,16 @@ impl Session {
   pub fn delete_edges(&self, ids: &[String]) -> Result<Vec<ItemState>> {
     self.apply(ids.iter().map(|id| ItemState::gone(Kind::Edge, id)).collect())
   }
+}
+
+/// An edge from one card to another, with no label, in the new-edge style.
+fn new_edge(from: &str, to: &str) -> Edge {
+  Edge { from: from.to_string(), to: to.to_string(), label: None, shape: Shape::default(), arrow: Arrow::default(), stroke: Stroke::default() }
+}
+
+/// An empty card on the world rectangle `at` in `zone`, and where it is placed.
+fn empty_card(id: &str, zone: Option<String>, at: Rect) -> (Move, Card) {
+  let (x, y, w, h) = (at.min_x, at.min_y, at.max_x - at.min_x, at.max_y - at.min_y);
+  let card = Card { note: None, zone, x, y, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None };
+  (Move { id: id.to_string(), x, y }, card)
 }

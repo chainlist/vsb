@@ -22,6 +22,7 @@
 	import EdgeInsert from './EdgeInsert.svelte';
 	import ResizeHandles from './ResizeHandles.svelte';
 	import SelectionBar from './SelectionBar.svelte';
+	import WayPicker from './WayPicker.svelte';
 	import Zone from './Zone.svelte';
 
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
@@ -176,6 +177,7 @@
 	</div>
 	<SelectionBar />
 	<EdgeInsert />
+	<WayPicker />
 </div>
 <BatchDialog />
 

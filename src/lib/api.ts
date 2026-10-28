@@ -277,6 +277,10 @@ export const createEdge = (from: string, to: string) => invoke<Created>('create_
 export const insertCard = (edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[]) =>
 	invoke<Created>('insert_card', { edge, zone, at, cards, zones });
 
+/** Adds an empty card on the world rectangle `at`, in the zone of the card `from` whatever lies under
+ * it, with a new edge from that card to it. The zone grows where needed to hold it. */
+export const addChild = (from: string, at: Rect) => invoke<Created>('add_child', { from, at });
+
 /** Sets an edge's label; an empty one removes it. */
 export const labelEdge = (id: string, label: string) => invoke<ItemState[]>('label_edge', { id, label });
 

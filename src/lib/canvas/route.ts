@@ -30,6 +30,8 @@ export type Route = {
 	mid: Point;
 	/** Which way the line leaves its first card: square to the side it leaves through, along x or y. */
 	out: Point;
+	/** Which way it reaches its second card: square to the side it arrives on, heading into it. */
+	into: Point;
 };
 
 /** `p` moved `by` along `d`. */
@@ -105,7 +107,7 @@ function draw({ start, tip, d }: Ends, { shape, arrow }: Style, px: number) {
 		...(arrow === 'none' ? [] : [head(tip, d, px)]),
 		...(arrow === 'both' ? [head(start, { x: -d.x, y: -d.y }, px)] : [])
 	];
-	const line = (points: Point[], mid: Point) => ({ route: { path: `M${points.map(xy).join(' L')}`, arrows, mid, out: d }, points });
+	const line = (points: Point[], mid: Point) => ({ route: { path: `M${points.map(xy).join(' L')}`, arrows, mid, out: d, into: d }, points });
 	const m = halfway(p, q);
 	if (shape === 'straight') return line([p, q], m);
 	// Out of one card, across halfway, then into the other, bending at right angles.
@@ -121,7 +123,7 @@ function draw({ start, tip, d }: Ends, { shape, arrow }: Style, px: number) {
 		const [k0, k1, k2, k3] = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
 		return { x: k0 * p.x + k1 * c1.x + k2 * c2.x + k3 * q.x, y: k0 * p.y + k1 * c1.y + k2 * c2.y + k3 * q.y };
 	};
-	const route = { path: `M${xy(p)} C${xy(c1)} ${xy(c2)} ${xy(q)}`, arrows, mid: at(0.5), out: d };
+	const route = { path: `M${xy(p)} C${xy(c1)} ${xy(c2)} ${xy(q)}`, arrows, mid: at(0.5), out: d, into: d };
 	return { route, points: Array.from({ length: PIECES + 1 }, (_, i) => at(i / PIECES)) };
 }
 
@@ -133,9 +135,9 @@ export function route(a: Frame, b: Frame, style: Style, px = 1, obstacles: Frame
 	if (style.shape === 'straight') {
 		const ends = centers(a, b);
 		const { d } = ends;
-		// Through the left or right side when the line crosses it before the top or bottom.
-		const out = Math.abs(d.x) * a.h >= Math.abs(d.y) * a.w ? { x: Math.sign(d.x) || 1, y: 0 } : { x: 0, y: Math.sign(d.y) || 1 };
-		return { ...draw(ends, style, px).route, out };
+		// Through the left or right side of a card when the line crosses it before the top or bottom.
+		const side = (f: Frame) => (Math.abs(d.x) * f.h >= Math.abs(d.y) * f.w ? { x: Math.sign(d.x) || 1, y: 0 } : { x: 0, y: Math.sign(d.y) || 1 });
+		return { ...draw(ends, style, px).route, out: side(a), into: side(b) };
 	}
 	// Through the left and right sides when the cards lie further apart across than down, for
 	// their sizes; through the top and bottom otherwise.

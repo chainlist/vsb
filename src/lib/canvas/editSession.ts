@@ -4,6 +4,12 @@ import { createNoteForCard, discardNote, renameNote, saveNote } from '#lib/api.j
 
 const SAVE_DELAY = 1000;
 
+/** The last edit to end, done once it has saved and applied the blur rules. */
+let ended = Promise.resolve();
+
+/** Waits for the last edit that ended to be done. */
+export const finished = () => ended;
+
 export function editSession(
 	cardId: string,
 	noteId: string | null,
@@ -53,13 +59,14 @@ export function editSession(
 		/** Saves, then applies the blur rules. */
 		finish() {
 			save();
-			return then(async () => {
+			ended = then(async () => {
 				// An empty card that is still empty stays an empty card.
 				if (!noteId || conflict) return;
 				// A note created in this edit and emptied again goes away; an older note is kept.
 				if (created && !text.trim()) await discardNote(cardId, noteId);
 				else await renameNote(noteId);
 			});
+			return ended;
 		}
 	};
 }
