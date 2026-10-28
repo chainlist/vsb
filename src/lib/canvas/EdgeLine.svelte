@@ -50,11 +50,14 @@
 		overflow: visible;
 		pointer-events: none;
 		color: var(--ink-soft);
+		transition: color var(--fade);
 	}
 
+	/* Selecting shows at once; only dimming fades. */
 	.selected,
 	.draft {
 		color: var(--pen);
+		transition: none;
 	}
 
 	.dimmed {

@@ -82,13 +82,19 @@
 		box-shadow: 0 0 0 2px var(--pen), var(--lift);
 	}
 
-	/* Faded back but still solid: a veil of the card's own stock over what it shows. */
-	.dimmed::after {
+	/* Faded back but still solid: a veil of the card's own stock over what it shows. Always there,
+	   clear until the card dims, so it fades in and out. */
+	.card::after {
 		content: '';
 		position: absolute;
 		inset: 0;
 		background: inherit;
-		opacity: calc(1 - var(--dim));
+		opacity: 0;
 		pointer-events: none;
+		transition: opacity var(--fade);
+	}
+
+	.dimmed::after {
+		opacity: calc(1 - var(--dim));
 	}
 </style>

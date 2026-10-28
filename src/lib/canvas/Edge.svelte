@@ -45,8 +45,14 @@
 {/if}
 
 <style>
+	.line-label {
+		transition: color var(--fade);
+	}
+
+	/* Selecting shows at once; only dimming fades. */
 	.selected {
 		color: var(--pen);
+		transition: none;
 	}
 
 	.dimmed {
