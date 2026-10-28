@@ -24,6 +24,7 @@ CREATE TABLE cards (
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
   halign    TEXT NOT NULL DEFAULT 'left',
   valign    TEXT NOT NULL DEFAULT 'top',
+  color     TEXT,                     -- NULL = the theme's plain stock
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX cards_note ON cards(note);

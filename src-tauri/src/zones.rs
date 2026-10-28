@@ -88,13 +88,20 @@ impl Session {
     })
   }
 
-  /// Sets the zones' color; None for the default.
-  pub fn color_zones(&self, ids: &[String], color: Option<String>) -> Result<Vec<ItemState>> {
-    let ids: Vec<&str> = ids.iter().map(String::as_str).collect();
-    self.edit::<Zone>(&ids, |_, zone| {
+  /// Sets the color of cards and zones, as one edit; None for none, which leaves a card on the
+  /// theme's plain stock and a zone on its gray.
+  pub fn color_items(&self, cards: &[String], zones: &[String], color: Option<String>) -> Result<Vec<ItemState>> {
+    let cards: Vec<&str> = cards.iter().map(String::as_str).collect();
+    let zones: Vec<&str> = zones.iter().map(String::as_str).collect();
+    let mut states = self.edited::<Card>(&cards, |_, card| {
+      card.color = color.clone();
+      Ok(())
+    })?;
+    states.extend(self.edited::<Zone>(&zones, |_, zone| {
       zone.color = color.clone();
       Ok(())
-    })
+    })?);
+    self.apply(states)
   }
 
   /// Deletes zones. Their cards and child zones move up to the nearest zone that stays, or the

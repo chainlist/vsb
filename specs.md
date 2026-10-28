@@ -184,7 +184,7 @@ Competitor scan
 ### Card: `.canvas/cards/<card-id>.json`
 
 ```json
-{ "note": "01JC...", "zone": null, "x": 120, "y": 40, "w": 200, "h": 80, "halign": "center", "valign": "center" }
+{ "note": "01JC...", "zone": null, "x": 120, "y": 40, "w": 200, "h": 80, "halign": "center", "valign": "center", "color": "#f5d76e" }
 ```
 
 - `note`: note ULID, or `null` for an empty card.
@@ -192,6 +192,7 @@ Competitor scan
 - `x`, `y`: relative to the card's zone.
 - `halign`: `left` (default), `center`, `right`.
 - `valign`: `top` (default), `center`, `bottom`.
+- `color`: one of the highlighters zones take (see [Color](#color)), or left out for none.
 - Fields at their default value are left out of the file.
 
 ### Edge: `.canvas/edges/<edge-id>.json`
@@ -246,6 +247,13 @@ Competitor scan
    - A note created during this edit session that is now empty: the `.md` is deleted and the card goes back to `note: null`.
    - A note that existed before this edit session is kept, even if empty. Deleting a note always takes an explicit action.
 
+### Color
+
+- A card can take a color, as a zone can: one of the same seven highlighters, from one list shared by both, kept in its card file and the same in every theme. Without one it stays on the theme's plain stock.
+- The whole card takes a light wash of its color over its stock, as a zone is washed over the paper. Each theme sets how strong the wash is (stronger on dark themes), so each color tells apart from the others and from plain stock while the text stays as readable as on plain stock.
+- The card stays tinted while it is edited. A dimmed card fades into its tinted stock. An unresolved card keeps its "Note not found" look whatever its color.
+- It is picked in the [selection bar](#canvas-chrome), for the selected cards and zones together. A card placed, inserted on an edge or made by a batch starts with no color.
+
 ### Deleting
 
 - Deleting a card never deletes its `.md`. A note left with no cards goes to the Unplaced tray.
@@ -286,8 +294,9 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
   - Fit frames everything on the canvas, as opening the vault does, gliding there. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
-- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the zones' color, the edges' style, Arrange, Builder and Delete.
-  - The zones' color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
+- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards and zones, the edges' style, Arrange, Builder and Delete.
+  - The color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
+  - One color select serves the selected cards and zones together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray.
   - A menu keeps its keys: Escape, Enter or Delete pressed in it never reach the canvas. Choosing leaves the selection and the view as they are, and the focus goes back to the canvas.
 - **Framing stays clear of the chrome:** whatever is framed (opening a vault, fit, a search result, a zone list row) keeps 80 pixels free on every side, at the interface size, so the rail and the corner cards never cover it.
 
@@ -412,6 +421,7 @@ CREATE TABLE cards (
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
   halign    TEXT NOT NULL DEFAULT 'left',
   valign    TEXT NOT NULL DEFAULT 'top',
+  color     TEXT,                     -- NULL = the theme's plain stock
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX cards_note ON cards(note);
@@ -504,7 +514,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - Orbit (futuristic): a deep navy canvas with faint major lines and brighter nodes where they cross, cards edged in light, an ice-blue accent. Saira for notes and controls; zone names are set narrower.
   - Cairn (eerie, Celtic): a peat-moss canvas with a faint speckle, slate cards with a dim gold rule under the title, fog-pale text and a bog-gold accent. Alegreya for notes, Alegreya Sans for controls.
 - **A theme is a set of design tokens:** CSS custom properties, picked by the `data-theme` attribute on the root element. A new theme, or a dark variant, is a new set of values with no component changes.
-  - The tokens also set whether the theme is light or dark (for scrollbars and form controls), the wash behind a dialog, how strongly zones are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
+  - The tokens also set whether the theme is light or dark (for scrollbars and form controls), the wash behind a dialog, how strongly zones and cards are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
   - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **Screens outside a vault** (the vault picker, errors) use the default theme.
@@ -512,7 +522,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the batch dialog, menus and tooltips, the settings page and the vault picker.
   - It never scales the canvas's cards, zones and edges, nor the marks drawn at a constant size on screen over them: zone names once collapsed, zone and cluster markers, bundles and resize handles. They belong to the map, and the zoomed-out map is built on their sizes.
   - It works through CSS `zoom` on each piece of chrome, never through the WebView's own zoom, which would scale the canvas too and fight the pinch. `zoom` scales viewport units along with everything else, so chrome sizes itself against the window with percentages instead.
-- Zone colors live in the zone files, so they are the same in every theme. The default zone gray, for a zone with no color, comes from the theme.
+- Zone and card colors live in their files, so they are the same in every theme. The default zone gray, for a zone with no color, and the plain card stock, for a card with none, come from the theme.
 - Later: a dark mode (Orbit and Cairn are dark themes of their own, not that feature).
 
 ## Sync

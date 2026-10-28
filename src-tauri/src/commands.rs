@@ -246,8 +246,8 @@ pub async fn rename_zone(state: State<'_, AppState>, id: String, name: String) -
 }
 
 #[tauri::command]
-pub async fn color_zones(state: State<'_, AppState>, ids: Vec<String>, color: Option<String>) -> Result<Vec<ItemState>> {
-  state.with(|s| s.color_zones(&ids, color))
+pub async fn color_items(state: State<'_, AppState>, cards: Vec<String>, zones: Vec<String>, color: Option<String>) -> Result<Vec<ItemState>> {
+  state.with(|s| s.color_items(&cards, &zones, color))
 }
 
 #[tauri::command]

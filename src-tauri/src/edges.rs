@@ -39,7 +39,7 @@ impl Session {
     let mut moves = cards.to_vec();
     let mut items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
     moves.push(Move { id: id.clone(), x, y });
-    items.push(Card { note: None, zone: zone.map(str::to_string), x, y, w, h, halign: HAlign::default(), valign: VAlign::default() });
+    items.push(Card { note: None, zone: zone.map(str::to_string), x, y, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None });
     let mut states = self.placed(&moves, items, zones)?;
     let first = Edge { to: id.clone(), ..old.clone() };
     let second = Edge { from: id.clone(), label: None, ..old };

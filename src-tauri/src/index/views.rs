@@ -28,6 +28,7 @@ pub struct CardView {
   pub h: f64,
   pub halign: String,
   pub valign: String,
+  pub color: Option<String>,
   pub title: Option<String>,
   pub excerpt: Option<String>,
   /// False when `note` is set but no indexed file has that ID.

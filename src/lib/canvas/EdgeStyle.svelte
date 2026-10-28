@@ -7,6 +7,7 @@
 	import Spline from '@lucide/svelte/icons/spline';
 	import type { Arrow, Shape, Stroke } from '#lib/api.js';
 	import { arrowSelected, shapeSelected, strokeSelected } from './actions.js';
+	import { shared } from './colors.js';
 	import { selection } from './selection.svelte.js';
 	import AngledIcon from './AngledIcon.svelte';
 	import StyleSelect from './StyleSelect.svelte';
@@ -33,8 +34,7 @@
 	];
 
 	const edges = $derived(selection.edges);
-	const same = <K extends 'shape' | 'arrow' | 'stroke'>(key: K) =>
-		edges.every((e) => e[key] === edges[0][key]) ? edges[0]?.[key] : undefined;
+	const same = <K extends 'shape' | 'arrow' | 'stroke'>(key: K) => shared(edges.map((e) => e[key]));
 </script>
 
 {#snippet icon(Icon: Glyph)}

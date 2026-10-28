@@ -32,6 +32,8 @@ export type CardView = {
 	h: number;
 	halign: HAlign;
 	valign: VAlign;
+	/** A highlighter the card is washed with; null for the theme's plain stock. */
+	color: string | null;
 	title: string | null;
 	excerpt: string | null;
 	/** False when `note` is set but its file is missing. */
@@ -258,9 +260,9 @@ export const canvasContents = () => invoke<Rect | null>('canvas_contents');
 
 export const renameZone = (id: string, name: string) => invoke<ItemState[]>('rename_zone', { id, name });
 
-/** Sets the zones' color; null for the default. */
-export const colorZones = (ids: string[], color: string | null) =>
-	invoke<ItemState[]>('color_zones', { ids, color });
+/** Sets the color of cards and zones, as one edit; null for none. */
+export const colorItems = (cards: string[], zones: string[], color: string | null) =>
+	invoke<ItemState[]>('color_items', { cards, zones, color });
 
 /** Deletes zones. What was inside moves up to the nearest zone left, without moving on screen. */
 export const deleteZones = (ids: string[]) => invoke<ItemState[]>('delete_zones', { ids });

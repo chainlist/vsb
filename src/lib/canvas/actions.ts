@@ -4,7 +4,7 @@ import {
 	alignCards,
 	arrowEdges,
 	clearCard,
-	colorZones,
+	colorItems,
 	deleteCards,
 	deleteEdges,
 	deleteZones,
@@ -66,10 +66,11 @@ export function alignSelected(halign: HAlign, valign: VAlign) {
 	return history.edit(() => alignCards(ids, halign, valign));
 }
 
-/** Sets the selected zones' color; null for the default. */
+/** Sets the color of the selected cards and zones together; null for none. */
 export function colorSelected(color: string | null) {
-	const ids = selection.zones.map((z) => z.id);
-	return history.edit(() => colorZones(ids, color));
+	const cards = selection.cards.map((c) => c.id);
+	const zones = selection.zones.map((z) => z.id);
+	return history.edit(() => colorItems(cards, zones, color));
 }
 
 export function shapeSelected(shape: Shape) {

@@ -33,6 +33,7 @@
 	--zone-default: #7f8e82;
 	/* Highlighters need more color to show on dark paper. */
 	--zone-wash: 26%;
+	--card-wash: 28%;
 	--zone-stretch: normal;
 	--radius-mark: 2px;
 	--radius-control: 4px;

@@ -98,7 +98,7 @@ pub fn run() {
       commands::zone_contents,
       commands::canvas_contents,
       commands::rename_zone,
-      commands::color_zones,
+      commands::color_items,
       commands::delete_zones,
       commands::create_edge,
       commands::insert_card,

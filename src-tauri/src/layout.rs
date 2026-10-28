@@ -42,7 +42,7 @@ impl Session {
 
   fn place(&self, note: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
     let (zone, ox, oy) = self.landing(x, y, w, h)?;
-    let card = Card { note, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default() };
+    let card = Card { note, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None };
     let id = crate::new_id();
     let undo = self.apply(vec![ItemState::of(&id, &card)?])?;
     Ok(Created { id, undo })

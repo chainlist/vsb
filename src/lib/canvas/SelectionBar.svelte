@@ -7,6 +7,7 @@
 	import { arrangeSelected } from './arrange.js';
 	import { batchDialog } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
+	import { COLORS, shared } from './colors.js';
 	import { items } from './items.svelte.js';
 	import { LABEL_HALF } from './route.js';
 	import { selection } from './selection.svelte.js';
@@ -14,16 +15,8 @@
 	import EdgeStyle from './EdgeStyle.svelte';
 	import StyleSelect from './StyleSelect.svelte';
 
-	/** Highlighter colors for zones, each drawn as its swatch; null is the default gray. */
-	const colors: [string | null, string, string | null][] = [
-		[null, 'Gray', null],
-		['#f5d76e', 'Yellow', '#f5d76e'],
-		['#f4a261', 'Orange', '#f4a261'],
-		['#e98a9b', 'Pink', '#e98a9b'],
-		['#a78bdb', 'Violet', '#a78bdb'],
-		['#6fa8dc', 'Blue', '#6fa8dc'],
-		['#7cc49a', 'Green', '#7cc49a']
-	];
+	/** Each color drawn as its swatch. */
+	const colors = COLORS.map(([value, name]): [string | null, string, string | null] => [value, name, value]);
 
 	const cards = $derived(selection.cards);
 	const zones = $derived(selection.zones);
@@ -41,11 +34,11 @@
 		if (boxes.length) return { ...camera.toScreen(Math.min(...xs), top), centered: false };
 		return { ...camera.toScreen((Math.min(...xs) + Math.max(...xs)) / 2, top - LABEL_HALF), centered: true };
 	});
-	const color = $derived(zones.every((z) => z.color === zones[0].color) ? zones[0]?.color : undefined);
+	const color = $derived(shared([...cards, ...zones].map((i) => i.color)));
 </script>
 
 {#snippet swatch(value: string | null)}
-	<span class="swatch" style:--swatch={value ?? 'var(--zone-default)'}></span>
+	<span class="swatch" class:none={value === null} style:--swatch={value ?? 'var(--card)'}></span>
 {/snippet}
 
 {#if at && !selection.editing}
@@ -63,8 +56,8 @@
 			{#if cards.length}
 				<AlignGrid {cards} />
 			{/if}
-			{#if zones.length}
-				<StyleSelect label="Zone color" options={colors} current={color} pick={colorSelected} look={swatch} />
+			{#if cards.length || zones.length}
+				<StyleSelect label="Color" options={colors} current={color} pick={colorSelected} look={swatch} />
 			{/if}
 			{#if mids.length}
 				<EdgeStyle />
@@ -96,6 +89,11 @@
 		align-items: center;
 		gap: 10px;
 		padding: 5px 6px 5px 8px;
+	}
+
+	/* No color: the plain stock, struck through. */
+	.none {
+		background: linear-gradient(135deg, transparent 44%, var(--ink-soft) 44% 56%, transparent 56%), var(--card);
 	}
 
 	.centered {

@@ -78,13 +78,18 @@ impl Session {
 
   /// Reads each item, lets `edit` change it (with the item's position in `ids`), and applies the result.
   pub(crate) fn edit<T: Item>(&self, ids: &[&str], edit: impl Fn(usize, &mut T) -> Result<()>) -> Result<Vec<ItemState>> {
+    self.apply(self.edited(ids, edit)?)
+  }
+
+  /// The states `edit` would apply, to apply along with others.
+  pub(crate) fn edited<T: Item>(&self, ids: &[&str], edit: impl Fn(usize, &mut T) -> Result<()>) -> Result<Vec<ItemState>> {
     let mut states = Vec::new();
     for (i, id) in ids.iter().enumerate() {
       let mut item = self.read(id)?;
       edit(i, &mut item)?;
       states.push(ItemState::of(id, &item)?);
     }
-    self.apply(states)
+    Ok(states)
   }
 
   fn state_of(&self, kind: Kind, id: &str) -> Result<ItemState> {

@@ -30,6 +30,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="card index-card note-card"
+	class:tinted={card.color !== null}
 	class:missing
 	class:selected
 	class:editing
@@ -38,6 +39,7 @@
 	style:top="{card.y}px"
 	style:width="{card.w}px"
 	style:height="{card.h}px"
+	style:--tint={card.color}
 	style:text-align={card.halign}
 	style:justify-content={justify[card.valign]}
 	onpointerdown={press}
@@ -59,6 +61,13 @@
 		overflow: hidden;
 	}
 
+	/* A light wash of the card's color over its stock, as a zone is washed over the paper. It stays
+	   while the card is edited, and a dimmed card fades into it. */
+	.tinted {
+		background: color-mix(in srgb, var(--tint) var(--card-wash), var(--card));
+	}
+
+	/* After the tint: a missing note looks the same whatever its card's color. */
 	.missing {
 		background: var(--danger-paper);
 		color: var(--danger);

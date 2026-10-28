@@ -156,6 +156,8 @@ pub struct Card {
   pub halign: HAlign,
   #[serde(default, skip_serializing_if = "is_default")]
   pub valign: VAlign,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub color: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
