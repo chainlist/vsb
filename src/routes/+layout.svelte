@@ -2,16 +2,23 @@
 	import '../app.css';
 	import { setLucideProps } from '@lucide/svelte/context';
 	import favicon from '#lib/assets/favicon.svg';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { interfaceSize } from '#lib/interfaceSize.svelte.js';
 	import { theme } from '#lib/theme.svelte.js';
 	import type { LayoutProps } from './$types';
 
-	let { children }: LayoutProps = $props();
+	let { data, children }: LayoutProps = $props();
 
 	// Every icon in the app is a Lucide icon at this size, drawn in the color of its text.
 	setLucideProps({ size: 16 });
 
 	$effect(() => {
 		document.documentElement.dataset.theme = theme.id;
+	});
+
+	$effect(() => interfaceSize.use(data.interfaceSize));
+	$effect(() => {
+		document.documentElement.style.setProperty('--ui-scale', String(interfaceSize.percent / 100));
 	});
 
 	// A trackpad pinch comes as a wheel turned with Ctrl held. The canvas zooms on it; anywhere else
@@ -29,4 +36,6 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<Tooltip.Provider delayDuration={300}>
+	{@render children()}
+</Tooltip.Provider>

@@ -1,18 +1,29 @@
 <script lang="ts">
-	import { setVaultTheme } from '#lib/api.js';
+	import { setDeviceInterfaceSize, setVaultTheme } from '#lib/api.js';
+	import { DEFAULT_INTERFACE_SIZE, INTERFACE_SIZES, interfaceSize } from '#lib/interfaceSize.svelte.js';
 	import { DEFAULT_THEME, THEMES, theme } from '#lib/theme.svelte.js';
 
 	let error = $state('');
 
-	// Shown at once, then written to vault.json, which leaves the default out.
-	async function pick(id: string) {
-		theme.id = id;
+	// Each choice shows at once, then is kept: the theme in vault.json, the size for this device.
+	// Both leave the default out.
+	async function keep(write: Promise<void>) {
 		error = '';
 		try {
-			await setVaultTheme(id === DEFAULT_THEME ? null : id);
+			await write;
 		} catch (e) {
 			error = String(e);
 		}
+	}
+
+	function pickTheme(id: string) {
+		theme.id = id;
+		keep(setVaultTheme(id === DEFAULT_THEME ? null : id));
+	}
+
+	function pickSize(percent: number) {
+		interfaceSize.percent = percent;
+		keep(setDeviceInterfaceSize(percent === DEFAULT_INTERFACE_SIZE ? null : percent));
 	}
 </script>
 
@@ -30,21 +41,41 @@
 					</span>
 				</span>
 				<span class="name">
-					<input type="radio" name="theme" value={t.id} checked={theme.id === t.id} onchange={() => pick(t.id)} />
+					<input type="radio" name="theme" value={t.id} checked={theme.id === t.id} onchange={() => pickTheme(t.id)} />
 					{t.name}
 				</span>
 			</label>
 		{/each}
 	</div>
-	{#if error}
-		<p class="error">{error}</p>
-	{/if}
 </fieldset>
+
+<fieldset>
+	<legend>Interface size</legend>
+	<p class="hint">How large controls and panels are on this device. Cards, zones and lines keep their size.</p>
+	<div class="sizes">
+		{#each INTERFACE_SIZES as percent (percent)}
+			<label>
+				<input
+					type="radio"
+					name="size"
+					value={percent}
+					checked={interfaceSize.percent === percent}
+					onchange={() => pickSize(percent)}
+				/>
+				{percent}%
+			</label>
+		{/each}
+	</div>
+</fieldset>
+
+{#if error}
+	<p class="error">{error}</p>
+{/if}
 
 <style>
 	fieldset {
 		min-width: 0;
-		margin: 0;
+		margin: 0 0 32px;
 		padding: 0;
 		border: none;
 	}
@@ -104,5 +135,41 @@
 	input {
 		margin: 0;
 		accent-color: var(--pen);
+	}
+
+	/* One choice of three, side by side. */
+	.sizes {
+		display: inline-flex;
+		padding: 3px;
+		border-radius: var(--radius-control);
+		background: var(--paper);
+		box-shadow: inset 0 0 0 1px var(--border);
+	}
+
+	.sizes label {
+		position: relative;
+		padding: 6px 16px;
+		border-radius: var(--radius-control);
+		color: var(--ink-soft);
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		cursor: pointer;
+	}
+
+	.sizes label:has(:checked) {
+		background: var(--card);
+		box-shadow: var(--lift);
+		color: var(--ink);
+	}
+
+	.sizes label:has(:focus-visible) {
+		outline: 2px solid var(--pen);
+		outline-offset: 2px;
+	}
+
+	.sizes input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
 	}
 </style>

@@ -2,6 +2,7 @@
 
 use crate::batch::{Batch, BatchCard, BatchEdge};
 use crate::batch_edit::{Link, LinkPlan};
+use crate::device;
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
 use crate::items::{Arrow, HAlign, Kind, Shape, Stroke, VAlign};
@@ -36,6 +37,17 @@ impl AppState {
 fn data_dir(app: &AppHandle) -> Result<PathBuf> {
   // Local, not roaming: a roaming profile would sync the index.
   app.path().app_local_data_dir().map_err(|e| Error::Msg(e.to_string()))
+}
+
+/// The device's interface size in percent, or None for the default.
+#[tauri::command]
+pub async fn device_interface_size(app: AppHandle) -> Result<Option<u32>> {
+  device::interface_size(&data_dir(&app)?)
+}
+
+#[tauri::command]
+pub async fn set_device_interface_size(app: AppHandle, size: Option<u32>) -> Result<()> {
+  device::set_interface_size(&data_dir(&app)?, size)
 }
 
 #[tauri::command]
@@ -149,6 +161,11 @@ pub async fn search(state: State<'_, AppState>, text: String, offset: u32, limit
 #[tauri::command]
 pub async fn zone_rows(state: State<'_, AppState>, parent: Option<String>, offset: u32, limit: u32) -> Result<Vec<ZoneRow>> {
   state.with(|s| s.index.zone_rows(parent.as_deref(), offset, limit))
+}
+
+#[tauri::command]
+pub async fn zone_matches(state: State<'_, AppState>, text: String, offset: u32, limit: u32) -> Result<Vec<ZoneRow>> {
+  state.with(|s| s.index.zone_matches(&text, offset, limit))
 }
 
 #[tauri::command]

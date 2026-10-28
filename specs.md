@@ -21,7 +21,7 @@ Principles:
 | Frontend | SvelteKit 3 with Svelte 5, built as a static single-page app (`@sveltejs/adapter-static`) |
 | Index | SQLite, used only from Rust. The build must include FTS5, R*Tree and math functions (`floor()`). |
 | Batch creation layout | `@dagrejs/dagre` |
-| Dialogs | shadcn-svelte (on bits-ui), styled with Tailwind CSS 4 |
+| Dialogs, menus and tooltips | shadcn-svelte (on bits-ui), styled with Tailwind CSS 4 |
 | Icons | Lucide (`@lucide/svelte`) |
 
 ### Responsibilities
@@ -65,7 +65,7 @@ src/routes/
   +layout.ts                  # SPA mode: SSR off
   +page.svelte                # /: vault picker (open a folder, recent vaults)
   vault/[vaultId]/
-    +layout.svelte            # the canvas, mounted for every child route
+    +layout.svelte            # the canvas, mounted for every child route, and its chrome
     +layout.ts                # opens the vault
     +page.svelte              # canvas with no panel open
     (panel)/
@@ -75,7 +75,7 @@ src/routes/
     settings/
       +layout.svelte          # settings: a full page over the canvas, one tab per child route
       +page.ts                # opens the first tab
-      appearance/+page.svelte # the vault's theme
+      appearance/+page.svelte # the vault's theme, the device's interface size
       canvas/+page.svelte     # snapping to the grid
 ```
 
@@ -92,8 +92,10 @@ src/routes/
 - **Design tokens:** every color, font, radius and shadow comes from a theme's tokens (see [Appearance](#appearance)). Components never hard-code them.
 - **shadcn-svelte components** live in `#lib/components/ui`, copied from its registry. `app.css` maps their colors, radii and shadows onto the theme's tokens, so they follow the vault's theme. Tailwind comes without its preflight reset, which the rest of the app is not styled for, and without `dark:` variants: a theme, not the OS, decides whether it is dark.
 - **Icons are Lucide icons**, drawn in the color of their text, at a size set once in the root layout. An icon Lucide lacks (the angled edge shape) is drawn through Lucide's own `Icon` component, so it matches.
-  - A universal symbol in a tight bar stands alone, with a tooltip and a screen-reader label: settings (gear), close (cross), delete (trash).
+  - A universal symbol in a tight bar stands alone, with a tooltip and a screen-reader label: close (cross), delete (trash).
+  - The [rail](#canvas-chrome) and the zoom controls show their icons alone too: a tooltip gives each one's name and shortcut, and a label names it for screen readers.
   - Everywhere else the icon sits beside its text.
+- **The interface size scales the chrome through one mechanism:** CSS `zoom` on each piece of chrome (the `.chrome` class), never a multiplier per component, never the WebView's own zoom. See [Appearance](#appearance).
 
 ## Concepts
 
@@ -123,8 +125,11 @@ src/routes/
     cards/<card-id>.json
     edges/<edge-id>.json
 
-<OS app-data>/<vault-id>/
-  index.sqlite                # derived cache, never synced
+<OS app-data>/                # this device only, never synced
+  vaults.json                 # recent vaults
+  device.json                 # this device's settings: the interface size
+  <vault-id>/
+    index.sqlite              # derived cache
 ```
 
 ### Rules
@@ -268,25 +273,37 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
 - Selecting cards brings out their links: every other card that no edge joins to one of them dims, and so does every edge that touches none of them. They stay solid, nothing shows through: a card's content fades into its stock, an edge's color into the paper. Zones never dim. A card with no edges dims all the others.
 
+## Canvas chrome
+
+- **The controls sit in the canvas's corners,** never across it: the vault top left, the tools down the left edge, the zoom bottom right. Each is a small card of the theme's stock floating over the canvas, which runs under them to the window's edges.
+- **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings.
+- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B). The Zones button shows when the [zone list](#zone-list) is open, and a panel's button when its route is. The panels stay routes, reached through links.
+- **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
+  - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
+  - Fit frames everything on the canvas, as opening the vault does, gliding there. An empty canvas stays as it is.
+  - While a panel is open, they sit left of its sheet.
+- **Framing stays clear of the chrome:** whatever is framed (opening a vault, fit, a search result, a zone list row) keeps 80 pixels free on every side, at the interface size, so the rail and the corner cards never cover it.
+
 ## Unplaced tray and search
 
 - **Panels beside the canvas.** The tray and search are child routes in the vault's `(panel)` route group, whose layout is their shell: a shadcn-svelte Sheet docked on the right, full height. The canvas stays mounted and usable beside it, keys included: the panel is not modal, so the sheet has no overlay and does not hold the focus.
-- **Opening and closing.** The top bar has an Unplaced and a Search button, icon beside text, between the vault name and the settings gear. Mod+U opens the tray and Mod+F opens search (Ctrl, Cmd on macOS), also while typing. The same key or button again, Close, or Escape while the focus is in the panel goes back to the canvas.
+- **Opening and closing.** The [rail](#canvas-chrome) has an Unplaced and a Search button. Mod+U opens the tray and Mod+F opens search (Ctrl, Cmd on macOS), also while typing. The same key or button again, Close, or Escape while the focus is in the panel goes back to the canvas.
 - **One note list.** Each line shows the title and the excerpt from the index, the excerpt as plain text without Markdown marks. Lines are fetched 50 at a time as the list scrolls, never all at once. After any edit to the vault (an undo step, the end of a card edit), the lines shown are fetched again.
 - **The tray** lists the notes with no card, most recently changed first: notes never placed, created outside the app, or whose cards were all deleted, and `(conflict).md` copies.
 - **Search** covers note text (titles and bodies) and zone names, through `notes_fts` and `zones_fts`. Every word typed must be there, each as the start of a word; case and accents are ignored. Matching zones come first, then notes, best match first. A note that has a card is marked "On the canvas".
 - **Clicking a result** with a place on the canvas, a placed note or a zone, frames and selects it: centered at 100%, or zoomed out until it fits but never below 40%, so the zones around it open. The panel stays open. Clicking an unplaced note does nothing; it is placed by dragging.
-- **Dragging a note onto the canvas** places its card where it is dropped. A ghost of the card, at the canvas's zoom, follows the pointer. The card has the size of a card placed by double-click, is centered on the drop point and joins the innermost zone under its center. A note without an ID gets its ULID first, then the card is written. The card is one undo step; undoing it keeps the ULID in the note, which goes back to the tray. Dropping back on the panel or the top bar places nothing.
+- **Dragging a note onto the canvas** places its card where it is dropped. A ghost of the card, at the canvas's zoom, follows the pointer. The card has the size of a card placed by double-click, is centered on the drop point and joins the innermost zone under its center. A note without an ID gets its ULID first, then the card is written. The card is one undo step; undoing it keeps the ULID in the note, which goes back to the tray. Dropping back on the panel or the chrome places nothing.
   - Dropped while zoomed out, the card would be hidden, in a collapsed zone (it joins it, or the zone inside it under the drop point) or in a cluster on the paper: it is framed, as a click on a placed result does.
 - **One card per note until V3:** dragging a note that already has a card creates nothing and frames its card, as a click does.
 
 ## Zone list
 
-- **A card floating on the left**, under the top bar, listing the vault's zones as a tree. It is canvas chrome, not a route, so it can stay open beside the tray or search, and the canvas keeps its keys.
-- **Opening and closing.** A Zones button in the top bar, icon beside text, before Unplaced and Search; Mod+L (Ctrl, Cmd on macOS), also while typing; or the card's close cross. Whether it is open is remembered for each vault on this device, in the index's `ui_state`, never in `vault.json`. It starts closed.
+- **A card floating on the left**, beside the rail and level with its top, listing the vault's zones as a tree. It is canvas chrome, not a route, so it can stay open beside the tray or search, and the canvas keeps its keys.
+- **Opening and closing.** The rail's Zones button, first on it; Mod+L (Ctrl, Cmd on macOS), also while typing; or the card's close cross. A click outside it closes it too, on the canvas, the vault card or the zoom controls; dragging the paper, the wheel and a pinch leave it open, and so do clicks on the rail and in the tray or search beside it. Whether it is open is remembered for each vault on this device, in the index's `ui_state`, never in `vault.json`. It starts closed.
 - **It slides in** from the left while fading in, in 0.2 s, and slides back out. Each level unrolls once its first rows are in, its rows arriving in a quick cascade; a zone's inner zones unfold under it the same way, and fold back up when its chevron closes.
 - **The tree.** The outermost zones, by name, ignoring case. A zone holding other zones has a chevron that lists them, indented under it and by name too; closed by default. Cards are never rows.
 - **One level at a time.** The outermost zones are fetched when the card opens, and a zone's inner zones when its chevron opens, 50 rows at a time as the list scrolls, never every zone. After any edit to the vault, the rows shown are fetched again.
+- **Finding a zone.** A small field under the card's title finds zones by name. While it holds a word, the tree gives way to a flat list of the zones at any depth whose name holds every word typed, each as the start of a word, case and accents ignored, as search finds them: by name, 50 rows at a time, fetched again after any edit to the vault. Its rows work as the tree's do. Emptying the field, or Escape in it, brings the tree back.
 - **A row** shows the zone's color as a dot, as in the selection bar's color picker; its name, set like zone names on the canvas; a dot in the accent color while any part of the zone is on screen, following pans and zooms; and how many cards it holds, its inner zones' included. The selected zone's row is tinted with the accent.
 - **Clicking a row** frames and selects the zone, as a zone search result does. **Double-clicking** it renames the zone in the row, not on the canvas: Enter, Escape or a click elsewhere ends it, keeping what was typed. A rename is one undo step.
 
@@ -302,7 +319,7 @@ Open questions
 
 This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
 
-- **Running it.** Mod+B (Ctrl, Cmd on macOS) opens the batch dialog, a modal over the canvas, which turns the canvas's keys off. The cards land on the point the pointer was over, or on the middle of the screen when it was elsewhere. Mod+Enter or Create makes the cards. Escape, Cancel, Close or a click outside closes it; the text stays for the next time it opens, until it creates cards.
+- **Running it.** Mod+B (Ctrl, Cmd on macOS) or the rail's Builder button opens the batch dialog, a modal over the canvas, which turns the canvas's keys off. The cards land on the point the pointer was over, or on the middle of the screen when it was elsewhere. Mod+Enter or Create makes the cards. Escape, Cancel, Close or a click outside closes it; the text stays for the next time it opens, until it creates cards.
 - **The syntax.**
   - Each line is one card, or a chain of cards joined by arrows. Blank lines and empty steps (`A -> -> B`, a trailing `->`) are skipped.
   - An arrow is a line with a head at one end or both. The heads set the arrowheads: `A -> B` points at B, `A <- B` at A (the edge runs from B), `A <-> B` at both.
@@ -323,7 +340,7 @@ This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
 
 ### Editing edges with the builder
 
-- **Opening it on cards of the canvas.** With a zone selected alone, or one card or more, Mod+B or the selection bar's Builder button (icon beside text) opens the builder on them, titled "Edit edges, add cards", with Apply in place of Create. With nothing selected it makes new cards, as above.
+- **Opening it on cards of the canvas.** With a zone selected alone, or one card or more, Mod+B, the rail's Builder button or the selection bar's (icon beside text) opens the builder on them, titled "Edit edges, add cards", with Apply in place of Create. With nothing selected it makes new cards, as above.
   - A zone brings every card inside it, its inner zones' included.
   - Selected cards bring every card an edge joins to one of them, with the edges between all those cards.
   - Cards with no title (empty, unresolved, or a note whose first line is blank) cannot be written, so they are left out, and so are their edges.
@@ -484,6 +501,10 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **Screens outside a vault** (the vault picker, errors) use the default theme.
+- **The interface size belongs to the device:** 100% (the default), 115% or 130%, picked in Appearance, applied at once and kept in the app-data folder's `device.json`, the same in every vault and never synced. The default is left out of the file.
+  - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the batch dialog, menus and tooltips, the settings page and the vault picker.
+  - It never scales the canvas's cards, zones and edges, nor the marks drawn at a constant size on screen over them: zone names once collapsed, zone and cluster markers, bundles and resize handles. They belong to the map, and the zoomed-out map is built on their sizes.
+  - It works through CSS `zoom` on each piece of chrome, never through the WebView's own zoom, which would scale the canvas too and fight the pinch. `zoom` scales viewport units along with everything else, so chrome sizes itself against the window with percentages instead.
 - Zone colors live in the zone files, so they are the same in every theme. The default zone gray, for a zone with no color, comes from the theme.
 - Later: a dark mode (Orbit and Cairn are dark themes of their own, not that feature).
 

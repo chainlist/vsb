@@ -125,6 +125,12 @@ export type Entry =
 	| { kind: 'note'; path: string; title: string; excerpt: string; card: string | null }
 	| { kind: 'zone'; id: string; name: string };
 
+/** This device's interface size in percent, the same in every vault; null for the default. */
+export const deviceInterfaceSize = () => invoke<number | null>('device_interface_size');
+
+/** Keeps this device's interface size; null leaves it out, for the default. */
+export const setDeviceInterfaceSize = (size: number | null) => invoke<void>('set_device_interface_size', { size });
+
 export const listVaults = () => invoke<VaultEntry[]>('list_vaults');
 
 /** Asks for a folder and makes it a vault if needed. Null if the dialog was cancelled. */
@@ -202,6 +208,11 @@ export const search = (text: string, offset: number, limit: number) =>
 /** A page of the zones directly inside `parent`, or on the canvas for null, by name ignoring case. */
 export const zoneRows = (parent: string | null, offset: number, limit: number) =>
 	invoke<ZoneRow[]>('zone_rows', { parent, offset, limit });
+
+/** A page of the zones at any depth whose name holds every word typed, as search finds them, by
+ * name ignoring case. Nothing for nothing typed. */
+export const zoneMatches = (text: string, offset: number, limit: number) =>
+	invoke<ZoneRow[]>('zone_matches', { text, offset, limit });
 
 /** A value of this device's state for the open vault, kept in its index, never in a synced file. */
 export const uiState = (key: string) => invoke<string | null>('ui_state', { key });

@@ -2,7 +2,7 @@
 // only once it passes a small threshold, so plain clicks and double-clicks still work.
 
 /** Pointer travel, in pixels, before a press becomes a drag. */
-const THRESHOLD = 3;
+export const THRESHOLD = 3;
 
 type Handlers = {
 	move(dx: number, dy: number, e: PointerEvent): void;

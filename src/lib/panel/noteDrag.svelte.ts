@@ -19,7 +19,7 @@ export function startDrag(down: PointerEvent, note: Note) {
 		end(dragged) {
 			const { x, y } = ghost;
 			ghost.note = null;
-			// Only a drop on the canvas places the card, not one back on the panel or on the top bar.
+			// Only a drop on the canvas places the card, not one back on the panel or on the chrome.
 			// The canvas fills the window, so the pointer's window position is its canvas position.
 			if (dragged && document.elementFromPoint(x, y)?.closest('.canvas')) dropNote(note.path, camera.toWorld(x, y));
 		}

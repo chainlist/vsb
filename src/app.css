@@ -31,11 +31,14 @@
 	--color-input: var(--border);
 	--color-ring: var(--pen);
 	--color-scrim: var(--scrim);
+	--color-popover: var(--card);
+	--color-popover-foreground: var(--ink);
 	--radius-xs: var(--radius-mark);
 	--radius-sm: var(--radius-mark);
 	--radius-md: var(--radius-control);
 	--radius-lg: var(--radius-card);
 	--shadow-xs: 0 0 #0000;
+	--shadow-md: var(--lift);
 	--shadow-lg: var(--lift);
 	--font-sans: var(--font-ui);
 }
@@ -186,6 +189,24 @@ a {
 	border: 1.5px solid color-mix(in srgb, var(--swatch) 70%, var(--ink));
 	border-radius: 50%;
 	background: color-mix(in srgb, var(--swatch) 45%, var(--card));
+}
+
+/* The chrome: the controls floating over the canvas, the panels and screens over it, and their
+   menus and tooltips. Drawn at the device's interface size (#lib/interfaceSize.svelte.ts), which
+   never scales the canvas's own cards, zones and edges. One mechanism: zoom on each chrome root. */
+.chrome {
+	zoom: var(--ui-scale, 1);
+}
+
+/* Where the canvas chrome sits: its distance from the window's edges; the gap between its cards;
+   the top of the rail and the zone list, under the 44px vault card; the rail's width; and the width
+   of the panel's sheet docked on the right, which the zoom controls stay clear of. */
+:root {
+	--inset: 16px;
+	--gap: 12px;
+	--under-vault: calc(var(--inset) + 44px + var(--gap));
+	--rail: 52px;
+	--panel: min(75%, 24rem);
 }
 
 /* An icon beside its text. */

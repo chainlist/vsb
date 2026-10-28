@@ -4,7 +4,7 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 </script>
 
-<main class="page graph-paper">
+<main class="page graph-paper chrome">
 	<h1>That did not work</h1>
 	<p class="error">{page.error?.message}</p>
 	<a class="icon-label" href={resolve('/')}><ArrowLeft /> Back to your vaults</a>

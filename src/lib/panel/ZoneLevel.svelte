@@ -1,16 +1,23 @@
 <script lang="ts">
 	import { cubicOut } from 'svelte/easing';
 	import { slide } from 'svelte/transition';
-	import { zoneRows } from '#lib/api.js';
+	import { zoneMatches, zoneRows } from '#lib/api.js';
 	import { MOD_NAME } from '#lib/keys.js';
 	import { motion } from '#lib/motion.js';
 	import { Paged } from './paged.svelte.js';
 	import ZoneRow from './ZoneRow.svelte';
 
-	/** The zone whose inner zones are listed, or null for the outermost; and how deep it lies. */
-	let { parent, depth }: { parent: string | null; depth: number } = $props();
+	/** The zone whose inner zones are listed, or null for the outermost; how deep it lies; and, for
+	 * the outermost, what was typed to find zones, which lists every zone whose name matches. */
+	let { parent, depth, find = '' }: { parent: string | null; depth: number; find?: string } = $props();
 
-	const load = $derived((offset: number, limit: number) => zoneRows(parent, offset, limit));
+	// Read here, not when a page is fetched: another level or other words make a new loader, and the
+	// list starts over.
+	const load = $derived.by(() => {
+		const [inside, words] = [parent, find];
+		return (offset: number, limit: number) =>
+			words ? zoneMatches(words, offset, limit) : zoneRows(inside, offset, limit);
+	});
 	const list = new Paged(() => load);
 </script>
 
@@ -26,7 +33,9 @@
 				<li class="status" {@attach list.atEnd}>Loading…</li>
 			{/if}
 		</ul>
-		{#if !parent && !list.lines.length}
+		{#if find && !list.lines.length}
+			<p class="status">No zone name has these words.</p>
+		{:else if !parent && !list.lines.length}
 			<p class="status">No zones yet. {MOD_NAME}+drag on the paper draws one.</p>
 		{/if}
 	</div>

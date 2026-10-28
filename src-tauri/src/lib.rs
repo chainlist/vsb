@@ -1,6 +1,7 @@
 mod batch;
 mod batch_edit;
 mod commands;
+mod device;
 mod edges;
 mod error;
 mod fsx;
@@ -61,6 +62,8 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .manage(commands::AppState::default())
     .invoke_handler(tauri::generate_handler![
+      commands::device_interface_size,
+      commands::set_device_interface_size,
       commands::list_vaults,
       commands::choose_vault,
       commands::open_vault,
@@ -79,6 +82,7 @@ pub fn run() {
       commands::plan_links,
       commands::edit_batch,
       commands::zone_rows,
+      commands::zone_matches,
       commands::ui_state,
       commands::set_ui_state,
       commands::move_cards,

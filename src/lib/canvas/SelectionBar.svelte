@@ -45,58 +45,64 @@
 </script>
 
 {#if at && !selection.editing}
+	<!-- The anchor holds the bar's place on screen; the bar inside it is drawn at the interface size. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="bar index-card"
+		class="anchor"
 		class:centered={at.centered}
 		style:left="{Math.max(8, at.x)}px"
 		style:top="{Math.max(52, at.y - 10)}px"
 		onpointerdown={(e) => e.stopPropagation()}
 		ondblclick={(e) => e.stopPropagation()}
 	>
-		{#if cards.length}
-			<AlignGrid {cards} />
-		{/if}
-		{#if zones.length}
-			<div class="colors" role="group" aria-label="Zone color">
-				{#each colors as [value, label] (label)}
-					<button
-						class="swatch"
-						aria-label={label}
-						title={label}
-						class:on={color === value}
-						style:--swatch={value ?? 'var(--zone-default)'}
-						onclick={() => colorSelected(value)}
-					></button>
-				{/each}
-			</div>
-		{/if}
-		{#if mids.length}
-			<EdgeStyle />
-		{/if}
-		<!-- Arranging and the builder work on the selected cards, or on a lone selected zone's contents. -->
-		{#if cards.length > 1 || zone}
-			<button class="tool icon-label" title="Arrange along their edges, in the builder's direction" onclick={arrangeSelected}>
-				<Network /> Arrange
-			</button>
-		{/if}
-		{#if cards.length || zone}
-			<button class="tool icon-label" title="Edit edges, add cards ({MOD_NAME}+B)" onclick={() => batchDialog.open()}>
-				<Workflow /> Builder
-			</button>
-		{/if}
-		<button class="delete" aria-label="Delete" title="Delete" onclick={deleteSelected}><Trash2 /></button>
+		<div class="bar index-card chrome">
+			{#if cards.length}
+				<AlignGrid {cards} />
+			{/if}
+			{#if zones.length}
+				<div class="colors" role="group" aria-label="Zone color">
+					{#each colors as [value, label] (label)}
+						<button
+							class="swatch"
+							aria-label={label}
+							title={label}
+							class:on={color === value}
+							style:--swatch={value ?? 'var(--zone-default)'}
+							onclick={() => colorSelected(value)}
+						></button>
+					{/each}
+				</div>
+			{/if}
+			{#if mids.length}
+				<EdgeStyle />
+			{/if}
+			<!-- Arranging and the builder work on the selected cards, or on a lone selected zone's contents. -->
+			{#if cards.length > 1 || zone}
+				<button class="tool icon-label" title="Arrange along their edges, in the builder's direction" onclick={arrangeSelected}>
+					<Network /> Arrange
+				</button>
+			{/if}
+			{#if cards.length || zone}
+				<button class="tool icon-label" title="Edit edges, add cards ({MOD_NAME}+B)" onclick={() => batchDialog.open()}>
+					<Workflow /> Builder
+				</button>
+			{/if}
+			<button class="delete" aria-label="Delete" title="Delete" onclick={deleteSelected}><Trash2 /></button>
+		</div>
 	</div>
 {/if}
 
 <style>
-	.bar {
+	.anchor {
 		position: absolute;
+		transform: translateY(-100%);
+	}
+
+	.bar {
 		display: flex;
 		align-items: center;
 		gap: 10px;
 		padding: 5px 6px 5px 8px;
-		transform: translateY(-100%);
 	}
 
 	.centered {

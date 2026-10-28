@@ -81,7 +81,7 @@
 >
 	<!-- No taller than the window: the preview map gives way first, then the dialog scrolls. -->
 	<Dialog.Content
-		class="flex max-h-[calc(100dvh-2rem)] flex-col overflow-y-auto sm:max-w-2xl"
+		class="chrome flex max-h-[calc(100%-2rem)] flex-col overflow-y-auto sm:max-w-2xl"
 		onOpenAutoFocus={(e) => {
 			e.preventDefault();
 			field?.focus();

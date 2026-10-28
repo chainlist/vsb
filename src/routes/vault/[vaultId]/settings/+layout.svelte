@@ -22,7 +22,7 @@
 	$effect(() => bindKeys([{ keys: ['Escape'], inText: true, run: () => goto(canvas) }], { modal: true }));
 </script>
 
-<div class="settings graph-paper">
+<div class="settings graph-paper chrome">
 	<div class="sheet index-card">
 		<header>
 			<h1>Settings</h1>

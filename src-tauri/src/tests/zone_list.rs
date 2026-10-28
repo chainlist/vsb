@@ -41,6 +41,39 @@ fn the_zone_list_shows_a_level_at_a_time_by_name_with_cards_counted_at_any_depth
 }
 
 #[test]
+fn zone_search_finds_names_at_any_depth_by_word_starts_ignoring_case_and_accents() {
+  let f = Fixture::new();
+  let index = f.index();
+  let zone = |id: &str, name: &str, parent: Option<&str>| {
+    let json = serde_json::json!({ "name": name, "parent": parent, "x": 0.0, "y": 0.0, "w": 400.0, "h": 400.0 });
+    f.write(&format!(".canvas/zones/{id}.json"), &json.to_string());
+  };
+  zone("Q3", "Q3 plan", None);
+  zone("PR", "Pricing risks", Some("Q3"));
+  zone("PT", "pricing", None);
+  zone("EL", "Éléments de prix", Some("PR"));
+  zone("SP", "Supprime", None);
+  put_card(&f, "C1", Some("EL"), 10.0, 10.0);
+  scan(&f.vault, &index).unwrap();
+
+  let names = |text: &str, offset, limit| -> Vec<String> {
+    index.zone_matches(text, offset, limit).unwrap().into_iter().map(|z| z.name).collect()
+  };
+  // At any depth, by name ignoring case; a word must start the way it was typed, so not "Supprime".
+  assert_eq!(names("pri", 0, 50), ["pricing", "Pricing risks", "Éléments de prix"]);
+  // Every word typed, each anywhere in the name.
+  assert_eq!(names("risk pri", 0, 50), ["Pricing risks"]);
+  // Accents and case are ignored.
+  assert_eq!(names("elements", 0, 50), ["Éléments de prix"]);
+  // Rows as in the tree: cards counted at any depth.
+  assert_eq!(index.zone_matches("risks", 0, 50).unwrap()[0].cards, 1);
+  // A page at a time, and nothing for nothing typed.
+  assert_eq!(names("pri", 1, 1), ["Pricing risks"]);
+  assert!(names("  ", 0, 50).is_empty());
+  assert!(names("->", 0, 50).is_empty());
+}
+
+#[test]
 fn ui_state_is_kept_in_the_index_across_reopening() {
   let f = Fixture::new();
   let index = f.index();

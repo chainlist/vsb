@@ -1,4 +1,5 @@
 use super::{names, Fixture};
+use crate::device;
 use crate::fsx::{atomic_write, files};
 use crate::items::{self, Card, Edge, HAlign, Kind, VAlign, Zone};
 use crate::vault::Vault;
@@ -100,4 +101,16 @@ fn items_read_files_written_by_hand() {
   assert_eq!((zone.name.as_str(), zone.w, zone.color.as_deref()), ("Pricing", 800.0, Some("#f5d76e")));
   let edge: Edge = items::read(&items::path(&f.vault, Kind::Edge, "E")).unwrap();
   assert_eq!((edge.from.as_str(), edge.to.as_str(), edge.label), ("A", "B", None));
+}
+
+#[test]
+fn interface_size_is_kept_per_device_and_left_out_for_the_default() {
+  let data = TempDir::new().unwrap();
+  assert_eq!(device::interface_size(data.path()).unwrap(), None);
+  device::set_interface_size(data.path(), Some(130)).unwrap();
+  assert_eq!(device::interface_size(data.path()).unwrap(), Some(130));
+  let json: serde_json::Value = serde_json::from_str(&fs::read_to_string(data.path().join("device.json")).unwrap()).unwrap();
+  assert_eq!(json["interfaceSize"], 130);
+  device::set_interface_size(data.path(), None).unwrap();
+  assert!(!fs::read_to_string(data.path().join("device.json")).unwrap().contains("interfaceSize"));
 }

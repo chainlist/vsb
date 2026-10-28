@@ -2,15 +2,19 @@
 // screen coordinates goes through here. Screen coordinates are relative to the canvas element.
 import { cubicInOut } from 'svelte/easing';
 import type { Rect } from '#lib/api.js';
+import { interfaceSize } from '#lib/interfaceSize.svelte.js';
 import { motion } from '#lib/motion.js';
 import { flight, type View } from './flight.js';
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 4;
-/** Room left around content framed by `fit`, in screen pixels. */
-const FIT_MARGIN = 64;
+/** Room left around content framed by `fit`, in screen pixels at a 100% interface size: clear of
+ * the chrome in the corners and down the left edge (its inset, the rail, a gap). */
+const FIT_MARGIN = 80;
 /** How long a glide takes, in ms: by the length of its path, within bounds. */
 const GLIDE = { perStep: 500, min: 250, max: 800 };
+/** The zooms the zoom buttons step through, 40% among them, where zones collapse. */
+const STEPS = [0.05, 0.1, 0.15, 0.2, 0.25, 0.33, 0.4, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3, 4];
 
 class Camera {
 	/** World point at the canvas's top-left corner. */
@@ -53,6 +57,13 @@ class Camera {
 		this.y = p.y - sy / this.zoom;
 	}
 
+	/** Zooms to the next step in (1) or out (-1), keeping the middle of the canvas in place. */
+	step(way: 1 | -1) {
+		const near = (z: number) => Math.abs(z - this.zoom) < 1e-3;
+		const next = way > 0 ? STEPS.find((z) => z > this.zoom && !near(z)) : STEPS.findLast((z) => z < this.zoom && !near(z));
+		if (next) this.zoomAt(this.width / 2, this.height / 2, next / this.zoom);
+	}
+
 	/** Centers a world rectangle on screen, zoomed out until it fits, but never zoomed in past 100%
 	 * nor out below `least`. */
 	fit(r: Rect, least = MIN_ZOOM) {
@@ -84,10 +95,11 @@ class Camera {
 
 	/** The view that frames a world rectangle, as `fit` describes. */
 	#framing(r: Rect, least: number): View {
+		const margin = (FIT_MARGIN * interfaceSize.percent) / 100;
 		const zoom = Math.min(
 			1,
-			(this.width - 2 * FIT_MARGIN) / (r.maxX - r.minX),
-			(this.height - 2 * FIT_MARGIN) / (r.maxY - r.minY)
+			(this.width - 2 * margin) / (r.maxX - r.minX),
+			(this.height - 2 * margin) / (r.maxY - r.minY)
 		);
 		return { x: (r.minX + r.maxX) / 2, y: (r.minY + r.maxY) / 2, w: this.width / Math.max(least, zoom) };
 	}

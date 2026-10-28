@@ -18,7 +18,7 @@
 	}
 </script>
 
-<main class="page graph-paper">
+<main class="page graph-paper chrome">
 	<h1>Visual Second Brain</h1>
 	<p class="lede">Pick any folder. Your notes stay in it as plain Markdown files.</p>
 	<button class="button" onclick={choose}><FolderOpen /> Open a folder</button>

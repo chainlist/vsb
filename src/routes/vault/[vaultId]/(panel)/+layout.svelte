@@ -36,7 +36,8 @@
 	<!-- The search field takes the focus itself; the tray takes none. -->
 	<Sheet.Content
 		bind:ref={el}
-		class="gap-0"
+		data-beside-zones
+		class="chrome w-(--panel) gap-0 sm:max-w-none"
 		showOverlay={false}
 		trapFocus={false}
 		preventScroll={false}

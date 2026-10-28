@@ -16,7 +16,7 @@ pub enum Entry {
 
 /// What was typed, as an FTS5 query: every word must be there, each as the start of a word.
 /// Quoting keeps FTS5 syntax (AND, *, ^, :) plain text; a run of marks alone is no word.
-fn words(text: &str) -> String {
+pub(super) fn words(text: &str) -> String {
   let words = text.split_whitespace().filter(|w| w.chars().any(char::is_alphanumeric));
   words.map(|w| format!("\"{}\"*", w.replace('"', "\"\""))).collect::<Vec<_>>().join(" ")
 }
