@@ -36,7 +36,14 @@ function typing(target: EventTarget | null) {
 	return target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'));
 }
 
+/** Whether a key was pressed in an open menu, which takes its own keys: Escape, Enter or Delete
+ * there never reach the canvas. */
+function inMenu(target: EventTarget | null) {
+	return target instanceof Element && target.closest('[role="menu"]') !== null;
+}
+
 function onKeydown(e: KeyboardEvent) {
+	if (inMenu(e.target)) return;
 	const pressed = combo(e);
 	const inText = typing(e.target);
 	for (const layer of layers.toReversed()) {

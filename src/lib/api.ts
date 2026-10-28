@@ -183,12 +183,13 @@ export const planLinks = (scope: string[], links: Link[]) => invoke<LinkPlan>('p
 export const editBatch = (zone: string | null, scope: string[], cards: BatchCard[], links: Link[]) =>
 	invoke<Batch>('edit_batch', { zone, scope, cards, links });
 
-/** What arranging a zone lays out: its own cards and its inner zones (`zone` true), each with its
- * box in the world, and the edges between them as indexes into them. An edge to a card inside an
- * inner zone joins that zone. */
+/** What arranging a zone lays out, or inserting a card in it moves: its own cards and its inner
+ * zones (`zone` true), each with its box in the world, and the edges between them as indexes into
+ * them. An edge to a card inside an inner zone joins that zone. */
 export type ZoneNodes = { nodes: (Frame & { id: string; zone: boolean })[]; edges: { from: number; to: number }[] };
 
-export const zoneNodes = (zone: string) => invoke<ZoneNodes>('zone_nodes', { zone });
+/** The nodes of a zone, or of the canvas itself for null. */
+export const zoneNodes = (zone: string | null) => invoke<ZoneNodes>('zone_nodes', { zone });
 
 /** Moves cards and zones to world positions, each staying in its zone, which grows to hold them; a
  * zone brings everything in it. */
@@ -267,6 +268,12 @@ export const deleteZones = (ids: string[]) => invoke<ItemState[]>('delete_zones'
 /** Connects two cards. When they are already connected, either way round, the existing edge comes
  * back with nothing to undo. */
 export const createEdge = (from: string, to: string) => invoke<Created>('create_edge', { from, to });
+
+/** Inserts an empty card on an edge, on the world rectangle `at` in `zone` (null: the canvas): the
+ * edge is split around it, both halves keeping its style and the first its label, and the cards
+ * and zones given move to make room, the zone growing where needed. */
+export const insertCard = (edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[]) =>
+	invoke<Created>('insert_card', { edge, zone, at, cards, zones });
 
 /** Sets an edge's label; an empty one removes it. */
 export const labelEdge = (id: string, label: string) => invoke<ItemState[]>('label_edge', { id, label });

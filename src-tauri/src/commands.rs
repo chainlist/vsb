@@ -191,8 +191,8 @@ pub async fn arrange(state: State<'_, AppState>, cards: Vec<Move>, zones: Vec<Mo
 }
 
 #[tauri::command]
-pub async fn zone_nodes(state: State<'_, AppState>, zone: String) -> Result<ZoneNodes> {
-  state.with(|s| s.index.zone_nodes(&zone))
+pub async fn zone_nodes(state: State<'_, AppState>, zone: Option<String>) -> Result<ZoneNodes> {
+  state.with(|s| s.index.zone_nodes(zone.as_deref()))
 }
 
 #[tauri::command]
@@ -258,6 +258,11 @@ pub async fn delete_zones(state: State<'_, AppState>, ids: Vec<String>) -> Resul
 #[tauri::command]
 pub async fn create_edge(state: State<'_, AppState>, from: String, to: String) -> Result<Created> {
   state.with(|s| s.create_edge(&from, &to))
+}
+
+#[tauri::command]
+pub async fn insert_card(state: State<'_, AppState>, edge: String, zone: Option<String>, at: Rect, cards: Vec<Move>, zones: Vec<Move>) -> Result<Created> {
+  state.with(|s| s.insert_card(&edge, zone.as_deref(), at, &cards, &zones))
 }
 
 #[tauri::command]

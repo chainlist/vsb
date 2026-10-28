@@ -32,15 +32,16 @@ pub struct ZoneNodes {
 }
 
 impl Index {
-  /// The cards and the zones directly in a zone, and the edges between them. An edge to a card in
-  /// an inner zone, at any depth, joins that zone; edges within one node are left out.
-  pub fn zone_nodes(&self, id: &str) -> Result<ZoneNodes> {
+  /// The cards and the zones directly in a zone (None: on the canvas), and the edges between them.
+  /// An edge to a card in an inner zone, at any depth, joins that zone; edges within one node are
+  /// left out.
+  pub fn zone_nodes(&self, id: Option<&str>) -> Result<ZoneNodes> {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
        SELECT 0, c.id, coalesce(zabs.ax, 0) + c.x, coalesce(zabs.ay, 0) + c.y, c.w, c.h
-       FROM cards c LEFT JOIN zabs ON zabs.id = c.zone WHERE c.zone = ?1
+       FROM cards c LEFT JOIN zabs ON zabs.id = c.zone WHERE c.zone IS ?1
        UNION ALL
-       SELECT 1, z.id, zabs.ax, zabs.ay, z.w, z.h FROM zones z JOIN zabs USING (id) WHERE z.parent = ?1
+       SELECT 1, z.id, zabs.ax, zabs.ay, z.w, z.h FROM zones z JOIN zabs USING (id) WHERE z.parent IS ?1
        ORDER BY 1, 2"
     ))?;
     let rows = stmt.query_map([id], |r| Ok(Node { zone: r.get(0)?, id: r.get(1)?, x: r.get(2)?, y: r.get(3)?, w: r.get(4)?, h: r.get(5)? }))?;
@@ -50,11 +51,11 @@ impl Index {
     let mut stmt = self.db.prepare(
       "WITH RECURSIVE
        under (id, top) AS (
-         SELECT id, id FROM zones WHERE parent = ?1
+         SELECT id, id FROM zones WHERE parent IS ?1
          UNION SELECT z.id, under.top FROM zones z JOIN under ON z.parent = under.id
        ),
        owner (card, node) AS (
-         SELECT id, id FROM cards WHERE zone = ?1
+         SELECT id, id FROM cards WHERE zone IS ?1
          UNION ALL SELECT c.id, under.top FROM cards c JOIN under ON c.zone = under.id
        )
        SELECT DISTINCT a.node, b.node FROM edges e

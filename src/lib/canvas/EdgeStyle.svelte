@@ -9,6 +9,7 @@
 	import { arrowSelected, shapeSelected, strokeSelected } from './actions.js';
 	import { selection } from './selection.svelte.js';
 	import AngledIcon from './AngledIcon.svelte';
+	import StyleSelect from './StyleSelect.svelte';
 
 	/** A Lucide icon, or the elements of one Lucide lacks, drawn through its `Icon`. */
 	type Glyph = LucideIcon | LucideIconNode[];
@@ -36,47 +37,14 @@
 		edges.every((e) => e[key] === edges[0][key]) ? edges[0]?.[key] : undefined;
 </script>
 
-{#snippet choices<T>(label: string, options: [T, string, Glyph][], current: T | undefined, pick: (value: T) => void)}
-	<div class="choices" role="group" aria-label={label}>
-		{#each options as [value, name, Icon] (name)}
-			<button aria-label={name} title={name} class:on={current === value} onclick={() => pick(value)}>
-				{#if Array.isArray(Icon)}
-					<Drawn iconNode={Icon} />
-				{:else}
-					<Icon />
-				{/if}
-			</button>
-		{/each}
-	</div>
+{#snippet icon(Icon: Glyph)}
+	{#if Array.isArray(Icon)}
+		<Drawn iconNode={Icon} />
+	{:else}
+		<Icon />
+	{/if}
 {/snippet}
 
-{@render choices('Edge shape', shapes, same('shape'), shapeSelected)}
-{@render choices('Edge arrows', arrows, same('arrow'), arrowSelected)}
-{@render choices('Edge line', strokes, same('stroke'), strokeSelected)}
-
-<style>
-	.choices {
-		display: flex;
-		gap: 2px;
-	}
-
-	button {
-		display: flex;
-		padding: 3px;
-		border: none;
-		border-radius: var(--radius-control);
-		background: none;
-		color: var(--ink-soft);
-		cursor: pointer;
-	}
-
-	button:hover {
-		background: var(--paper);
-	}
-
-	.on {
-		background: var(--paper);
-		color: var(--ink);
-		box-shadow: inset 0 0 0 1px var(--border);
-	}
-</style>
+<StyleSelect label="Edge shape" options={shapes} current={same('shape')} pick={shapeSelected} look={icon} />
+<StyleSelect label="Edge arrows" options={arrows} current={same('arrow')} pick={arrowSelected} look={icon} />
+<StyleSelect label="Edge line" options={strokes} current={same('stroke')} pick={strokeSelected} look={icon} />

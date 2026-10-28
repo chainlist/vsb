@@ -5,6 +5,7 @@ mod check;
 mod clusters;
 mod edges;
 mod index;
+mod insert;
 mod layout;
 mod note;
 mod scan;

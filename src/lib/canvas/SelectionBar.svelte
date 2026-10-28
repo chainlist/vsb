@@ -8,21 +8,21 @@
 	import { batchDialog } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { items } from './items.svelte.js';
+	import { LABEL_HALF } from './route.js';
 	import { selection } from './selection.svelte.js';
 	import AlignGrid from './AlignGrid.svelte';
 	import EdgeStyle from './EdgeStyle.svelte';
+	import StyleSelect from './StyleSelect.svelte';
 
-	/** Half an edge label's height, in world units: the bar clears a label on the edge's middle. */
-	const LABEL_HALF = 11;
-	/** Highlighter colors for zones; null is the default gray. */
-	const colors: [string | null, string][] = [
-		[null, 'Gray'],
-		['#f5d76e', 'Yellow'],
-		['#f4a261', 'Orange'],
-		['#e98a9b', 'Pink'],
-		['#a78bdb', 'Violet'],
-		['#6fa8dc', 'Blue'],
-		['#7cc49a', 'Green']
+	/** Highlighter colors for zones, each drawn as its swatch; null is the default gray. */
+	const colors: [string | null, string, string | null][] = [
+		[null, 'Gray', null],
+		['#f5d76e', 'Yellow', '#f5d76e'],
+		['#f4a261', 'Orange', '#f4a261'],
+		['#e98a9b', 'Pink', '#e98a9b'],
+		['#a78bdb', 'Violet', '#a78bdb'],
+		['#6fa8dc', 'Blue', '#6fa8dc'],
+		['#7cc49a', 'Green', '#7cc49a']
 	];
 
 	const cards = $derived(selection.cards);
@@ -44,6 +44,10 @@
 	const color = $derived(zones.every((z) => z.color === zones[0].color) ? zones[0]?.color : undefined);
 </script>
 
+{#snippet swatch(value: string | null)}
+	<span class="swatch" style:--swatch={value ?? 'var(--zone-default)'}></span>
+{/snippet}
+
 {#if at && !selection.editing}
 	<!-- The anchor holds the bar's place on screen; the bar inside it is drawn at the interface size. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -60,18 +64,7 @@
 				<AlignGrid {cards} />
 			{/if}
 			{#if zones.length}
-				<div class="colors" role="group" aria-label="Zone color">
-					{#each colors as [value, label] (label)}
-						<button
-							class="swatch"
-							aria-label={label}
-							title={label}
-							class:on={color === value}
-							style:--swatch={value ?? 'var(--zone-default)'}
-							onclick={() => colorSelected(value)}
-						></button>
-					{/each}
-				</div>
+				<StyleSelect label="Zone color" options={colors} current={color} pick={colorSelected} look={swatch} />
 			{/if}
 			{#if mids.length}
 				<EdgeStyle />
@@ -107,21 +100,6 @@
 
 	.centered {
 		transform: translate(-50%, -100%);
-	}
-
-	.colors {
-		display: flex;
-		gap: 4px;
-	}
-
-	.colors button {
-		padding: 0;
-		cursor: pointer;
-	}
-
-	.colors button:hover,
-	.colors .on {
-		box-shadow: 0 0 0 1.5px var(--card), 0 0 0 3px var(--ink);
 	}
 
 	.delete {

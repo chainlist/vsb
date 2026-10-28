@@ -272,6 +272,9 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
   - A straight line runs along the line between the two cards' centers, from border to border, whatever lies between.
 - Pressing the line or its label selects the edge. Double-clicking it, or Enter while it is selected, edits the label in place at the curve's middle. New edges have no label; clearing a label removes it from the file.
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
+- **Inserting a card on an edge.** A lone selected edge shows a + on its middle, or just under its label when it has one, so the label stays readable. Clicking it places an empty card, the size of a card placed by double-click, between the edge's two cards, in the innermost zone at the edge's middle, and opens it for editing, as a placed card. The edge is split in two, from its first card to the new one and from the new one to its second: both keep its shape, arrowheads and line, and the first keeps its label.
+  - **Making room,** like inserting a row: along the way the line leaves its first card, across or down as it is routed, the new card is centered on the edge's middle, or put the usual gap past the first card when the middle is nearer (80 world units, the gap between linked cards in a batch). Across that way it is centered on the middle. Every card and inner zone directly in that zone (on the paper, the canvas's own cards and zones) lying wholly past the middle moves along by the same amount, just enough to leave that gap after the new card; an inner zone moves with everything in it. With snapping on, the card lands on the grid and the moves are whole squares. Nothing outside that zone moves, and the zone grows to hold what moved, as for a batch.
+  - The card, both edges and every move are one undo step.
 - Selecting cards brings out their links: every other card that no edge joins to one of them dims, and so does every edge that touches none of them. They stay solid, nothing shows through: a card's content fades into its stock, an edge's color into the paper. Zones never dim. A card with no edges dims all the others.
 
 ## Canvas chrome
@@ -283,6 +286,9 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
   - Fit frames everything on the canvas, as opening the vault does, gliding there. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
+- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the zones' color, the edges' style, Arrange, Builder and Delete.
+  - The zones' color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
+  - A menu keeps its keys: Escape, Enter or Delete pressed in it never reach the canvas. Choosing leaves the selection and the view as they are, and the focus goes back to the canvas.
 - **Framing stays clear of the chrome:** whatever is framed (opening a vault, fit, a search result, a zone list row) keeps 80 pixels free on every side, at the interface size, so the rail and the corner cards never cover it.
 
 ## Unplaced tray and search

@@ -19,6 +19,7 @@
 	import Cluster from './Cluster.svelte';
 	import EdgeLine from './EdgeLine.svelte';
 	import Edge from './Edge.svelte';
+	import EdgeInsert from './EdgeInsert.svelte';
 	import ResizeHandles from './ResizeHandles.svelte';
 	import SelectionBar from './SelectionBar.svelte';
 	import Zone from './Zone.svelte';
@@ -174,6 +175,7 @@
 		<ResizeHandles {hovered} />
 	</div>
 	<SelectionBar />
+	<EdgeInsert />
 </div>
 <BatchDialog />
 

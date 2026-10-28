@@ -65,7 +65,13 @@ impl Session {
   /// needed to hold them, its contents staying in place. A zone brings everything in it. Arranging
   /// selected cards, or a zone's contents, does this.
   pub fn arrange(&self, cards: &[Move], zones: &[Move]) -> Result<Vec<ItemState>> {
-    let mut card_items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
+    let card_items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
+    self.apply(self.placed(cards, card_items, zones)?)
+  }
+
+  /// The states that put cards, given whole with their zone (new ones too), and zones at world
+  /// positions, as `arrange` does.
+  pub(crate) fn placed(&self, cards: &[Move], mut card_items: Vec<Card>, zones: &[Move]) -> Result<Vec<ItemState>> {
     let mut zone_items = zones.iter().map(|m| self.read::<Zone>(&m.id)).collect::<Result<Vec<_>>>()?;
     let boxes = cards.iter().zip(&card_items).map(|(m, c)| (&c.zone, Rect::of(m.x, m.y, c.w, c.h)));
     let boxes = boxes.chain(zones.iter().zip(&zone_items).map(|(m, z)| (&z.parent, Rect::of(m.x, m.y, z.w, z.h))));
@@ -95,7 +101,7 @@ impl Session {
       (card.x, card.y) = (m.x - ox, m.y - oy);
       states.push(ItemState::of(&m.id, card)?);
     }
-    self.apply(states)
+    Ok(states)
   }
 
   /// Gives a card a new world rectangle. Resizing from the left or top moves its corner too, but

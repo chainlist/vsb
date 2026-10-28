@@ -88,6 +88,11 @@ class Items {
 		return this.cards.findLast(near) ?? this.zones.findLast(near);
 	}
 
+	/** The innermost zone on the canvas around a world point. Zones come parents first. */
+	zoneAt(p: { x: number; y: number }) {
+		return this.zones.findLast((z) => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h);
+	}
+
 	/** The card or zone on the canvas with this id, and which of the two it is. */
 	find(id: string) {
 		const card = this.#byId.get(id);

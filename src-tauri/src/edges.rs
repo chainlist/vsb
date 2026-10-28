@@ -1,8 +1,11 @@
-//! Edge edits: connecting two cards, labeling, styling (shape, arrowheads, line) and deleting. Like card and zone edits,
-//! each hands the target item states to `apply`, so every edit can be undone.
+//! Edge edits: connecting two cards, inserting a card on an edge, labeling, styling (shape,
+//! arrowheads, line) and deleting. Like card and zone edits, each hands the target item states to
+//! `apply`, so every edit can be undone.
 
 use crate::error::{msg, Result};
-use crate::items::{Arrow, Card, Edge, Kind, Shape, Stroke};
+use crate::index::Rect;
+use crate::items::{Arrow, Card, Edge, HAlign, Kind, Shape, Stroke, VAlign};
+use crate::layout::Move;
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 
@@ -22,6 +25,26 @@ impl Session {
     let id = crate::new_id();
     let edge = Edge { from: from.to_string(), to: to.to_string(), label: None, shape: Shape::default(), arrow: Arrow::default(), stroke: Stroke::default() };
     let undo = self.apply(vec![ItemState::of(&id, &edge)?])?;
+    Ok(Created { id, undo })
+  }
+
+  /// Inserts an empty card on an edge, on the world rectangle `at` in `zone` (None: the canvas).
+  /// The edge is split around it, from its first card to the new one and on to its second: both
+  /// halves keep its style, and the first its label. The cards and zones given move to make room,
+  /// as arranging moves them, and the zone grows where needed to hold them and the new card.
+  pub fn insert_card(&self, edge: &str, zone: Option<&str>, at: Rect, cards: &[Move], zones: &[Move]) -> Result<Created> {
+    let old: Edge = self.read(edge)?;
+    let id = crate::new_id();
+    let (x, y, w, h) = (at.min_x, at.min_y, at.max_x - at.min_x, at.max_y - at.min_y);
+    let mut moves = cards.to_vec();
+    let mut items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
+    moves.push(Move { id: id.clone(), x, y });
+    items.push(Card { note: None, zone: zone.map(str::to_string), x, y, w, h, halign: HAlign::default(), valign: VAlign::default() });
+    let mut states = self.placed(&moves, items, zones)?;
+    let first = Edge { to: id.clone(), ..old.clone() };
+    let second = Edge { from: id.clone(), label: None, ..old };
+    states.extend([ItemState::of(&crate::new_id(), &first)?, ItemState::of(&crate::new_id(), &second)?, ItemState::gone(Kind::Edge, edge)]);
+    let undo = self.apply(states)?;
     Ok(Created { id, undo })
   }
 

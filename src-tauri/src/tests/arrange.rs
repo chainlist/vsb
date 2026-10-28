@@ -44,7 +44,7 @@ fn a_zone_arranges_its_cards_and_its_inner_zones_as_blocks() {
 
   // Its own cards and its inner zone Y; edges to cards inside Y, at any depth, join Y. An edge
   // within Y, and one to a card outside, are left out.
-  let nodes = s.index.zone_nodes("Z").unwrap();
+  let nodes = s.index.zone_nodes(Some("Z")).unwrap();
   let listed: Vec<_> = nodes.nodes.iter().map(|n| (n.id.as_str(), n.zone, n.x, n.y)).collect();
   assert_eq!(listed, [("A", false, 20.0, 60.0), ("B", false, 20.0, 300.0), ("Y", true, 500.0, 100.0)]);
   let edges: Vec<_> = nodes.edges.iter().map(|e| (e.from, e.to)).collect();
