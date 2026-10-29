@@ -25,8 +25,12 @@ export type EdgeFile = { from: string; to: string; label?: string; shape?: Shape
 
 export type File = ZoneFile | CardFile | EdgeFile;
 
-/** A zone, with how many cards sit directly in it and the box around them, in its own coordinates. */
-export type ZoneRecord = { id: string; file: ZoneFile; own: number; cbox: Box | null };
+/** A card a zone holds directly: its box in the zone's coordinates, as its file has it, and its color. */
+export type Held = [x: number, y: number, w: number, h: number, color: string | null];
+
+/** A zone, with the cards it holds directly, by ID: what the zone list counts, framing covers and a
+ * collapsed zone's preview draws, without reading the cards. */
+export type ZoneRecord = { id: string; file: ZoneFile; held: Record<string, Held> };
 
 /** A card, with all the viewport query draws it from: its absolute corner, its outermost zone (''
  * when loose), the grid square it is filed under, its cluster square at each cell size when loose,

@@ -75,7 +75,7 @@ function rows(layout: Layout, ids: string[], offset: number, limit: number): Zon
 	return sorted.slice(offset, offset + limit).map(([, id]) => {
 		const { file } = layout.zones.get(id)!;
 		const at = layout.places.get(id)!;
-		const cards = layout.subtree(id).reduce((n, z) => n + (layout.zones.get(z)?.own ?? 0), 0);
+		const cards = layout.subtree(id).reduce((n, z) => n + Object.keys(layout.zones.get(z)?.held ?? {}).length, 0);
 		return { id, name: file.name, color: file.color ?? null, inner: !!layout.kids.get(id)?.length, cards, x: at.x, y: at.y, w: file.w, h: file.h };
 	});
 }

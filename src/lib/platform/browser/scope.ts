@@ -2,7 +2,7 @@
 // or zone's, a zone's contents, the whole canvas's.
 import type { BatchScope, Rect, ZoneNodes } from '#lib/api.js';
 import type { Edit } from './apply.ts';
-import { type Box, rectOf, union } from './grid.ts';
+import { type Box, boxOf, rectOf, union } from './grid.ts';
 import { request } from './idb.ts';
 import { edgesAmong } from './lookups.ts';
 import type { CardRecord, ClusterRecord, EdgeRecord } from './records.ts';
@@ -69,13 +69,8 @@ export async function zoneNodes(e: Edit, zone: string | null): Promise<ZoneNodes
 	return { nodes, edges: sorted.flatMap(([a, b]) => (at.has(a) && at.has(b) ? [{ from: at.get(a)!, to: at.get(b)! }] : [])) };
 }
 
-/** The boxes of what a zone holds directly: its cards, from the box kept around them. A zone that
- * sits nowhere holds its cards at the canvas origin, as on the desktop. */
-function held(e: Edit, zone: string): Box | null {
-	const cbox = e.layout.zones.get(zone)?.cbox;
-	const at = e.layout.places.get(zone) ?? { x: 0, y: 0 };
-	return cbox ? [cbox[0] + at.x, cbox[1] + at.y, cbox[2] + at.x, cbox[3] + at.y] : null;
-}
+/** The world boxes of the cards a zone holds directly, from what the zone keeps of them. */
+const held = (e: Edit, zone: string) => e.layout.cards(zone).map(boxOf);
 
 const covering = (boxes: (Box | null)[]) => {
 	const kept = boxes.filter((b): b is Box => !!b);
@@ -85,7 +80,7 @@ const covering = (boxes: (Box | null)[]) => {
 /** The world area covered by everything inside a zone, at any depth. Null when it is empty. */
 export function zoneContents(e: Edit, id: string): Rect | null {
 	const inside = e.layout.subtree(id);
-	return covering([...inside.filter((z) => z !== id).map((z) => e.layout.box(z)), ...inside.map((z) => held(e, z))]);
+	return covering([...inside.filter((z) => z !== id).map((z) => e.layout.box(z)), ...inside.flatMap((z) => held(e, z))]);
 }
 
 /** The world area covered by every zone and card: the zones, what they hold, and the loose cards'
@@ -95,7 +90,7 @@ export async function canvasContents(e: Edit): Promise<Rect | null> {
 	const range = IDBKeyRange.bound([cell, -Infinity, -Infinity], [cell, Infinity, Infinity]);
 	const clusters = (await request(e.tx.objectStore('clusters').getAll(range))) as ClusterRecord[];
 	const zones = [...e.layout.zones.keys()];
-	return covering([...zones.map((z) => e.layout.box(z)), ...zones.filter((z) => e.layout.places.has(z)).map((z) => held(e, z)), ...clusters.map((c) => c.box)]);
+	return covering([...zones.map((z) => e.layout.box(z)), ...zones.filter((z) => e.layout.places.has(z)).flatMap((z) => held(e, z)), ...clusters.map((c) => c.box)]);
 }
 
 /** A card's or a zone's own box in the world. Null when it is gone. */

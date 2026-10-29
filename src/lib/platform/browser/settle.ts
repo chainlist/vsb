@@ -6,7 +6,7 @@ import { boxOf, gridKeys } from './grid.ts';
 import { request } from './idb.ts';
 import type { Layout } from './layout.ts';
 import type { CardFile, CardRecord, EdgeFile, EdgeRecord, NoteRecord, ZoneFile } from './records.ts';
-import { bounds, bundled, end, flush, inZone, rawBox, Tally } from './tally.ts';
+import { bounds, bundled, end, flush, rawBox, Tally } from './tally.ts';
 
 /** Cell sizes the zoomed-out map is kept for: those the canvas asks for, from 40% zoom down to 5%. */
 export const CELLS = [512, 1024, 2048, 4096];
@@ -17,8 +17,17 @@ export type Next = { zone: Map<string, ZoneFile | null>; card: Map<string, CardF
 export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 	const cards = tx.objectStore('cards');
 	const edges = tx.objectStore('edges');
-	const tallies = { zones: new Tally(), clusters: new Tally(), bundles: new Tally(), notes: new Map<string, number>() };
+	const tallies = { clusters: new Tally(), bundles: new Tally(), notes: new Map<string, number>() };
 	const count = (note: string | null, by: number) => note && tallies.notes.set(note, (tallies.notes.get(note) ?? 0) + by);
+	/** The zones to keep again: those written, and those whose cards changed. */
+	const zones = new Set(next.zone.keys());
+	const hold = (zone: string, id: string, file: CardFile | null) => {
+		const held = layout.zones.get(zone)?.held;
+		if (!held) return;
+		if (file) held[id] = [file.x, file.y, file.w, file.h, file.color ?? null];
+		else delete held[id];
+		zones.add(zone);
+	};
 
 	// Zones first, in memory. Every zone that gained, lost or changed its place moves its cards.
 	const was = layout.places;
@@ -44,7 +53,7 @@ export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 	ids.forEach((id, i) => {
 		const [old, file] = [olds[i], files[i]];
 		if (old) {
-			tallies.zones.change(old.zk, inZone(old.file), -1);
+			hold(old.zk, id, null);
 			for (const key of old.cl ?? []) tallies.clusters.change(key, rawBox(old.file), -1);
 			count(old.file.note, -1);
 		}
@@ -56,7 +65,7 @@ export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 		const card = cardRecord(layout, id, file, old, notes);
 		cards.put(card);
 		now.set(id, card);
-		tallies.zones.change(card.zk, inZone(file), 1);
+		hold(card.zk, id, file);
 		for (const key of card.cl ?? []) tallies.clusters.change(key, rawBox(file), 1);
 		count(file.note, 1);
 	});
@@ -82,7 +91,13 @@ export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 		bundled(edge, tallies.bundles, 1);
 	});
 
-	await flush(tx, layout, tallies, next);
+	const store = tx.objectStore('zones');
+	for (const id of zones) {
+		const zone = layout.zones.get(id);
+		if (zone) store.put(zone);
+		else store.delete(id);
+	}
+	await flush(tx, tallies);
 }
 
 const samePlace = (a: { x: number; y: number; root: string } | undefined, b: typeof a) =>

@@ -25,7 +25,7 @@ export class Layout {
 
 	put(id: string, file: ZoneFile) {
 		const was = this.zones.get(id);
-		this.zones.set(id, { id, file, own: was?.own ?? 0, cbox: was?.cbox ?? null });
+		this.zones.set(id, { id, file, held: was?.held ?? {} });
 	}
 
 	drop(id: string) {
@@ -68,6 +68,13 @@ export class Layout {
 	box(id: string): Box | null {
 		const f = this.frame(id);
 		return f && [f.x, f.y, f.x + Math.max(f.w, 0), f.y + Math.max(f.h, 0)];
+	}
+
+	/** The cards a zone holds directly, as boxes in the world with their colors. A zone that sits
+	 * nowhere holds them at the canvas origin, as on the desktop. */
+	cards(zone: string) {
+		const at = this.places.get(zone) ?? { x: 0, y: 0 };
+		return Object.values(this.zones.get(zone)?.held ?? {}).map(([x, y, w, h, color]) => ({ x: at.x + x, y: at.y + y, w, h, color }));
 	}
 
 	/** A zone and every zone inside it, at any depth. */

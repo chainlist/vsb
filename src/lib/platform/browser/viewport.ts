@@ -1,11 +1,13 @@
 // The viewport query: zones, cards and edges meeting a world rectangle, through the grid. Zoomed out,
-// the outermost zones, the loose cards' clusters and the bundles, read from the counts and boxes kept
-// per cell on every write, never from the cards themselves.
+// the outermost zones with a preview of what they hold, the loose cards' clusters and the bundles,
+// read from what the zones keep and the counts and boxes kept per cell on every write, never from
+// the cards themselves.
 import type { Bundle, BundleEnd, CardView, Cluster, EdgeView, Rect, Viewport, ZoneView } from '#lib/api.js';
 import type { Edit } from './apply.ts';
 import { type Box, boxOf, frameOf, large, meets } from './grid.ts';
 import { request } from './idb.ts';
 import { inGrid } from './lookups.ts';
+import { previews } from './previews.ts';
 import type { BundleRecord, CardRecord, ClusterRecord, EdgeRecord } from './records.ts';
 import { CELLS } from './settle.ts';
 import { bounds } from './tally.ts';
@@ -15,7 +17,8 @@ export async function viewport(e: Edit, rect: Rect, minSize: number, cell: numbe
 	if (cell !== null) {
 		if (!CELLS.includes(cell)) throw new Error(`the zoomed-out map is kept for cells of ${CELLS.join(', ')}, not ${cell}`);
 		const clusters = await clustersIn(e, rect, cell);
-		return { zones, cards: [], edges: [], clusters, bundles: await bundlesIn(e, rect, cell, clusters) };
+		const bundles = await bundlesIn(e, rect, cell, clusters);
+		return { zones, cards: [], edges: [], clusters, bundles, previews: previews(e.layout, rect, minSize, zones) };
 	}
 	const [cards, edges] = await Promise.all([
 		inGrid<CardRecord>(e.tx.objectStore('cards'), rect),
@@ -30,7 +33,8 @@ export async function viewport(e: Edit, rect: Rect, minSize: number, cell: numbe
 			.map(cardView),
 		edges: edges.filter((edge) => edge.ends && shown(bounds(edge.ends))).map(edgeView),
 		clusters: [],
-		bundles: []
+		bundles: [],
+		previews: []
 	};
 }
 

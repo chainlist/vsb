@@ -76,13 +76,20 @@ export type BundleEnd = Frame & { zone: string | null };
 /** Zoomed out, the edges between two ends drawn as one line: how many, and where they point. */
 export type Bundle = { ends: [BundleEnd, BundleEnd]; count: number; arrow: Arrow };
 
-/** Open, the zones, cards and edges; zoomed out, the outermost zones, the clusters and the bundles. */
+/** Zoomed out, what a collapsed zone holds at any depth, in its coordinates from its top-left corner:
+ * its cards' boxes by color (null for the theme's plain stock), and its inner zones' boxes, top to
+ * bottom then left to right. Only what meets the queried area and is large enough comes back. */
+export type Preview = { zone: string; cards: { color: string | null; boxes: Frame[] }[]; zones: Frame[] };
+
+/** Open, the zones, cards and edges; zoomed out, the outermost zones with a preview of what they
+ * hold, the clusters and the bundles. */
 export type Viewport = {
 	zones: ZoneView[];
 	cards: CardView[];
 	edges: EdgeView[];
 	clusters: Cluster[];
 	bundles: Bundle[];
+	previews: Preview[];
 };
 
 /** One zone, card or edge file: its JSON, or null for no file. Layout edits return the states

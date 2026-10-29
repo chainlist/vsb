@@ -1,12 +1,10 @@
-// Counts and boxes kept per key: what each zone holds directly, each cluster square and each bundle,
-// and how many cards show each note. A write adds and takes away; a box only shrinks when something
-// reaching its side leaves, and then it is measured again from what is left.
+// Counts and boxes kept per key: each cluster square and each bundle, and how many cards show each
+// note. A write adds and takes away; a box only shrinks when something reaching its side leaves, and
+// then it is measured again from what is left.
 import type { Frame } from '#lib/api.js';
 import { type Box, boxOf, touches, union } from './grid.ts';
 import { request } from './idb.ts';
-import type { Layout } from './layout.ts';
 import { tray, type CardFile, type CardRecord, type ClusterRecord, type BundleRecord, type EdgeRecord, type NoteRecord } from './records.ts';
-import type { Next } from './settle.ts';
 
 type Entry = { key: IDBValidKey; count: number; ha: number; hb: number; adds: Box[]; removes: Box[] };
 
@@ -24,9 +22,6 @@ export class Tally {
 		(sign > 0 ? e.adds : e.removes).push(box);
 	}
 }
-
-/** A card's box in its zone's coordinates, as zone contents count it. */
-export const inZone = (f: CardFile): Box => [f.x, f.y, f.x + Math.max(f.w, 0), f.y + Math.max(f.h, 0)];
 
 /** A card's box as clusters count it, its size as written. */
 export const rawBox = (f: CardFile): Box => [f.x, f.y, f.x + f.w, f.y + f.h];
@@ -55,34 +50,11 @@ const cover = (boxes: Box[]) => (boxes.length ? boxes.reduce(union) : null);
 /** Whether what left may have reached the box's side. */
 const shrinks = (e: Entry, box: Box | null) => e.removes.length > 0 && (!box || e.removes.some((b) => touches(b, box)));
 
-type Tallies = { zones: Tally; clusters: Tally; bundles: Tally; notes: Map<string, number> };
+type Tallies = { clusters: Tally; bundles: Tally; notes: Map<string, number> };
 
 /** Writes what the tallies changed, after every item of the edit is written. */
-export async function flush(tx: IDBTransaction, layout: Layout, t: Tallies, next: Next) {
+export async function flush(tx: IDBTransaction, t: Tallies) {
 	const cards = tx.objectStore('cards');
-	const touched = new Set(next.zone.keys());
-	await Promise.all(
-		[...t.zones.entries.values()].map(async (e) => {
-			const zone = layout.zones.get(e.key as string);
-			if (!zone) return;
-			touched.add(zone.id);
-			if (shrinks(e, zone.cbox)) {
-				const held = (await request(cards.index('zk').getAll(e.key))) as CardRecord[];
-				zone.own = held.length;
-				zone.cbox = cover(held.map((c) => inZone(c.file)));
-			} else {
-				zone.own += e.count;
-				zone.cbox = cover([...(zone.cbox ? [zone.cbox] : []), ...e.adds]);
-			}
-		})
-	);
-	const zones = tx.objectStore('zones');
-	for (const id of touched) {
-		const zone = layout.zones.get(id);
-		if (zone) zones.put(zone);
-		else zones.delete(id);
-	}
-
 	const clusters = tx.objectStore('clusters');
 	await update<ClusterRecord>(clusters, t.clusters, async (e, was) => {
 		const [cell, cx, cy] = e.key as number[];
