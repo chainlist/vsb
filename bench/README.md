@@ -32,7 +32,10 @@ edges are long). It spans about 49,000 by 46,000 world units.
 | zone matches | `zoneMatches` for every prefix of three words, three times |
 | unplaced page | `unplacedNotes`, ten pages of 50, five times |
 
-`run.mjs` reports p50 and p95 (nearest rank) and the maximum per scenario, and writes them to
+`render.mjs` times drawing the zoomed-out map on the vault's canvas: from asking for it to the frame
+painted, the longest the main thread is held, and the elements drawn, at 20% and 5%.
+
+`run.mjs` (`--only <regex>` to run some scenarios) reports p50 and p95 (nearest rank) and the maximum per scenario, and writes them to
 `results/<label>.json`. `compare.mjs <label>...` sets labels side by side, taking the median of each
 label's runs (`<label>-1`, `-2`, ...).
 

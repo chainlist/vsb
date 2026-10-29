@@ -98,3 +98,40 @@ bundles (1,447 at cell 4096, holding 2,137 edges). They differ in:
 - **Search order.** The same notes and zones match every query; the ranking differs (FTS5's bm25 on
   the desktop; title words thrice, other words once, in the browser).
 - **Order of zones at the same depth** in a viewport answer (parents still come first).
+
+## Previews of collapsed zones
+
+Zoomed out, each collapsed zone drawn as a frame shows what it holds, at any depth (specs.md,
+Previews). Measured before (`main` at 17e708b) and after, on the same vault, alternately: three
+pairs of query runs (`desktop-preview-*`, `browser-preview-*`) and two pairs of render runs
+(`desktop-render-*`, `browser-render-*`; the browser has three). Medians of the runs, in ms. The
+machine was less loaded than for the sections above, so compare within this section only.
+
+**The query** (`run.mjs --only viewport`):
+
+| Scenario | Desktop before | Desktop after | Browser before | Browser after |
+|---|---:|---:|---:|---:|
+| viewport 20%, p50 / p95 | 427 / 637 | 415 / 614 | 18.2 / 22.8 | 16.6 / 21.8 |
+| viewport 5%, p50 / p95 | 945 / 1023 | 925 / 948 | 12.3 / 15.1 | 10.3 / 14.8 |
+| viewport 100%, p50 (control) | 5.6 | 5.4 | 14.6 | 13.8 |
+
+The preview adds nothing measurable to either backend's query. The desktop reads it with two R*Tree
+queries next to its slow bundle lookups; the browser reads it from the cards each zone keeps in
+memory, never from the cards. Over the whole canvas at 5% it is 4,240 boxes, 160 KB of a 413 KB
+answer (bundles: 242 KB).
+
+**Drawing** (`render.mjs`: the canvas emptied, then the zoomed-out answer asked for and drawn):
+
+| | Desktop before | Desktop after | Browser before | Browser after |
+|---|---:|---:|---:|---:|
+| elements at 20% / 5% | 2,487 / 4,853 | 2,532 / 5,015 | 2,844 / 5,718 | 2,912 / 5,933 |
+| main thread held at 20%, p50 | 53 | 53 | 91 | 86 |
+| main thread held at 5%, p50 | 125 | 112 | 179 | 188 |
+| asked to painted at 20%, p50 | 502 | 408 | 149 | 123 |
+| asked to painted at 5%, p50 | 1,144 | 944 | 224 | 197 |
+
+The preview is one SVG per zone with one path per color and one for the inner frames: 45 to 70 more
+elements at 20%, 160 to 215 at 5%, whatever the number of cards. The longest main-thread block
+stays within run-to-run noise. It was already long before the preview: 50 to 90 ms at 20% and 110 to
+190 ms at 5% on this vault, spent drawing its 1,400 to 2,200 bundles (each a line, its arrowheads and
+a count), which a zoom-out on a vault this dense would feel as a stall.

@@ -1,6 +1,6 @@
 // Runs the scenarios in a running app over CDP and writes their p50 and p95 to bench/results.
 //
-//   node bench/run.mjs --port 9224 --label desktop-before [--cold] [--base /] [--vault <id>]
+//   node bench/run.mjs --port 9224 --label desktop-before [--cold] [--base /] [--vault <id>] [--only <regex>]
 //
 // See bench/README.md for starting the app copies.
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -15,12 +15,13 @@ const { values: args } = parseArgs({
 		label: { type: 'string' },
 		cold: { type: 'boolean', default: false },
 		base: { type: 'string', default: '/' },
-		vault: { type: 'string' }
+		vault: { type: 'string' },
+		only: { type: 'string' }
 	}
 });
 
 const plan = generate();
-const input = { base: args.base, vaultId: args.vault ?? plan.vaultId, search: plan.search };
+const input = { base: args.base, vaultId: args.vault ?? plan.vaultId, search: plan.search, only: args.only };
 const page = await connect(Number(args.port));
 const call = (fn) => page.evaluate(`(${fn})(${JSON.stringify(input)})`);
 
