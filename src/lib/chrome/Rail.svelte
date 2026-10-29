@@ -26,7 +26,7 @@
 	$effect(() =>
 		bindKeys([
 			...PANELS.map((p) => ({ keys: [`Mod+${p.key}`], inText: true, run: () => goto(toggle(p)) })),
-			{ keys: ['Mod+l'], inText: true, run: () => zoneList.toggle() }
+			{ keys: ['Mod+l'], inText: true, run: () => zoneList.toggle(true) }
 		])
 	);
 </script>

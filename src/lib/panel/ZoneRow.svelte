@@ -10,12 +10,13 @@
 	import { bindKeys } from '#lib/keys.js';
 	import { motion } from '#lib/motion.js';
 	import ZoneLevel from './ZoneLevel.svelte';
+	import { zoneList } from './zoneList.svelte.js';
 
 	/** `index`: its place in its level, which staggers the rows' arrival. */
 	let { zone, depth, index }: { zone: ZoneRow; depth: number; index: number } = $props();
 
 	/** Whether the zones inside it are listed under it. */
-	let open = $state(false);
+	const open = $derived(zoneList.unfolded.has(zone.id));
 	let renaming = $state(false);
 	const selected = $derived(selection.has(zone.id));
 	const onScreen = $derived.by(() => {
@@ -40,7 +41,7 @@
 				class:open
 				aria-expanded={open}
 				aria-label={open ? 'Hide the zones inside' : 'Show the zones inside'}
-				onclick={() => (open = !open)}
+				onclick={() => zoneList.unfold(zone.id)}
 			>
 				<ChevronRight size={14} />
 			</button>
@@ -53,8 +54,17 @@
 				<InlineField value={zone.name} placeholder="Untitled" save={(name) => rename(zone.id, name)} done={() => (renaming = false)} />
 			</span>
 		{:else}
-			<!-- A click frames and selects the zone, as a search result does; a double-click renames it. -->
-			<button class="zone" title="Show on the canvas" onclick={() => show('zone', zone.id)} ondblclick={() => (renaming = true)}>
+			<!-- A click, or Enter, frames and selects the zone, as a search result does; a double-click
+			     renames it. The list's arrow keys find the zone and its inner zones by data-zone and
+			     data-inner. -->
+			<button
+				class="zone"
+				title="Show on the canvas"
+				data-zone={zone.id}
+				data-inner={zone.inner || undefined}
+				onclick={() => show('zone', zone.id)}
+				ondblclick={() => (renaming = true)}
+			>
 				<span class="swatch"></span>
 				<span class="name" class:untitled={!zone.name}>{zone.name || 'Untitled'}</span>
 				{#if onScreen}
@@ -89,6 +99,15 @@
 	.selected:hover {
 		background: color-mix(in srgb, var(--pen) 10%, transparent);
 		color: var(--pen);
+	}
+
+	/* The row the keyboard is on: ringed whole, not just its name's button. */
+	.row:has(.zone:focus-visible) {
+		box-shadow: inset 0 0 0 1.5px var(--pen);
+	}
+
+	.zone:focus-visible {
+		outline: none;
 	}
 
 	.chevron {

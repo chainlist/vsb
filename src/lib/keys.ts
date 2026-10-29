@@ -7,7 +7,7 @@ export type Binding = {
 	run: () => void;
 	/** Extra condition, checked when the key is pressed. */
 	when?: () => boolean;
-	/** Also runs while typing in a text field. */
+	/** Also runs while typing in a text field, or in a part that takes its own keys (data-own-keys). */
 	inText?: boolean;
 };
 
@@ -32,8 +32,13 @@ function combo(e: KeyboardEvent) {
 	return [...mods, key].filter(Boolean).join('+');
 }
 
+/** Whether keys go to a text field, or to a part marked data-own-keys, such as the zone list once the
+ * keyboard is in it: the canvas's keys are off there, as while typing. */
 function typing(target: EventTarget | null) {
-	return target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select'));
+	return (
+		target instanceof HTMLElement &&
+		(target.isContentEditable || target.matches('input, textarea, select') || target.closest('[data-own-keys]') !== null)
+	);
 }
 
 /** Whether a key was pressed in an open menu, which takes its own keys: Escape, Enter or Delete

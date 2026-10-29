@@ -2,10 +2,11 @@
 	import Search from '@lucide/svelte/icons/search';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import X from '@lucide/svelte/icons/x';
+	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { fly } from 'svelte/transition';
 	import { THRESHOLD } from '#lib/canvas/drag.js';
-	import { MOD_NAME } from '#lib/keys.js';
+	import { bindKeys, MOD_NAME } from '#lib/keys.js';
 	import { motion } from '#lib/motion.js';
 	import { zoneList } from './zoneList.svelte.js';
 	import ZoneLevel from './ZoneLevel.svelte';
@@ -14,6 +15,62 @@
 	let find = $state('');
 	let field: HTMLInputElement;
 	let card: HTMLElement;
+	let rows: HTMLElement;
+
+	onMount(() => {
+		if (zoneList.focusFind) field.focus();
+	});
+
+	/** The row the keyboard is on: its zone's button. */
+	function focused() {
+		const on = document.activeElement;
+		return on instanceof HTMLButtonElement && rows.contains(on) && on.matches('.zone') ? on : null;
+	}
+
+	/** Moves the keyboard `by` rows, as the tree shows them; up from the first, to the find field. Rows
+	 * still folding away are inert, and skipped. */
+	function step(by: 1 | -1) {
+		const all = [...rows.querySelectorAll<HTMLButtonElement>('button.zone')].filter((b) => !b.closest('[inert]'));
+		const on = focused();
+		const next = (on ? all.indexOf(on) : -1) + by;
+		if (next < 0) field.focus();
+		else all[Math.min(next, all.length - 1)]?.focus();
+	}
+
+	/** Lists the zone's inner zones, or, once they are, steps to the first. */
+	function unfold(row: HTMLButtonElement) {
+		const id = row.dataset.zone!;
+		if (!row.dataset.inner) return;
+		if (zoneList.unfolded.has(id)) step(1);
+		else zoneList.unfold(id, true);
+	}
+
+	/** Folds the zone's inner zones back up, or, when they are, steps out to the zone around. */
+	function fold(row: HTMLButtonElement) {
+		const id = row.dataset.zone!;
+		if (zoneList.unfolded.has(id)) zoneList.unfold(id, false);
+		else row.closest('li')?.parentElement?.closest('li')?.querySelector<HTMLButtonElement>('button.zone')?.focus();
+	}
+
+	// Once the keyboard is in the card (Mod+L puts it in the find field), it takes its keys, through
+	// data-own-keys: Up and Down go from row to row, Right and Left unfold and fold, Enter is a row's
+	// own click, and Escape gives the keys back to the canvas. In the field, Escape empties it first.
+	$effect(() => {
+		const onRow = () => focused() !== null;
+		const inField = () => document.activeElement === field;
+		return bindKeys([
+			{ keys: ['ArrowDown'], inText: true, when: () => onRow() || inField(), run: () => step(1) },
+			{ keys: ['ArrowUp'], inText: true, when: onRow, run: () => step(-1) },
+			{ keys: ['ArrowRight'], inText: true, when: onRow, run: () => unfold(focused()!) },
+			{ keys: ['ArrowLeft'], inText: true, when: onRow, run: () => fold(focused()!) },
+			{
+				keys: ['Escape'],
+				inText: true,
+				when: () => onRow() || (inField() && !find),
+				run: () => (document.activeElement as HTMLElement).blur()
+			}
+		]);
+	});
 
 	// A click outside closes it, but not a drag that pans, the wheel or a pinch, nor a click on what
 	// it stays open beside: the rail and the tray or search, marked data-beside-zones. Caught on the
@@ -40,10 +97,12 @@
 
 <!-- The outermost zones, and the zones inside one when it is opened, or the zones found by name. A
      card floating beside the canvas, not a route: it stays open with the tray or search, and the
-     canvas keeps its keys. It slides in from the left, and back out. -->
+     canvas keeps its keys until the keyboard is put in the card. It slides in from the left, and
+     back out. -->
 <aside
 	class="zones index-card chrome"
 	aria-label="Zones"
+	data-own-keys
 	bind:this={card}
 	transition:fly={{ x: -24, duration: motion(200), easing: cubicOut }}
 >
@@ -71,7 +130,7 @@
 			</button>
 		{/if}
 	</label>
-	<div class="rows">
+	<div class="rows" bind:this={rows}>
 		<ZoneLevel parent={null} depth={0} find={find.trim()} />
 	</div>
 </aside>
