@@ -8,6 +8,7 @@
 	import { createCards, editCards } from './batchApply.js';
 	import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 	import { sketchEdit, sketchNew, wanted } from './batchEdit.js';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import BatchPreview from './BatchPreview.svelte';
 	import Directions from './Directions.svelte';
 
@@ -108,7 +109,9 @@
 			aria-label="Cards, one per line"
 			class="max-h-[30vh] min-h-28 font-[family-name:var(--font-note)] whitespace-pre [font-variant-ligatures:none]"
 		/>
-		<BatchPreview {sketch} />
+		<ErrorBoundary what="The preview">
+			<BatchPreview {sketch} />
+		</ErrorBoundary>
 		<Dialog.Footer class="items-center">
 			<Directions bind:direction={batchDialog.direction} />
 			<span class="summary">{summary}</span>

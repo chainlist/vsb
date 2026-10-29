@@ -6,6 +6,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { fly } from 'svelte/transition';
 	import { THRESHOLD } from '#lib/canvas/drag.js';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import { bindKeys, MOD_NAME } from '#lib/keys.js';
 	import { motion } from '#lib/motion.js';
 	import { zoneList, ZONE_LIST_KEYS } from './zoneList.svelte.js';
@@ -131,7 +132,9 @@
 		{/if}
 	</label>
 	<div class="rows" bind:this={rows}>
-		<ZoneLevel parent={null} depth={0} find={find.trim()} />
+		<ErrorBoundary what="The zone list">
+			<ZoneLevel parent={null} depth={0} find={find.trim()} />
+		</ErrorBoundary>
 	</div>
 </aside>
 

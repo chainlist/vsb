@@ -6,6 +6,7 @@
 	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import Palette from '@lucide/svelte/icons/palette';
 	import Vault from '@lucide/svelte/icons/vault';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { bindKeys } from '#lib/keys.js';
 	import { PANEL_KEYS } from '#lib/panel/panels.js';
@@ -60,7 +61,9 @@
 			{/each}
 		</nav>
 		<section>
-			{@render children()}
+			<ErrorBoundary what="This tab">
+				{@render children()}
+			</ErrorBoundary>
 		</section>
 	</Dialog.Content>
 </Dialog.Root>

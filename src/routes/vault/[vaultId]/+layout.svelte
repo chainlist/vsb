@@ -3,6 +3,7 @@
 	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
 	import { wheel } from '#lib/canvas/wheel.svelte.js';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import Rail from '#lib/chrome/Rail.svelte';
 	import VaultCard from '#lib/chrome/VaultCard.svelte';
 	import ZoomControls from '#lib/chrome/ZoomControls.svelte';
@@ -35,7 +36,9 @@
 <!-- The canvas stays mounted while panels open and close as child routes. Its chrome sits in the
      corners: the vault top left, the tools down the left edge, the zoom bottom right. -->
 {#key data.vault.id}
-	<Canvas contents={data.contents} />
+	<ErrorBoundary what="The canvas" center>
+		<Canvas contents={data.contents} />
+	</ErrorBoundary>
 {/key}
 
 <VaultCard vault={data.vault} />

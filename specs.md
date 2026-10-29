@@ -101,6 +101,7 @@ src/routes/
   - selection and focus
   - world-to-screen conversion: one module owns the pan and zoom transform
   - undo
+  - errors while drawing: one `ErrorBoundary` component, Svelte's `<svelte:boundary>`, around each part that can fail on its own: the canvas, each card, the zone list's rows, a panel's contents, a settings tab, the builder's preview, and the whole app as a last resort. A part that throws while it draws, or in one of its effects, is replaced by a notice saying what could not be shown and why, with Try again, which draws it afresh; the rest of the app keeps working. Boundaries never see errors in clicks or commands, nor a route's `load`, which goes to the error page.
 - **Repeated UI is one component.** For example, the Unplaced tray and search results both list notes, so they share one note list component; the tray and search share one panel shell. Every list beside the canvas pages through one helper.
 - **Design tokens:** every color, font, radius and shadow comes from a theme's tokens (see [Appearance](#appearance)). Components never hard-code them.
 - **shadcn-svelte components** live in `#lib/components/ui`, copied from its registry. `app.css` maps their colors, radii and shadows onto the theme's tokens, so they follow the vault's theme. Tailwind comes without its preflight reset, which the rest of the app is not styled for, and without `dark:` variants: a theme, not the OS, decides whether it is dark.

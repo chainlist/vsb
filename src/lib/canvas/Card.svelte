@@ -5,6 +5,7 @@
 	import { edit } from './actions.js';
 	import { startMove } from './gestures.js';
 	import { items } from './items.svelte.js';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import { selection } from './selection.svelte.js';
 	import CardContent from './CardContent.svelte';
 	import CardEditor from './CardEditor.svelte';
@@ -57,11 +58,14 @@
 	ondblclick={open}
 	out:collapse
 >
-	{#if editing}
-		<CardEditor {card} />
-	{:else}
-		<CardContent {card} {missing} />
-	{/if}
+	<!-- A note that fails to show fails alone, in its card. -->
+	<ErrorBoundary what="This card">
+		{#if editing}
+			<CardEditor {card} />
+		{:else}
+			<CardContent {card} {missing} />
+		{/if}
+	</ErrorBoundary>
 </div>
 
 <style>

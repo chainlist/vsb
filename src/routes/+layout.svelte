@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { setLucideProps } from '@lucide/svelte/context';
 	import favicon from '#lib/assets/favicon.svg';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { interfaceSize } from '#lib/interfaceSize.svelte.js';
 	import { theme } from '#lib/theme.svelte.js';
@@ -37,5 +38,8 @@
 </svelte:head>
 
 <Tooltip.Provider delayDuration={300}>
-	{@render children()}
+	<!-- The last resort, for a part with no boundary of its own: the vault's chrome, the picker. -->
+	<ErrorBoundary what="This screen" center>
+		{@render children()}
+	</ErrorBoundary>
 </Tooltip.Provider>

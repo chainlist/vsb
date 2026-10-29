@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 	import { bindKeys } from '#lib/keys.js';
 	import { PANEL_KEYS, PANELS } from '#lib/panel/panels.js';
@@ -48,6 +49,8 @@
 		<Sheet.Header class="border-b">
 			<Sheet.Title class="icon-label"><panel.icon /> {panel.name}</Sheet.Title>
 		</Sheet.Header>
-		{@render children()}
+		<ErrorBoundary what="This panel">
+			{@render children()}
+		</ErrorBoundary>
 	</Sheet.Content>
 </Sheet.Root>
