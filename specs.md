@@ -18,6 +18,8 @@ Principles:
 | Part | Technology |
 |---|---|
 | Desktop shell and backend | Tauri 2 (Rust) |
+| Browser backend | TypeScript on IndexedDB, for the web build (see [Browser](#browser)). No WebAssembly. |
+| Platform layer | `#lib/api`, which talks to one of the two backends, picked when the app is built |
 | Frontend | SvelteKit 3 with Svelte 5, built as a static single-page app (`@sveltejs/adapter-static`) |
 | Index | SQLite, used only from Rust. The build must include FTS5, R*Tree and math functions (`floor()`). |
 | Batch creation layout | `@dagrejs/dagre` |
@@ -26,7 +28,7 @@ Principles:
 
 ### Responsibilities
 
-**The backend (Rust) owns everything that touches disk:**
+**The backend (Rust) owns everything that touches disk** (in the web build, the browser backend owns the browser's storage the same way: see [Browser](#browser)):
 
 - reading and writing vault files, with atomic writes and the write order from [Storage](#storage)
 - frontmatter parsing and ULID assignment
@@ -39,7 +41,15 @@ Principles:
 - card editing
 - parsing the batch syntax and laying it out with dagre; the result goes to the backend as one command
 
-The frontend never reads files or SQLite directly. It calls typed Tauri commands and listens to Tauri events.
+The frontend never reads files or SQLite directly. It calls typed Tauri commands and listens to Tauri events, through the platform layer.
+
+**The platform layer** is `#lib/api`, the one way from the frontend to a backend:
+
+- **Everything platform-specific goes through it.** Nothing else imports `@tauri-apps`, and nothing else touches IndexedDB or localStorage. A feature that needs the platform adds a function to the layer, implemented by both backends.
+- It keeps the types and one function per command. The functions come from `#platform`, a `package.json` import resolved when the app is built: `platform/tauri.ts` by default (the desktop: each function calls its Tauri command), or `platform/browser/` under the `web` condition, which the web build's Vite config adds. Each build bundles one backend only: the web build holds no Tauri code, the desktop build no browser backend.
+- Both backends have the same functions with the same signatures, checked when the code is type-checked, and the same behavior, checked by tests: the browser backend's mirror the Rust tests' cases.
+- The layer costs nothing at run time: `api.ts` re-exports the backend's functions, so a call goes straight to them. Measured on the desktop, calls through the layer and straight to the Tauri module time the same, within 0.2 ms (`bench/`).
+- Errors come back from both as plain strings, as Tauri's do.
 
 ## Code organization
 
@@ -81,7 +91,8 @@ src/routes/
 
 ### Shared pieces
 
-- **`#lib/api`:** one typed function per Tauri command and event (SvelteKit 3 replaced `$lib` with the `#lib` subpath import). Components never call `invoke` or `listen` directly.
+- **`#lib/api`:** the platform layer, one typed function per backend command and event (SvelteKit 3 replaced `$lib` with the `#lib` subpath import). Components never call `invoke` or `listen` directly, nor the browser's storage.
+- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, so no page knows which platform it runs on.
 - **Shared state** lives in `.svelte.ts` modules using runes, not passed down through many component levels.
 - **One system per cross-cutting behavior**, never a copy per component or route:
   - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open.
@@ -547,6 +558,44 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 - Known case: the same empty card filled on two offline devices. Each device creates its own note and points the card at it, so the card file conflicts. The card is pointed at one note and the other goes to the Unplaced tray. Both texts survive.
 - Not planned: a per-device append-only operation log (`.canvas/ops/<device-id>.jsonl`). It would avoid conflicts entirely, but it means building a CRDT and the files stop being readable by hand.
 
+## Browser
+
+The web build runs the same app in a browser, without Tauri: the [platform layer](#responsibilities) talks to the browser backend, TypeScript on IndexedDB, with no WebAssembly. It is a static site for GitHub Pages, under `/vsb`.
+
+### Storage
+
+- **One IndexedDB database per vault** (`vsb-<vault-id>`), holding what a vault folder holds on the desktop: the vault's settings as `vault.json` has them, the notes, and one record per zone, card and edge holding exactly the JSON its file would hold, defaults left out. Item states, undo and every edit are the desktop's.
+- **A note keeps a path**, `notes/<title>.md`, named after its title as on the desktop: characters Windows rejects left out, a clash numbered (ignoring case), renamed on blur. Search and the tray show it, and a vault written out as files would use it.
+- **The same records hold what the desktop's index derives**, kept up to date in the transaction of every write: each card's absolute box and its note's title and excerpt, each edge's two card boxes. This device's `ui_state` is kept in the vault's database too. What SQLite gives the desktop, the browser backend builds itself:
+  - **A spatial index.** Each card and edge is filed under every square of a grid it overlaps, the squares 1024, 4096, 16,384 or 65,536 world units wide, the smallest at least a quarter of its size, so a long edge spans at most five a side; bigger ones go in one bucket. A viewport query reads one key range per column of squares the queried area overlaps, never every card.
+  - **The zoomed-out map.** Cluster counts and boxes per cell, and bundle counts, arrowheads and boxes per pair of ends, are kept on every write for the cell sizes the canvas asks for, 512 to 4096 (40% zoom down to 5%); another size is refused. A zoomed-out query reads them, never the cards: the clusters of the columns it covers, and every bundle of its cell size, kept when the box around its edges meets the queried area. A box only shrinks when something reaching its side leaves, and is then measured again from what is left.
+  - **A bundle counts all its edges.** On the desktop a bundle's count and arrowheads come from those of its edges whose own box meets the queried area, so they change as the window moves; in the browser they come from all the edges between its two ends, as [Bundles](#bundles) describes them. A bundle is found when the box around all its edges meets the area: on rare layouts one more than on the desktop, never one fewer.
+  - **Search.** A word index of its own: for each word, folded (case and accents left out), the notes holding it and those holding it in their title, split in sixteen shards by note, so a save rewrites small records and a word typed reads a few. Every word typed must start a word of the note, as with FTS5. Best first means: a title word counts thrice, every other word starting as typed once; the matches are the desktop's, their order is not bm25's.
+  - **Zones in memory.** While a vault is open its zones are held in memory: a vault has few, and the desktop walks them all on every query too. Each zone record keeps how many cards it holds directly and the box around them, for the zone list and framing.
+- **One command at a time**, as the desktop's lock runs them, and each edit is one transaction: it lands whole or not at all.
+
+### Vaults by name
+
+- **A vault is chosen by name**, not by folder. "Open a folder" asks for a name, in a dialog the browser backend mounts. A name already used, ignoring case, opens that vault, as choosing a folder that already is a vault does.
+- **The vault list lives in localStorage**, most recent first, as `vaults.json` does on the desktop. A browser vault has no path.
+- **This device's settings live in localStorage too:** the interface size, as `device.json` holds it.
+- **One tab per vault.** A tab holds a Web Lock on the vault while it is open. Another tab opening it gets "This vault is open in another tab", on the error page, rather than two tabs writing over each other. Closing the tab, or opening another vault in it, lets it go.
+
+### What does not apply
+
+- **The startup scan, the check before every write and conflict copies.** Nothing changes a vault from outside the browser, so a save always lands (`saveNote` returns true) and a card is unresolved only when its note was deleted. These are no-ops, not missing features.
+- **Sync, atomic file writes and the write order.** A browser vault lives in one browser; a transaction stands in for the other two.
+
+### Persistence
+
+- **Opening or creating a vault asks the browser to keep its storage** (`navigator.storage.persist()`). The browser decides: Chrome from how the site is used, without asking; Firefox asks the user.
+- **The risk:** a browser may clear a site's data. The user can clear it with their browsing data; a browser short of disk evicts sites that are not persisted; Safari clears a site not visited for seven days unless it was added to the Home Screen. Until a vault can be exported, its notes in a browser are only as safe as the browser's storage; the desktop app is where they are owned as files.
+
+### The web build
+
+- `pnpm build:web` writes the static site to `build/web`, for `/vsb`. Every route is served by the app's one page, also copied to `404.html`, which GitHub Pages serves for any path it does not know, so a link to a vault opens it. The app's folder is `app`, not `_app`, which Jekyll would leave out. `pnpm dev:web` serves it on port 5175.
+- Its configuration is `vite.web.config.ts`: the desktop's `vite.config.ts` does not change.
+
 ## V3: shared note references
 
 The model already supports it:
@@ -566,3 +615,5 @@ The model already supports it:
 
 - How conflict copies are detected (`.sync-conflict-`, `(conflicted copy)`, `(1)`) and resolved (per field, or last write wins).
 - AI assistance and paper import are not covered by this spec.
+- Exporting a browser vault as vault files, and importing a vault folder into the browser: not built. The records already hold each file's JSON and each note's path.
+- The vault picker speaks of folders ("Pick any folder", "Open a folder"), also in the browser, where a vault has a name. Saying so in the browser means the page asking the platform layer which platform it runs on.
