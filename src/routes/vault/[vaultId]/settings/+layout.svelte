@@ -38,9 +38,11 @@
 		}
 	}
 >
-	<!-- As tall whichever tab is open, no taller than the window: the tab scrolls. -->
+	<!-- Obsidian's settings size: 90% of the window wide and 85% tall, at most 1100 by 1000 pixels,
+	     whichever tab is open; the tab scrolls. Percentages, not viewport units, which the interface
+	     size's zoom would scale. -->
 	<Dialog.Content
-		class="chrome grid h-[min(38rem,calc(100%-2rem))] grid-cols-[180px_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 p-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[auto_auto_minmax(0,1fr)] sm:max-w-3xl"
+		class="chrome grid h-[min(85%,1000px)] w-[min(90%,1100px)] max-w-none grid-cols-[180px_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 p-0 max-sm:grid-cols-[minmax(0,1fr)] max-sm:grid-rows-[auto_auto_minmax(0,1fr)] sm:max-w-none"
 	>
 		<header>
 			<Dialog.Title>Settings</Dialog.Title>

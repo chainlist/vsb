@@ -545,7 +545,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 ## Appearance
 
-- **Settings is a modal** at `vault/[vaultId]/settings/`: the shared dialog, a centered sheet over the canvas, which stays mounted and visible behind the theme's dialog wash. Each tab is a child route, so a tab can be linked to: Appearance, Canvas, Keyboard and Vault. The focus stays inside, and the canvas's keys are off while it is open. Escape, Close or a click on the wash goes back to the canvas.
+- **Settings is a modal** at `vault/[vaultId]/settings/`: the shared dialog, a centered sheet over the canvas, which stays mounted and visible behind the theme's dialog wash. It is sized as Obsidian's settings are: 90% of the window wide and 85% tall, at most 1100 by 1000 pixels at the interface size, whichever tab is open; a long tab scrolls. Each tab is a child route, so a tab can be linked to: Appearance, Canvas, Keyboard and Vault. The focus stays inside, and the canvas's keys are off while it is open. Escape, Close or a click on the wash goes back to the canvas.
   - **Mod+, opens it** (Ctrl+, or Cmd+, on macOS) from anywhere in a vault, also while typing, on its first tab; the same key again closes it, as the rail's keys open and close the panels.
   - **Appearance:** the vault's theme and the device's interface size, below.
   - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
