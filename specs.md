@@ -83,19 +83,21 @@ src/routes/
       unplaced/+page.svelte   # Unplaced tray
       search/+page.svelte     # search
     settings/
-      +layout.svelte          # settings: a full page over the canvas, one tab per child route
+      +layout.svelte          # settings: a modal over the canvas, one tab per child route
       +page.ts                # opens the first tab
       appearance/+page.svelte # the vault's theme, the device's interface size
-      canvas/+page.svelte     # snapping to the grid
+      canvas/+page.svelte     # snapping, the style for new edges, the device's mouse wheel
+      keyboard/+page.svelte   # every key and gesture, read-only
+      vault/+page.svelte      # the vault's name and where it lives
 ```
 
 ### Shared pieces
 
 - **`#lib/api`:** the platform layer, one typed function per backend command and event (SvelteKit 3 replaced `$lib` with the `#lib` subpath import). Components never call `invoke` or `listen` directly, nor the browser's storage.
-- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's, come from the backend too, so no page knows which platform it runs on.
+- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's and where Settings > Vault says the vault lives, come from the backend too, so no page knows which platform it runs on.
 - **Shared state** lives in `.svelte.ts` modules using runes, not passed down through many component levels.
 - **One system per cross-cutting behavior**, never a copy per component or route:
-  - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open.
+  - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open. Each part keeps its keys, with what each does, in a table its bindings take them from; Settings > Keyboard lists those tables, so the list is what is bound.
   - selection and focus
   - world-to-screen conversion: one module owns the pan and zoom transform
   - undo
@@ -138,7 +140,7 @@ src/routes/
 
 <OS app-data>/                # this device only, never synced
   vaults.json                 # recent vaults
-  device.json                 # this device's settings: the interface size
+  device.json                 # this device's settings: the interface size, what the wheel does
   <vault-id>/
     index.sqlite              # derived cache
 ```
@@ -164,6 +166,7 @@ Rarely written. Holds:
 - vault settings, each left out at its default:
   - `theme`: the theme the vault is drawn in
   - `snap`: `false` when moved and resized cards and zones do not snap to the grid (on by default)
+  - `newEdges`: the style every edge the app creates gets (see [Edges](#edges)), each part (`shape`, `arrow`, `stroke`) left out at its default as in an edge file, and the whole of it while all are: `"newEdges": { "shape": "angled", "stroke": "dashed" }`
 
 ### Note: `notes/**/*.md`
 
@@ -268,7 +271,7 @@ Competitor scan
   - When the edges that decide leave or arrive on several sides, a small picker over the card's middle, kept on screen, asks: four arrow buttons around it. An arrow key or a click picks, Enter is not needed; Escape or a press anywhere else adds nothing. The canvas's keys are off meanwhile.
 - **Where:** beside the card's children that way (the cards its edges leaving that way reach), one gap after the last of them in reading order and centered on it: below it when they stand in a column (a way to a side), right of it in a row (a way up or down). The gap is 40 world units, as between the cards of a rank in a batch. With no children there, it goes 80 past the card (the gap between ranks), centered on it.
   - If that spot comes nearer than a gap to any card, on screen or not, at any depth, the new card slides on down its column or right along its row to the first spot that does not. Nothing else moves.
-- **The card** has the size of a card placed by double-click and lands on the grid when snapping is on. It stays in the selected card's zone, whatever lies under it, and the zone grows to hold it, as for a batch. The edge has the new-edge style. The card and its edge are one undo step.
+- **The card** has the size of a card placed by double-click and lands on the grid when snapping is on. It stays in the selected card's zone, whatever lies under it, and the zone grows to hold it, as for a batch. The edge has the vault's style for new edges. The card and its edge are one undo step.
 - **Then** the new card is selected and opens for typing, so Tab there chains the next one. Landing off screen, or under the chrome, it is shown: the canvas glides just far enough, at the same zoom (at once under reduced motion).
 
 ### Color
@@ -298,7 +301,8 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - Mod+drag (Ctrl, Cmd on macOS) from a card draws an edge: releasing on another card connects them, `from` the first, `to` the second. Started on the paper, the same gesture draws a zone. Releasing on the paper or on the starting card creates nothing.
 - Edges join cards only, never zones or notes. Cards in different zones and empty cards can be connected.
 - No edge from a card to itself, and at most one edge between two cards, in either direction. Connecting a pair that is already connected selects its edge.
-- Each edge has a style, picked for the selected edges in the selection bar: its shape, its arrowheads and its line. New edges are curved and solid, with an arrowhead at `to`.
+- Each edge has a style, picked for the selected edges in the selection bar: its shape, its arrowheads and its line.
+  - **New edges take the vault's style for new edges,** picked in Settings > Canvas with the selection bar's own selects and kept in `vault.json` (`newEdges`). By default it is curved and solid, with an arrowhead at `to`. A drawn edge, Tab's edge and an edge the builder creates all take it, and an edge being drawn shows its shape and arrowheads. The builder's arrows always say an edge's arrowheads and line, so a builder edge takes only the shape. The two halves of an edge a card is inserted on keep that edge's style: they are the old edge cut in two, not new edges.
   - Curved and angled lines leave each card square to the side that faces the other card, from the middle of that side. An angled line bends at right angles halfway across.
   - When that line would run through another card on the canvas, the edge takes the other pair of sides (top and bottom instead of left and right, or the reverse) if that line misses every card; when neither does, it keeps the first. Only cards count: crossing another edge or a zone's frame is fine. A line moves as soon as a card is dragged into or out of its way.
   - A straight line runs along the line between the two cards' centers, from border to border, whatever lies between.
@@ -312,7 +316,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 ## Canvas chrome
 
 - **The controls sit in the canvas's corners,** never across it: the vault top left, the tools down the left edge, the zoom bottom right. Each is a small card of the theme's stock floating over the canvas, which runs under them to the window's edges.
-- **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings.
+- **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings, which shows its key, Mod+, (Ctrl+, or Cmd+, on macOS).
 - **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B). The Zones button shows when the [zone list](#zone-list) is open, and a panel's button when its route is. The panels stay routes, reached through links.
 - **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
@@ -393,7 +397,7 @@ This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
 - **The text is the truth for the edges between those cards.** Applying it is one undo step:
   - a line removed deletes its edge;
   - an arrow changed restyles its edge (arrowheads, line, direction), keeping its label and shape;
-  - a new arrow creates an edge, and a new name a new card;
+  - a new arrow creates an edge, in the shape of the vault's style for new edges, and a new name a new card;
   - edges to cards the builder did not open with are neither shown nor touched.
   - Cards are never deleted, renamed or moved. A card's name changed in the text is a new card, and the edges of the card it named go.
 - **The preview** shows the cards of the canvas where they are and the new cards where they will land, in the accent color, the new and restyled edges in the accent color, and the edges to be removed in red. Beside the directions, the dialog counts the new cards, new edges, changed and removed edges as the text is typed, checked by the backend without writing anything.
@@ -498,7 +502,8 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ## Rendering and zoom
 
 - Opening a vault frames everything on its canvas: centered, zoomed out until it all fits, never zoomed in past 100%. An empty canvas opens at 100% on the origin.
-- **Mouse and trackpad, like a map:** the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer; dragging the paper pans, in any direction. A pinch follows the fingers. Two-finger panning is left out because on Windows the touchpad locks each swipe to one axis before the page sees it. A pinch never zooms the window itself.
+- **Mouse and trackpad, like a map:** the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer; dragging the paper pans, in any direction. A pinch follows the fingers. Two-finger panning is left out by default because on Windows the touchpad locks each swipe to one axis before the page sees it. A pinch never zooms the window itself.
+  - **The wheel can pan instead,** for each device, in Settings > Canvas: Zoom (the default) or Pan. Panning, the wheel and two fingers move the canvas, Shift+wheel sideways (the page turns it sideways when the browser leaves that to it), and Ctrl+wheel and a pinch still zoom around the pointer. It is kept with the interface size: in `device.json` on the desktop, in localStorage in the browser, the default left out.
   - On Windows, Tauri leaves WebView2's pinch zoom off, which drops the pinch before the page sees it; the app turns it on at startup, before the first page loads, so the pinch arrives as a wheel turned with Ctrl held. WebKit, on macOS, reports it as gesture events instead.
 - **Framing glides.** Every jump that frames something (a zone list row, a search result, a cluster marker, a bundle, double-clicking a collapsed zone, new cards framed while zoomed out) glides there like a map: a far jump zooms out, travels and zooms back in, along the path that feels shortest (van Wijk and Nuij's, as d3 draws it). It takes 0.25 to 0.8 s, by the length of the path, eased in and out. Opening a vault frames everything at once. The wheel, a pinch and dragging stay direct, and stop a glide where it is.
 - **Reduced motion.** When the system asks for reduced motion, glides jump and the panels' animations are off.
@@ -533,14 +538,19 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ### Bundles
 
 - Zoomed out, each end of an edge is drawn at the outermost zone holding its card (its frame, or its marker when it is drawn as one) or, for a loose card, at its cell's marker. The edges between two ends are drawn as one line, a bundle. An edge with both cards at the same end lies inside it and is not drawn.
-- A bundle is drawn like a new edge, curved and solid, from the middle of the sides facing each other. Its line and arrowheads keep their size on screen. It has an arrowhead at each end that at least one of its edges points to: edges both ways give heads at both ends, edges without heads add none.
+- A bundle is drawn curved and solid, whatever its edges' styles and the style for new edges, from the middle of the sides facing each other. Its line and arrowheads keep their size on screen. It has an arrowhead at each end that at least one of its edges points to: edges both ways give heads at both ends, edges without heads add none.
 - The count sits on the line, like an edge's label, when it is 2 or more.
 - Clicking the line or its count frames both ends, zoomed in at least until their edges show. Dragging from it pans. While a collapsed zone is dragged, its bundles follow it.
 - A bundle is found through its edges' bounds: it is drawn when one of its edges crosses the queried area.
 
 ## Appearance
 
-- **Settings is a full page** at `vault/[vaultId]/settings/`, drawn over the canvas, which stays mounted underneath. Each tab is a child route: Appearance and Canvas so far. Escape or Close goes back to the canvas.
+- **Settings is a modal** at `vault/[vaultId]/settings/`: the shared dialog, a centered sheet over the canvas, which stays mounted and visible behind the theme's dialog wash. Each tab is a child route, so a tab can be linked to: Appearance, Canvas, Keyboard and Vault. The focus stays inside, and the canvas's keys are off while it is open. Escape, Close or a click on the wash goes back to the canvas.
+  - **Mod+, opens it** (Ctrl+, or Cmd+, on macOS) from anywhere in a vault, also while typing, on its first tab; the same key again closes it, as the rail's keys open and close the panels.
+  - **Appearance:** the vault's theme and the device's interface size, below.
+  - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
+  - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Mod+drag and Alt while dragging.
+  - **Vault:** the vault's name and where it lives, in its backend's words. On the desktop, its folder's path and Show in folder, which opens the folder around it in Explorer or Finder with the vault selected (the opener plugin's Rust function, called by a command of the app's own; the plugin is not registered, so its commands stay out of the page's reach). In the browser, that it is kept in this browser and whether the browser agreed to keep it (see [Persistence](#persistence)).
 - **Four themes:** Studio, the default, Engineering pad, and two dark ones, Orbit and Cairn.
   - Studio: a cool gray canvas dotted at the grid crossings, white cards with a hairline edge, graphite text and a petrol accent. Instrument Sans for notes and controls; zone names are set narrower.
   - Engineering pad: sage graph paper, index cards with a red rule under the title, fountain-pen blue. Literata for notes, IBM Plex Sans for controls.
@@ -552,7 +562,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **Screens outside a vault** (the vault picker, errors) use the default theme.
 - **The interface size belongs to the device:** 100% (the default), 115% or 130%, picked in Appearance, applied at once and kept in the app-data folder's `device.json`, the same in every vault and never synced. The default is left out of the file.
-  - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the batch dialog, menus and tooltips, the settings page and the vault picker.
+  - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the batch dialog, menus and tooltips, the settings dialog and the vault picker.
   - It never scales the canvas's cards, zones and edges, nor the marks drawn at a constant size on screen over them: zone names once collapsed, zone and cluster markers, bundles and resize handles. They belong to the map, and the zoomed-out map is built on their sizes.
   - It works through CSS `zoom` on each piece of chrome, never through the WebView's own zoom, which would scale the canvas too and fight the pinch. `zoom` scales viewport units along with everything else, so chrome sizes itself against the window with percentages instead.
 - Zone and card colors live in their files, so they are the same in every theme. The default zone gray, for a zone with no color, and the plain card stock, for a card with none, come from the theme.
@@ -587,7 +597,7 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 - **A vault is chosen by name**, not by folder. The vault picker says "Name a vault. Your notes stay in this browser.", and its button, "Open a vault", asks for a name, in a dialog the browser backend mounts. A name already used, ignoring case, opens that vault, as choosing a folder that already is a vault does.
 - **The vault list lives in localStorage**, most recent first, as `vaults.json` does on the desktop. A browser vault has no path.
-- **This device's settings live in localStorage too:** the interface size, as `device.json` holds it.
+- **This device's settings live in localStorage too:** the interface size and what the wheel does, as `device.json` holds them.
 - **One tab per vault.** A tab holds a Web Lock on the vault while it is open. Another tab opening it gets "This vault is open in another tab", on the error page, rather than two tabs writing over each other. Closing the tab, or opening another vault in it, lets it go.
 
 ### What does not apply
@@ -599,6 +609,7 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 - **Opening or creating a vault asks the browser to keep its storage** (`navigator.storage.persist()`). The browser decides: Chrome from how the site is used, without asking; Firefox asks the user.
 - **The risk:** a browser may clear a site's data. The user can clear it with their browsing data; a browser short of disk evicts sites that are not persisted; Safari clears a site not visited for seven days unless it was added to the Home Screen. Until a vault can be exported, its notes in a browser are only as safe as the browser's storage; the desktop app is where they are owned as files.
+- **Settings > Vault says where it stands:** whether the browser agreed to keep the vault's data (`navigator.storage.persisted()`), with the risk above in short. Until it has, an Ask again button asks once more (`persist()`) and the tab looks again.
 
 ### The web build
 
