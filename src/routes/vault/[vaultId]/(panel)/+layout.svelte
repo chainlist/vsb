@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import * as Sheet from '#lib/components/ui/sheet/index.js';
 	import { bindKeys } from '#lib/keys.js';
-	import { PANELS } from '#lib/panel/panels.js';
+	import { PANEL_KEYS, PANELS } from '#lib/panel/panels.js';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -17,7 +17,7 @@
 	// the focus is in it.
 	$effect(() =>
 		bindKeys([
-			{ keys: ['Escape'], inText: true, when: () => !!el?.contains(document.activeElement), run: () => goto(canvas) }
+			{ ...PANEL_KEYS.close, inText: true, when: () => !!el?.contains(document.activeElement), run: () => goto(canvas) }
 		])
 	);
 </script>

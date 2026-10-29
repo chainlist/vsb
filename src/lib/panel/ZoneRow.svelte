@@ -10,7 +10,7 @@
 	import { bindKeys } from '#lib/keys.js';
 	import { motion } from '#lib/motion.js';
 	import ZoneLevel from './ZoneLevel.svelte';
-	import { zoneList } from './zoneList.svelte.js';
+	import { zoneList, ZONE_LIST_KEYS } from './zoneList.svelte.js';
 
 	/** `index`: its place in its level, which staggers the rows' arrival. */
 	let { zone, depth, index }: { zone: ZoneRow; depth: number; index: number } = $props();
@@ -27,7 +27,7 @@
 
 	// Escape ends the renaming, keeping what was typed, as it does on the canvas.
 	$effect(() => {
-		if (renaming) return bindKeys([{ keys: ['Escape'], inText: true, run: () => (renaming = false) }]);
+		if (renaming) return bindKeys([{ ...ZONE_LIST_KEYS.renamed, inText: true, run: () => (renaming = false) }]);
 	});
 </script>
 

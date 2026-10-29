@@ -11,6 +11,10 @@ export type Binding = {
 	inText?: boolean;
 };
 
+/** A key as Settings > Keyboard lists it, with what it does. Bindings take their keys from these, so
+ * the list is what is bound. */
+export type KeyHelp = { keys: string[]; label: string };
+
 type Layer = { bindings: Binding[]; modal: boolean };
 
 const layers: Layer[] = [];
@@ -25,6 +29,23 @@ export const MOD_NAME = MAC ? 'Cmd' : 'Ctrl';
 
 /** How Alt reads on this platform. */
 export const ALT_NAME = MAC ? 'Option' : 'Alt';
+
+const NAMES: Record<string, string> = {
+	Mod: MOD_NAME,
+	Alt: ALT_NAME,
+	Escape: 'Esc',
+	ArrowUp: '↑',
+	ArrowDown: '↓',
+	ArrowLeft: '←',
+	ArrowRight: '→'
+};
+
+/** How a key reads on this platform, in tooltips and settings: Mod+Shift+z as Ctrl+Shift+Z. */
+export const keyName = (key: string) =>
+	key
+		.split('+')
+		.map((part) => NAMES[part] ?? (part.length === 1 ? part.toUpperCase() : part))
+		.join('+');
 
 function combo(e: KeyboardEvent) {
 	const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;

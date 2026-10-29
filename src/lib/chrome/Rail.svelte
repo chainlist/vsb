@@ -4,9 +4,9 @@
 	import { page } from '$app/state';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import Workflow from '@lucide/svelte/icons/workflow';
-	import { batchDialog } from '#lib/canvas/batchDialog.svelte.js';
-	import { bindKeys, MOD_NAME } from '#lib/keys.js';
-	import { PANELS } from '#lib/panel/panels.js';
+	import { batchDialog, BUILDER_KEYS } from '#lib/canvas/batchDialog.svelte.js';
+	import { bindKeys, keyName, type KeyHelp } from '#lib/keys.js';
+	import { PANEL_KEYS, PANELS } from '#lib/panel/panels.js';
 	import { zoneList } from '#lib/panel/zoneList.svelte.js';
 	import Tip from './Tip.svelte';
 
@@ -15,7 +15,7 @@
 	type Panel = (typeof PANELS)[number];
 
 	const ICON = 20;
-	const keys = (key: string) => `${MOD_NAME}+${key.toUpperCase()}`;
+	const keys = (key: KeyHelp) => keyName(key.keys[0]);
 
 	/** Where a panel's button and key lead: the panel, or back to the canvas when it is open. */
 	function toggle(panel: Panel) {
@@ -25,8 +25,8 @@
 	// Mod+B, which opens the builder, is the canvas's own key.
 	$effect(() =>
 		bindKeys([
-			...PANELS.map((p) => ({ keys: [`Mod+${p.key}`], inText: true, run: () => goto(toggle(p)) })),
-			{ keys: ['Mod+l'], inText: true, run: () => zoneList.toggle(true) }
+			...PANELS.map((p) => ({ ...p.key, inText: true, run: () => goto(toggle(p)) })),
+			{ ...PANEL_KEYS.zones, inText: true, run: () => zoneList.toggle(true) }
 		])
 	);
 </script>
@@ -34,7 +34,7 @@
 <!-- Down the left edge: the zone list, the panels and the builder, by their icons alone. -->
 <nav class="rail index-card chrome" aria-label="Tools" data-beside-zones>
 	<!-- Not a route like the panels: the zone list stays open beside them. -->
-	<Tip label="Zones" keys={keys('l')}>
+	<Tip label="Zones" keys={keys(PANEL_KEYS.zones)}>
 		{#snippet children(props)}
 			<button {...props} aria-pressed={zoneList.open} onclick={() => zoneList.toggle()}>
 				<SquareDashed size={ICON} />
@@ -57,7 +57,7 @@
 		</Tip>
 	{/each}
 	<hr />
-	<Tip label="Builder" keys={keys('b')}>
+	<Tip label="Builder" keys={keys(BUILDER_KEYS.open)}>
 		{#snippet children(props)}
 			<button {...props} onclick={() => batchDialog.open()}>
 				<Workflow size={ICON} />

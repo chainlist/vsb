@@ -3,6 +3,7 @@
 // they flow several ways, a picker asks which. The new card opens for typing, so Tab there chains.
 import { tick } from 'svelte';
 import { addChild, queryViewport, type CardView, type Rect } from '#lib/api.js';
+import type { KeyHelp } from '#lib/keys.js';
 import { NODE_GAP, RANK_GAP } from './batch.js';
 import { batchDialog } from './batchDialog.svelte.js';
 import { camera } from './camera.svelte.js';
@@ -15,6 +16,12 @@ import { items } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 type Point = { x: number; y: number };
+
+/** The picker's keys while it asks which way the new card goes, as Settings list them. */
+export const PICKER_KEYS = {
+	way: { keys: ['ArrowUp', 'ArrowLeft', 'ArrowRight', 'ArrowDown'], label: 'Put the new card that way' },
+	cancel: { keys: ['Escape'], label: 'Add no card' }
+} satisfies Record<string, KeyHelp>;
 
 class Picker {
 	/** The card whose new child's way is asked; null while nothing is. */

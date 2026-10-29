@@ -2,12 +2,19 @@
 // land on the point the pointer was over, or on the middle of the canvas when it was elsewhere.
 // Opened on a selected zone or on selected cards, it edits the edges between their cards.
 import { batchScope } from '#lib/api.js';
+import type { KeyHelp } from '#lib/keys.js';
 import type { Direction } from './batch.js';
 import { opening, type Edit } from './batchEdit.js';
 import { camera } from './camera.svelte.js';
 import { selection } from './selection.svelte.js';
 
 type Point = { x: number; y: number };
+
+/** The builder's keys, as Settings list them. */
+export const BUILDER_KEYS = {
+	open: { keys: ['Mod+b'], label: 'Open the builder, on the selected cards or zone if any' },
+	run: { keys: ['Mod+Enter'], label: 'Create the cards, or apply the edit' }
+} satisfies Record<string, KeyHelp>;
 
 class BatchDialog {
 	/** World point the cards land on, while the dialog is open; null while it is closed. */

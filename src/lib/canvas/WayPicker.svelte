@@ -6,7 +6,7 @@
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import { bindKeys } from '#lib/keys.js';
 	import { camera } from './camera.svelte.js';
-	import { picker } from './tab.svelte.js';
+	import { picker, PICKER_KEYS } from './tab.svelte.js';
 
 	type Point = { x: number; y: number };
 
@@ -34,8 +34,12 @@
 	// anywhere else cancels it too, and goes on to do what it does there.
 	$effect(() => {
 		if (!card) return;
+		const way = (key: string) => WAYS.find(([k]) => k === key)![1];
 		const unbind = bindKeys(
-			[...WAYS.map(([key, way]) => ({ keys: [key], run: () => picker.answer(way) })), { keys: ['Escape'], run: () => picker.answer(null) }],
+			[
+				...PICKER_KEYS.way.keys.map((key) => ({ keys: [key], run: () => picker.answer(way(key)) })),
+				{ ...PICKER_KEYS.cancel, run: () => picker.answer(null) }
+			],
 			{ modal: true }
 		);
 		const outside = (e: PointerEvent) => {

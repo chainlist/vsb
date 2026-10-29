@@ -8,7 +8,7 @@
 	import { THRESHOLD } from '#lib/canvas/drag.js';
 	import { bindKeys, MOD_NAME } from '#lib/keys.js';
 	import { motion } from '#lib/motion.js';
-	import { zoneList } from './zoneList.svelte.js';
+	import { zoneList, ZONE_LIST_KEYS } from './zoneList.svelte.js';
 	import ZoneLevel from './ZoneLevel.svelte';
 
 	/** What is typed to find zones; while it holds a word, the matches stand in for the tree. */
@@ -59,12 +59,12 @@
 		const onRow = () => focused() !== null;
 		const inField = () => document.activeElement === field;
 		return bindKeys([
-			{ keys: ['ArrowDown'], inText: true, when: () => onRow() || inField(), run: () => step(1) },
-			{ keys: ['ArrowUp'], inText: true, when: onRow, run: () => step(-1) },
-			{ keys: ['ArrowRight'], inText: true, when: onRow, run: () => unfold(focused()!) },
-			{ keys: ['ArrowLeft'], inText: true, when: onRow, run: () => fold(focused()!) },
+			{ ...ZONE_LIST_KEYS.down, inText: true, when: () => onRow() || inField(), run: () => step(1) },
+			{ ...ZONE_LIST_KEYS.up, inText: true, when: onRow, run: () => step(-1) },
+			{ ...ZONE_LIST_KEYS.unfold, inText: true, when: onRow, run: () => unfold(focused()!) },
+			{ ...ZONE_LIST_KEYS.fold, inText: true, when: onRow, run: () => fold(focused()!) },
 			{
-				keys: ['Escape'],
+				...ZONE_LIST_KEYS.leave,
 				inText: true,
 				when: () => onRow() || (inField() && !find),
 				run: () => (document.activeElement as HTMLElement).blur()

@@ -6,7 +6,7 @@
 	import { bindKeys, MOD_NAME } from '#lib/keys.js';
 	import { parse } from './batch.js';
 	import { createCards, editCards } from './batchApply.js';
-	import { batchDialog } from './batchDialog.svelte.js';
+	import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 	import { sketchEdit, sketchNew, wanted } from './batchEdit.js';
 	import BatchPreview from './BatchPreview.svelte';
 	import Directions from './Directions.svelte';
@@ -57,7 +57,7 @@
 
 	// Over the canvas: its keys are off while the dialog is open.
 	$effect(() => {
-		if (batchDialog.at) return bindKeys([{ keys: ['Mod+Enter'], inText: true, run: create }], { modal: true });
+		if (batchDialog.at) return bindKeys([{ ...BUILDER_KEYS.run, inText: true, run: create }], { modal: true });
 	});
 
 	function create() {
