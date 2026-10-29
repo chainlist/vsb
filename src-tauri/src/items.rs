@@ -185,19 +185,71 @@ pub struct Edge {
   pub stroke: Stroke,
 }
 
-/// Strokes of the pen grouped as one item. `x` and `y` are relative to its zone (or the canvas), as a
-/// card's; `w` and `h` the box around its strokes' points. Each stroke is its points as x, y and
-/// pressure in turn, from the drawing's corner.
+/// The pen's medium width in world units, at middling pressure: a stroke's unless it says otherwise.
+pub const MEDIUM: f64 = 3.0;
+
+fn medium() -> f64 {
+  MEDIUM
+}
+
+pub(crate) fn is_medium(width: &f64) -> bool {
+  *width == MEDIUM
+}
+
+/// One stroke of the pen: its points as x, y and pressure in turn, from its drawing's corner, its
+/// color (None for the theme's ink) and its width.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct PenStroke {
+  pub points: Vec<f64>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub color: Option<String>,
+  #[serde(default = "medium", skip_serializing_if = "is_medium")]
+  pub width: f64,
+}
+
+/// Strokes of the pen grouped as one item. `x` and `y` are relative to its zone (or the canvas), as a
+/// card's; `w` and `h` the box around its ink.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(from = "Written")]
 pub struct Drawing {
   pub zone: Option<String>,
   pub x: f64,
   pub y: f64,
   pub w: f64,
   pub h: f64,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub color: Option<String>,
-  pub strokes: Vec<Vec<f64>>,
+  pub strokes: Vec<PenStroke>,
+}
+
+/// A drawing as its file may hold it: its strokes as they are written now, or as they were before
+/// strokes had their own color and width, a bare list of points each, the drawing's `color` applying
+/// to all of them.
+#[derive(Deserialize)]
+struct Written {
+  zone: Option<String>,
+  x: f64,
+  y: f64,
+  w: f64,
+  h: f64,
+  #[serde(default)]
+  color: Option<String>,
+  strokes: Vec<WrittenStroke>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum WrittenStroke {
+  Points(Vec<f64>),
+  Stroke(PenStroke),
+}
+
+impl From<Written> for Drawing {
+  fn from(d: Written) -> Drawing {
+    let strokes = d.strokes.into_iter().map(|s| match s {
+      WrittenStroke::Points(points) => PenStroke { points, color: d.color.clone(), width: MEDIUM },
+      WrittenStroke::Stroke(s) => PenStroke { color: s.color.or_else(|| d.color.clone()), ..s },
+    });
+    Drawing { zone: d.zone, x: d.x, y: d.y, w: d.w, h: d.h, strokes: strokes.collect() }
+  }
 }
 
 pub trait Item: Serialize + DeserializeOwned {
@@ -226,7 +278,7 @@ impl Item for Drawing {
 
   /// Pretty JSON as every item's, but each stroke on one line: a drawing holds hundreds of numbers.
   fn json(&self) -> Result<Vec<u8>> {
-    let head = serde_json::to_string_pretty(&Drawing { zone: self.zone.clone(), color: self.color.clone(), strokes: Vec::new(), ..*self })?;
+    let head = serde_json::to_string_pretty(&Drawing { zone: self.zone.clone(), strokes: Vec::new(), ..*self })?;
     if self.strokes.is_empty() {
       return Ok(head.into_bytes());
     }

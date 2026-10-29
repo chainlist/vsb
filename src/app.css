@@ -197,6 +197,12 @@ a {
 	white-space: nowrap;
 }
 
+/* Ink as the pen draws it, in `color`: the theme's own, or a highlighter (set --tint) mixed toward it,
+   darker, so it reads on the paper, as a color's swatch is rimmed. */
+.inked {
+	color: color-mix(in srgb, var(--tint, var(--ink)) 70%, var(--ink));
+}
+
 /* A zone color as a dot: in the selection bar's color picker and the zone list. Set --swatch. */
 .swatch {
 	box-sizing: border-box;

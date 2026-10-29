@@ -88,8 +88,8 @@ impl Session {
     })
   }
 
-  /// Sets the color of cards, zones and drawings, as one edit; None for none, which leaves a card on
-  /// the theme's plain stock, a zone on its gray and a drawing in its ink.
+  /// Sets the color of cards, zones and every stroke of drawings, as one edit; None for none, which
+  /// leaves a card on the theme's plain stock, a zone on its gray and a stroke in the theme's ink.
   pub fn color_items(&self, cards: &[String], zones: &[String], drawings: &[String], color: Option<String>) -> Result<Vec<ItemState>> {
     let cards: Vec<&str> = cards.iter().map(String::as_str).collect();
     let zones: Vec<&str> = zones.iter().map(String::as_str).collect();
@@ -103,7 +103,9 @@ impl Session {
       Ok(())
     })?);
     states.extend(self.edited::<Drawing>(&drawings, |_, drawing| {
-      drawing.color = color.clone();
+      for stroke in &mut drawing.strokes {
+        stroke.color = color.clone();
+      }
       Ok(())
     })?);
     self.apply(states)

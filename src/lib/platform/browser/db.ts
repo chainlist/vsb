@@ -2,7 +2,7 @@
 // and what the desktop's index derives from it, kept up to date on every write.
 import type { EdgeStyle } from '#lib/api.js';
 import { request } from './idb.ts';
-import type { CardRecord, ZoneRecord } from './records.ts';
+import { fileOf, type CardRecord, type DrawingRecord, type ZoneRecord } from './records.ts';
 
 export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'drawings', 'clusters', 'bundles'];
 
@@ -14,13 +14,15 @@ export type VaultFile = { format: number; id: string; theme?: string; snap?: boo
 export const FORMAT = 1;
 
 export function openDb(vault: string) {
-	const open = indexedDB.open(`vsb-${vault}`, 3);
+	const open = indexedDB.open(`vsb-${vault}`, 4);
 	open.onupgradeneeded = ({ oldVersion }) => {
 		if (oldVersion === 0) create(open.result);
 		// Version 2: a zone keeps the cards it holds, where version 1 kept how many and their box.
 		if (oldVersion === 1) void holding(open.transaction!);
 		// Version 3: drawings.
 		if (oldVersion > 0 && oldVersion < 3) drawings(open.result);
+		// Version 4: each stroke has its own color and width.
+		if (oldVersion === 3) void reshape(open.transaction!);
 	};
 	return request(open);
 }
@@ -53,6 +55,12 @@ function drawings(db: IDBDatabase) {
 	const store = db.createObjectStore('drawings', { keyPath: 'id' });
 	store.createIndex('g', 'g', { multiEntry: true });
 	store.createIndex('zk', 'zk');
+}
+
+/** Gives each stroke of a version 3 vault's drawings the drawing's color, in the shape strokes have now. */
+async function reshape(tx: IDBTransaction) {
+	const store = tx.objectStore('drawings');
+	for (const r of (await request(store.getAll())) as DrawingRecord[]) store.put({ ...r, file: fileOf('drawing', r.file) });
 }
 
 /** Gives each zone of a version 1 vault the cards it holds. */

@@ -67,6 +67,8 @@ pub fn run() {
       commands::set_device_interface_size,
       commands::device_wheel,
       commands::set_device_wheel,
+      commands::device_pen,
+      commands::set_device_pen,
       commands::list_vaults,
       commands::choose_vault,
       commands::open_vault,

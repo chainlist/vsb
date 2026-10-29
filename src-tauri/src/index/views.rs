@@ -1,6 +1,7 @@
 //! What the viewport query returns: zones, cards, edges and drawings, or zoomed out clusters and
 //! bundles, in absolute coordinates.
 
+use crate::items::PenStroke;
 use serde::Serialize;
 
 /// A zone, in absolute coordinates.
@@ -58,7 +59,8 @@ pub struct EdgeView {
   pub ends: [Frame; 2],
 }
 
-/// A drawing, in absolute coordinates, with its strokes as its file has them: from its corner.
+/// A drawing, in absolute coordinates, with its strokes as its file has them: from its corner, each
+/// with its color and width.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct DrawingView {
   pub id: String,
@@ -67,8 +69,7 @@ pub struct DrawingView {
   pub y: f64,
   pub w: f64,
   pub h: f64,
-  pub color: Option<String>,
-  pub strokes: Vec<Vec<f64>>,
+  pub strokes: Vec<PenStroke>,
 }
 
 /// Zoomed out, the loose cards whose centers lie in one square of the grid: how many, never which.
@@ -110,7 +111,8 @@ pub struct Tint {
   pub boxes: Vec<Frame>,
 }
 
-/// A drawing in a collapsed zone's preview: its corner in the zone's coordinates, and its strokes.
+/// A drawing in a collapsed zone's preview: its corner in the zone's coordinates, and its strokes of
+/// one color, each as its points.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Sketch {
   pub x: f64,
@@ -118,7 +120,7 @@ pub struct Sketch {
   pub strokes: Vec<Vec<f64>>,
 }
 
-/// The drawings of a collapsed zone in one color: None for the theme's ink.
+/// The strokes of a collapsed zone's drawings in one color: None for the theme's ink.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Ink {
   pub color: Option<String>,
@@ -126,8 +128,8 @@ pub struct Ink {
 }
 
 /// Zoomed out, what a collapsed zone holds at any depth, in its coordinates from its top-left corner:
-/// its cards' boxes by color, its inner zones' boxes and its drawings by color. No text, nothing to
-/// point at.
+/// its cards' boxes by color, its inner zones' boxes and its drawings' strokes by color. No text,
+/// nothing to point at.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct PreviewView {
   pub zone: String,

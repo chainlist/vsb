@@ -36,7 +36,8 @@
 		if (boxes.length) return { ...camera.toScreen(Math.min(...xs), top), centered: false };
 		return { ...camera.toScreen((Math.min(...xs) + Math.max(...xs)) / 2, top - LABEL_HALF), centered: true };
 	});
-	const color = $derived(shared([...cards, ...zones, ...drawings].map((i) => i.color)));
+	// A drawing's color is each of its strokes': Mixed when they differ.
+	const color = $derived(shared([...cards, ...zones].map((i) => i.color).concat(drawings.flatMap((d) => d.strokes.map((s) => s.color ?? null)))));
 	const edgeStyle = $derived.by(() => {
 		const edges = selection.edges;
 		return {

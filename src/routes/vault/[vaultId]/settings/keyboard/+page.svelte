@@ -21,7 +21,7 @@
 			'Drawing',
 			[
 				...all(DRAWING_KEYS),
-				{ keys: ['drag'], label: 'With the pen, draw a stroke; with the eraser, take out every stroke it passes over' }
+				{ keys: ['drag'], label: 'In pen mode: with the pen, draw; with the stroke eraser, take out every stroke it passes over; with the cutting eraser, cut away what it passes over' }
 			]
 		],
 		['Panels and settings', [...all(PANEL_KEYS), { keys: ['Escape'], label: 'Close settings' }]],

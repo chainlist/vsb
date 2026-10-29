@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import Eraser from '@lucide/svelte/icons/eraser';
 	import PenLine from '@lucide/svelte/icons/pen-line';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import Workflow from '@lucide/svelte/icons/workflow';
@@ -34,8 +33,7 @@
 	);
 </script>
 
-<!-- Down the left edge: the zone list, the panels, the builder, the pen and the eraser, by their icons
-     alone. -->
+<!-- Down the left edge: the zone list, the panels, the builder and pen mode, by their icons alone. -->
 <nav class="rail index-card chrome" aria-label="Tools" data-beside-zones>
 	<!-- Not a route like the panels: the zone list stays open beside them. -->
 	<Tip label="Zones" keys={keys(PANEL_KEYS.zones)}>
@@ -70,15 +68,8 @@
 	</Tip>
 	<Tip label="Pen" keys={keys(DRAWING_KEYS.pen)}>
 		{#snippet children(props)}
-			<button {...props} aria-pressed={ink.tool === 'pen'} onclick={() => ink.toggle('pen')}>
+			<button {...props} aria-pressed={ink.on} onclick={() => ink.toggle()}>
 				<PenLine size={ICON} />
-			</button>
-		{/snippet}
-	</Tip>
-	<Tip label="Eraser" keys={keys(DRAWING_KEYS.eraser)}>
-		{#snippet children(props)}
-			<button {...props} aria-pressed={ink.tool === 'eraser'} onclick={() => ink.toggle('eraser')}>
-				<Eraser size={ICON} />
 			</button>
 		{/snippet}
 	</Tip>

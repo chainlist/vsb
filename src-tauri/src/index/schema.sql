@@ -49,8 +49,7 @@ CREATE TABLE drawings (
   id        TEXT UNIQUE NOT NULL,
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
-  color     TEXT,                     -- NULL = the theme's ink
-  strokes   TEXT NOT NULL,            -- JSON, as in the file
+  strokes   TEXT NOT NULL,            -- JSON, as the file has them now, each with its color and width
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX drawings_zone ON drawings(zone);

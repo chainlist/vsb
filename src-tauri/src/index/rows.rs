@@ -58,7 +58,7 @@ impl Index {
       Kind::Zone => "'name', name, 'parent', parent, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color",
       Kind::Card => "'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign, 'color', color",
       Kind::Edge => "'from', from_card, 'to', to_card, 'label', label, 'shape', shape, 'arrow', arrow, 'stroke', stroke",
-      Kind::Drawing => "'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color, 'strokes', json(strokes)",
+      Kind::Drawing => "'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'strokes', json(strokes)",
     };
     let sql = format!("SELECT json_object({fields}) FROM {} WHERE id = ?1", tables(T::KIND).0);
     let json: Option<String> = self.db.query_row(&sql, [id], |r| r.get(0)).optional()?;
@@ -103,10 +103,10 @@ impl Index {
 
   pub fn put_drawing(&self, id: &str, d: &Drawing, stamp: Stamp) -> Result<()> {
     self.db.execute(
-      "INSERT INTO drawings (id, zone, x, y, w, h, color, strokes, mtime, size) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+      "INSERT INTO drawings (id, zone, x, y, w, h, strokes, mtime, size) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
        ON CONFLICT (id) DO UPDATE SET zone = excluded.zone, x = excluded.x, y = excluded.y, w = excluded.w, h = excluded.h,
-         color = excluded.color, strokes = excluded.strokes, mtime = excluded.mtime, size = excluded.size",
-      params![id, d.zone, d.x, d.y, d.w, d.h, d.color, serde_json::to_string(&d.strokes)?, stamp.mtime, stamp.size],
+         strokes = excluded.strokes, mtime = excluded.mtime, size = excluded.size",
+      params![id, d.zone, d.x, d.y, d.w, d.h, serde_json::to_string(&d.strokes)?, stamp.mtime, stamp.size],
     )?;
     Ok(())
   }

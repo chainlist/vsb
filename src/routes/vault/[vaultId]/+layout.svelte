@@ -2,8 +2,10 @@
 	import Canvas from '#lib/canvas/Canvas.svelte';
 	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
+	import { ink } from '#lib/canvas/pen.svelte.js';
 	import { wheel } from '#lib/canvas/wheel.svelte.js';
 	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
+	import PenBar from '#lib/chrome/PenBar.svelte';
 	import Rail from '#lib/chrome/Rail.svelte';
 	import VaultCard from '#lib/chrome/VaultCard.svelte';
 	import ZoomControls from '#lib/chrome/ZoomControls.svelte';
@@ -29,6 +31,9 @@
 		wheel.does = data.wheel;
 	});
 	$effect(() => {
+		ink.pen = data.pen;
+	});
+	$effect(() => {
 		zoneList.open = data.zoneList;
 	});
 </script>
@@ -44,6 +49,9 @@
 <VaultCard vault={data.vault} />
 <Rail vaultId={data.vault.id} />
 <ZoomControls />
+{#if ink.on}
+	<PenBar />
+{/if}
 
 {#if zoneList.open}
 	<ZoneList />

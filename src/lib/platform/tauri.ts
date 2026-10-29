@@ -14,6 +14,7 @@ import type {
 	Link,
 	LinkPlan,
 	Move,
+	Pen,
 	Rect,
 	Shape,
 	Stroke,
@@ -32,6 +33,12 @@ export const deviceInterfaceSize = () => invoke<number | null>('device_interface
 
 /** Keeps this device's interface size; null leaves it out, for the default. */
 export const setDeviceInterfaceSize = (size: number | null) => invoke<void>('set_device_interface_size', { size });
+
+/** The pen's color, width and eraser on this device, the same in every vault. */
+export const devicePen = () => invoke<Pen>('device_pen');
+
+/** Keeps the pen's color, width and eraser on this device; each is left out at its default. */
+export const setDevicePen = (pen: Pen) => invoke<void>('set_device_pen', { pen });
 
 /** What the mouse wheel does on this device's canvas, the same in every vault. */
 export const deviceWheel = () => invoke<Wheel>('device_wheel');
@@ -212,12 +219,13 @@ export const strokeEdges = (ids: string[], stroke: Stroke) => invoke<ItemState[]
 
 export const deleteEdges =(ids: string[]) => invoke<ItemState[]>('delete_edges', { ids });
 
-/** Adds a stroke of the pen, its points as world x, y and pressure in turn: to the drawing whose box it
- * starts near, or as a new drawing, in the zone under its start. */
-export const addStroke = (points: number[]) => invoke<Created>('add_stroke', { points });
+/** Adds a stroke of the pen in a color (null for the ink) and a width, its points as world x, y and
+ * pressure in turn: to the drawing whose box it starts near, or as a new drawing, in the zone under
+ * its start. */
+export const addStroke = (points: number[], color: string | null, width: number) => invoke<Created>('add_stroke', { points, color, width });
 
-/** Takes strokes out of drawings, as one edit: a drawing's box shrinks to the strokes left, and a
- * drawing left with none is deleted. */
+/** Erases from drawings, as one edit: each stroke passed over goes, whole or for the pieces left of
+ * it. A drawing's box shrinks to the ink left, and a drawing left with none is deleted. */
 export const eraseStrokes = (erased: Erased[]) => invoke<ItemState[]>('erase_strokes', { erased });
 
 /** Drops drawings with their top-left corners at world positions; each joins the zone under its center. */

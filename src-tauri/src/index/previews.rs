@@ -6,11 +6,12 @@ use super::viewport::{LARGE, MEETS};
 use super::views::{Frame, Ink, PreviewView, Sketch, Tint, ZoneView};
 use super::{Index, Rect};
 use crate::error::Result;
+use crate::items::PenStroke;
 use rusqlite::params;
 use std::collections::BTreeMap;
 
 /// What a preview gathers for one zone: its cards' boxes by color, its inner zones' boxes, and its
-/// drawings by color.
+/// drawings' strokes by color.
 type Gathered = (BTreeMap<Option<String>, Vec<Frame>>, Vec<Frame>, BTreeMap<Option<String>, Vec<Sketch>>);
 
 impl Index {
@@ -51,19 +52,24 @@ impl Index {
         inner.push(at);
       }
     }
-    // Each drawing in a zone, with its corner from its outermost zone's.
+    // Each drawing in a zone, with its corner from its outermost zone's, its strokes by color.
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
-       SELECT zabs.root, d.color, zabs.ax + d.x - top.ax, zabs.ay + d.y - top.ay, d.strokes
+       SELECT zabs.root, zabs.ax + d.x - top.ax, zabs.ay + d.y - top.ay, d.strokes
        FROM drawing_bounds b JOIN drawings d ON d.key = b.key
        JOIN zabs ON zabs.id = d.zone JOIN zabs top ON top.id = zabs.root
        WHERE {MEETS} AND {LARGE} ORDER BY d.id"
     ))?;
-    let rows = stmt.query_map(args, |r| Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?, r.get(2)?, r.get(3)?, r.get::<_, String>(4)?)))?;
+    let rows = stmt.query_map(args, |r| Ok((r.get::<_, String>(0)?, r.get(1)?, r.get(2)?, r.get::<_, String>(3)?)))?;
     for row in rows {
-      let (zone, color, x, y, strokes) = row?;
-      if let Some((_, _, inks)) = found.get_mut(&zone) {
-        inks.entry(color).or_default().push(Sketch { x, y, strokes: serde_json::from_str(&strokes)? });
+      let (zone, x, y, strokes) = row?;
+      let Some((_, _, inks)) = found.get_mut(&zone) else { continue };
+      let mut colors: BTreeMap<Option<String>, Vec<Vec<f64>>> = BTreeMap::new();
+      for stroke in serde_json::from_str::<Vec<PenStroke>>(&strokes)? {
+        colors.entry(stroke.color).or_default().push(stroke.points);
+      }
+      for (color, strokes) in colors {
+        inks.entry(color).or_default().push(Sketch { x, y, strokes });
       }
     }
     let previews = found.into_iter().map(|(zone, (cards, mut zones, inks))| {

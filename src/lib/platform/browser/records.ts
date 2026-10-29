@@ -1,7 +1,7 @@
 // What the browser keeps of each item. The `file` of a zone, card, edge or drawing is what the desktop writes
 // to its JSON file, defaults left out, so item states, undo and a later export are the same on both
 // platforms. The rest is derived on every write, as the desktop's index derives it.
-import type { Arrow, Frame, HAlign, Shape, Stroke, VAlign } from '#lib/api.js';
+import type { Arrow, Frame, HAlign, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
 import type { Box } from './grid.ts';
 import type { Words } from './words.ts';
 
@@ -23,9 +23,12 @@ export type CardFile = {
 
 export type EdgeFile = { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke };
 
-/** Strokes of the pen grouped as one item: its corner in its zone, the box around its strokes'
- * points, and each stroke as its points' x, y and pressure in turn, from the corner. */
-export type DrawingFile = { zone: string | null; x: number; y: number; w: number; h: number; color?: string; strokes: number[][] };
+/** The pen's medium width in world units, at middling pressure: a stroke's unless it says otherwise. */
+export const MEDIUM = 3;
+
+/** Strokes of the pen grouped as one item: its corner in its zone, the box around its ink, and its
+ * strokes, each in its own color and width. */
+export type DrawingFile = { zone: string | null; x: number; y: number; w: number; h: number; strokes: PenStroke[] };
 
 export type File = ZoneFile | CardFile | EdgeFile | DrawingFile;
 
@@ -108,6 +111,16 @@ function choice<T extends string>(v: unknown, values: readonly T[], fallback: T,
 /** Drops the fields left undefined, so they are left out as the desktop leaves them out. */
 const kept = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
 
+/** A stroke as its file has it now, or as it was before strokes had their own color and width: a bare
+ * list of points, in `color`, the drawing's. */
+function penStroke(s: unknown, color: string | null): PenStroke {
+	const o = (Array.isArray(s) ? { points: s } : (s ?? {})) as Record<string, unknown>;
+	const points = o.points;
+	if (!Array.isArray(points) || !points.every((n) => typeof n === 'number')) throw new Error('invalid field `strokes`');
+	const width = o.width === undefined || o.width === null ? MEDIUM : number(o.width, 'width');
+	return kept({ points, color: maybe(o.color) ?? color ?? undefined, width: width === MEDIUM ? undefined : width });
+}
+
 /** A state's value as the file it stands for, read as the desktop reads it. */
 export function fileOf(kind: Kind, value: unknown): File {
 	const v = (value ?? {}) as Record<string, unknown>;
@@ -123,10 +136,10 @@ export function fileOf(kind: Kind, value: unknown): File {
 	}
 	const at = { x: number(v.x, 'x'), y: number(v.y, 'y'), w: number(v.w, 'w'), h: number(v.h, 'h') };
 	if (kind === 'drawing') {
-		const strokes = v.strokes;
-		const numbers = (s: unknown) => Array.isArray(s) && s.every((n) => typeof n === 'number');
-		if (!Array.isArray(strokes) || !strokes.every(numbers)) throw new Error('invalid field `strokes`');
-		return kept({ zone: maybe(v.zone), ...at, color: maybe(v.color) ?? undefined, strokes: strokes as number[][] });
+		if (!Array.isArray(v.strokes)) throw new Error('missing field `strokes`');
+		// Before strokes had their own color, the drawing's applied to all of them.
+		const color = maybe(v.color);
+		return kept({ zone: maybe(v.zone), ...at, strokes: v.strokes.map((s: unknown) => penStroke(s, color)) });
 	}
 	if (kind === 'zone') return kept({ name: maybe(v.name) ?? '', parent: maybe(v.parent), ...at, color: maybe(v.color) ?? undefined });
 	return kept({

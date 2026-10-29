@@ -4,7 +4,7 @@
 	import { camera } from './camera.svelte.js';
 	import { startMove } from './gestures.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
-	import { lines, PEN } from './ink.js';
+	import { lines, MEDIUM } from './ink.js';
 	import { asMarker, MARKER, zoneMarkers } from './marker.js';
 	import { selection } from './selection.svelte.js';
 	import InlineField from './InlineField.svelte';
@@ -70,7 +70,7 @@
 			{/each}
 			<path class="inner" d={outline(preview.zones)} />
 			{#each preview.inks as { color, drawings } (color)}
-				<path class="ink" class:tinted={color !== null} style:--tint={color} style:--pen-width="{PEN}px" d={lines(drawings)} />
+				<path class="ink inked" style:--tint={color} style:--pen-width="{MEDIUM}px" d={lines(drawings)} />
 			{/each}
 		</svg>
 	{/if}
@@ -120,17 +120,13 @@
 		stroke-width: var(--frame-width);
 	}
 
-	/* Drawings as their strokes' middle lines at the pen's width, inked as on the canvas. */
+	/* Drawings as their strokes' middle lines at the pen's medium width, inked as on the canvas. */
 	.preview .ink {
 		fill: none;
-		stroke: var(--ink);
+		stroke: currentColor;
 		stroke-width: var(--pen-width);
 		stroke-linecap: round;
 		stroke-linejoin: round;
-	}
-
-	.preview .ink.tinted {
-		stroke: color-mix(in srgb, var(--tint) 70%, var(--ink));
 	}
 
 	/* Zoomed out, the zone is only its frame and its name, which keep their size on screen. */

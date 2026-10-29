@@ -1,12 +1,18 @@
-// How strokes of the pen are drawn and touched: each stroke is its points as x, y and pressure in
+// How strokes of the pen are drawn, touched and cut: each stroke is its points as x, y and pressure in
 // turn, drawn by perfect-freehand as an outline that thickens with the pressure. Pure, so Node tests
 // it without the app.
 import { getStroke } from 'perfect-freehand';
 
 type Point = { x: number; y: number };
 
-/** The pen's width in world units, at middling pressure: thinner pressed lightly, thicker pressed hard. */
-export const PEN = 3;
+/** The pen's widths in world units, at middling pressure: thinner pressed lightly, thicker pressed
+ * hard. Medium is a stroke's width unless its file says otherwise. */
+export const WIDTHS: [number, string][] = [
+	[1.5, 'Thin'],
+	[3, 'Medium'],
+	[8, 'Thick']
+];
+export const MEDIUM = 3;
 
 /** Screen pixels a mouse moves between two events at which its line is thinnest: it has no pressure,
  * so the line follows its speed, as perfect-freehand simulates it, thicker when slow. */
@@ -19,12 +25,12 @@ export function simulated(last: number, moved: number) {
 	return Math.min(1, last + (1 - speed - last) * speed * RATE);
 }
 
-/** A stroke's outline as an SVG path, its points offset by (dx, dy). While it is being drawn
- * (`last` false), its end is left open to follow the pointer. */
-export function outline(stroke: number[], dx = 0, dy = 0, last = true) {
+/** A stroke's outline at a width, as an SVG path. While it is being drawn (`last` false), its end is
+ * left open to follow the pointer. */
+export function outline(stroke: number[], width = MEDIUM, last = true) {
 	const points: number[][] = [];
-	for (let i = 0; i < stroke.length; i += 3) points.push([stroke[i] + dx, stroke[i + 1] + dy, stroke[i + 2]]);
-	const ring = getStroke(points, { size: PEN, thinning: 0.5, smoothing: 0.5, streamline: 0.5, simulatePressure: false, last });
+	for (let i = 0; i < stroke.length; i += 3) points.push([stroke[i], stroke[i + 1], stroke[i + 2]]);
+	const ring = getStroke(points, { size: width, thinning: 0.5, smoothing: 0.5, streamline: 0.5, simulatePressure: false, last });
 	if (!ring.length) return '';
 	// Through the middles of the ring's sides, curving at its corners.
 	const at = (i: number) => ring[i % ring.length];
@@ -78,4 +84,38 @@ export function touches(stroke: number[], dx: number, dy: number, a: Point, b: P
 		last = p;
 	}
 	return false;
+}
+
+/** What is left of a stroke once a cutting eraser, moving from `a` to `b` with radius `r`, passed over
+ * it, its points offset by (dx, dy): null when it did not touch it, else the pieces on either side of
+ * each cut, each its own points, none when it took it all. The parts of the stroke it crosses are cut
+ * finely first, so a cut falls where it passed, not at the nearest point. A lone point left at a cut's
+ * edge is let go: a dot nobody drew. All in world units.
+ */
+export function cut(stroke: number[], dx: number, dy: number, a: Point, b: Point, r: number): number[][] | null {
+	const fine: number[] = [];
+	for (let i = 0; i < stroke.length; i += 3) {
+		if (i) {
+			const [p, q] = [{ x: stroke[i - 3] + dx, y: stroke[i - 2] + dy }, { x: stroke[i] + dx, y: stroke[i + 1] + dy }];
+			const steps = between(a, b, p, q) <= r ? Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / (r / 2)) : 1;
+			for (let k = 1; k < steps; k++) {
+				const t = k / steps;
+				fine.push(stroke[i - 3] + (stroke[i] - stroke[i - 3]) * t, stroke[i - 2] + (stroke[i + 1] - stroke[i - 2]) * t, stroke[i - 1] + (stroke[i + 2] - stroke[i - 1]) * t);
+			}
+		}
+		fine.push(stroke[i], stroke[i + 1], stroke[i + 2]);
+	}
+	const pieces: number[][] = [];
+	let piece: number[] = [];
+	let touched = false;
+	for (let i = 0; i < fine.length; i += 3) {
+		if (toSegment({ x: fine[i] + dx, y: fine[i + 1] + dy }, a, b) > r) piece.push(fine[i], fine[i + 1], fine[i + 2]);
+		else {
+			touched = true;
+			pieces.push(piece);
+			piece = [];
+		}
+	}
+	pieces.push(piece);
+	return touched ? pieces.filter((p) => p.length > 3) : null;
 }

@@ -31,7 +31,7 @@ const lone = () => (selection.ids.length === 1 && !selection.editing ? selection
 
 export const shortcuts: Binding[] = [
 	{ ...EDITING_KEYS.stop, inText: true, when: () => selection.editing !== null, run: stopEditing },
-	{ ...DRAWING_KEYS.down, when: () => ink.tool !== null, run: () => (ink.tool = null) },
+	{ ...DRAWING_KEYS.off, when: () => ink.on, run: () => (ink.on = false) },
 	{ ...CANVAS_KEYS.clear, when: selected, run: () => selection.clear() },
 	{ ...CANVAS_KEYS.edit, when: () => selection.ids.length === 1, run: editSelected },
 	{ ...CANVAS_KEYS.remove, when: selected, run: deleteSelected },
@@ -41,6 +41,6 @@ export const shortcuts: Binding[] = [
 	{ ...CANVAS_KEYS.undo, run: () => history.undo() },
 	{ ...CANVAS_KEYS.redo, run: () => history.redo() },
 	{ ...CANVAS_KEYS.fit, run: fitAll },
-	{ ...DRAWING_KEYS.pen, run: () => ink.toggle('pen') },
-	{ ...DRAWING_KEYS.eraser, run: () => ink.toggle('eraser') }
+	{ ...DRAWING_KEYS.pen, run: () => ink.toggle() },
+	{ ...DRAWING_KEYS.eraser, run: () => ink.eraser() }
 ];

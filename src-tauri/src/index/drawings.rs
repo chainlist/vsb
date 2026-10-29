@@ -14,7 +14,7 @@ impl Index {
   pub fn drawings(&self, rect: Rect, min_size: f64, loose: bool) -> Result<Vec<DrawingView>> {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
-       SELECT d.id, d.zone, coalesce(zabs.ax, 0) + d.x, coalesce(zabs.ay, 0) + d.y, d.w, d.h, d.color, d.strokes
+       SELECT d.id, d.zone, coalesce(zabs.ax, 0) + d.x, coalesce(zabs.ay, 0) + d.y, d.w, d.h, d.strokes
        FROM drawing_bounds b JOIN drawings d ON d.key = b.key LEFT JOIN zabs ON zabs.id = d.zone
        WHERE {MEETS} AND {LARGE} AND (NOT ?6 OR zabs.id IS NULL) ORDER BY d.id"
     ))?;
@@ -27,10 +27,9 @@ impl Index {
         y: r.get(3)?,
         w: r.get(4)?,
         h: r.get(5)?,
-        color: r.get(6)?,
         strokes: Vec::new(),
       };
-      Ok((view, r.get::<_, String>(7)?))
+      Ok((view, r.get::<_, String>(6)?))
     })?;
     let mut drawings = Vec::new();
     for row in rows {

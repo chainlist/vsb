@@ -1,9 +1,10 @@
 // Vaults in this browser, chosen by name. The list of them and this device's settings live in
 // localStorage, each vault in its own IndexedDB database. A vault is open in one tab at a time: a
 // second tab opening it is told so, rather than both writing past each other.
-import type { VaultEntry, VaultHome, Wheel } from '#lib/api.js';
+import type { Pen, VaultEntry, VaultHome, Wheel } from '#lib/api.js';
 import { FORMAT, openDb, type VaultFile } from './db.ts';
 import { finished } from './idb.ts';
+import { MEDIUM } from './records.ts';
 import { loadLayout, opened, setOpen } from './session.ts';
 import { newId } from './ulid.ts';
 
@@ -67,7 +68,7 @@ function hold(id: string): Promise<(() => void) | null> {
 	});
 }
 
-type Device = { interfaceSize?: number; wheel?: Wheel };
+type Device = { interfaceSize?: number; wheel?: Wheel; pen?: Partial<Pen> };
 
 /** Changes this device's settings and keeps them. */
 function change(edit: (d: Device) => void) {
@@ -83,6 +84,19 @@ export const setInterfaceSize = (size: number | null) =>
 	change((d) => {
 		if (size === null) delete d.interfaceSize;
 		else d.interfaceSize = size;
+	});
+
+/** The pen when nothing says otherwise: the ink, medium, taking the stroke eraser. */
+const PEN: Pen = { color: null, width: MEDIUM, eraser: 'stroke' };
+
+/** The pen as this device last left it. */
+export const pen = (): Pen => ({ ...PEN, ...stored<Device>(DEVICE, {}).pen });
+
+export const setPen = (pen: Pen) =>
+	change((d) => {
+		const set = Object.entries(pen).filter(([part, value]) => value !== PEN[part as keyof Pen]);
+		if (set.length) d.pen = Object.fromEntries(set);
+		else delete d.pen;
 	});
 
 /** What the mouse wheel does on this device's canvas: zoom unless it says otherwise. */

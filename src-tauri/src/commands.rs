@@ -2,7 +2,7 @@
 
 use crate::batch::{Batch, BatchCard, BatchEdge};
 use crate::batch_edit::{Link, LinkPlan};
-use crate::device::{self, Wheel};
+use crate::device::{self, Pen, Wheel};
 use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
@@ -49,6 +49,17 @@ pub async fn device_interface_size(app: AppHandle) -> Result<Option<u32>> {
 #[tauri::command]
 pub async fn set_device_interface_size(app: AppHandle, size: Option<u32>) -> Result<()> {
   device::set_interface_size(&data_dir(&app)?, size)
+}
+
+/// The pen's color, width and kind of eraser on this device.
+#[tauri::command]
+pub async fn device_pen(app: AppHandle) -> Result<Pen> {
+  device::pen(&data_dir(&app)?)
+}
+
+#[tauri::command]
+pub async fn set_device_pen(app: AppHandle, pen: Pen) -> Result<()> {
+  device::set_pen(&data_dir(&app)?, pen)
 }
 
 /// What the mouse wheel does on the canvas on this device.
@@ -345,8 +356,8 @@ pub async fn delete_edges(state: State<'_, AppState>, ids: Vec<String>) -> Resul
 }
 
 #[tauri::command]
-pub async fn add_stroke(state: State<'_, AppState>, points: Vec<f64>) -> Result<Created> {
-  state.with(|s| s.add_stroke(&points))
+pub async fn add_stroke(state: State<'_, AppState>, points: Vec<f64>, color: Option<String>, width: f64) -> Result<Created> {
+  state.with(|s| s.add_stroke(&points, color, width))
 }
 
 #[tauri::command]

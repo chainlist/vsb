@@ -50,6 +50,7 @@
 	selection.editing = null;
 	history.reset();
 	batchDialog.close();
+	ink.on = false;
 
 	// Frames the contents once, as soon as the canvas has a size.
 	$effect(() => {
@@ -109,7 +110,7 @@
 	function hover(p: { x: number; y: number }) {
 		// Within half a handle of an item, the pointer is on its handle. With the pen or the eraser in
 		// hand, nothing is resized.
-		hovered = ink.tool ? null : (items.itemAt(camera.toWorld(p.x, p.y), GRIP / 2 / camera.zoom)?.id ?? null);
+		hovered = ink.on ? null : (items.itemAt(camera.toWorld(p.x, p.y), GRIP / 2 / camera.zoom)?.id ?? null);
 	}
 
 	// With the pen or the eraser in hand, a left drag draws or erases, whatever lies under it; the middle
@@ -180,10 +181,10 @@
 		{#if ink.live || ink.pending.length}
 			<svg class="ink" aria-hidden="true">
 				{#each ink.pending as stroke (stroke)}
-					<path d={outline(stroke)} />
+					<path class="inked" style:--tint={stroke.color} d={outline(stroke.points, stroke.width)} />
 				{/each}
 				{#if ink.live}
-					<path d={outline(ink.live, 0, 0, false)} />
+					<path class="inked" style:--tint={ink.live.color} d={outline(ink.live.points, ink.live.width, false)} />
 				{/if}
 			</svg>
 		{/if}
@@ -201,11 +202,11 @@
 		{/if}
 		<ResizeHandles {hovered} />
 	</div>
-	{#if ink.tool}
+	{#if ink.on}
 		<!-- Over everything on the canvas, under the chrome: presses draw or erase, and a double-click
 		     places nothing. -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="hand {ink.tool}" onpointerdown={inking} ondblclick={(e) => e.stopPropagation()}></div>
+		<div class="hand {ink.erasing ? 'eraser' : 'pen'}" onpointerdown={inking} ondblclick={(e) => e.stopPropagation()}></div>
 	{/if}
 	<SelectionBar />
 	<EdgeInsert />
@@ -246,7 +247,10 @@
 		height: 1px;
 		overflow: visible;
 		pointer-events: none;
-		fill: var(--ink);
+	}
+
+	.ink path {
+		fill: currentColor;
 	}
 
 	.hand {

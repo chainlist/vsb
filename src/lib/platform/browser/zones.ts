@@ -4,7 +4,7 @@ import type { Created, ItemState, Move, Rect } from '#lib/api.js';
 import { apply, edit, edited, gone, read, state, type Edit } from './apply.ts';
 import { cover, rectAt } from './grid.ts';
 import { children } from './lookups.ts';
-import type { Kind, ZoneFile } from './records.ts';
+import type { DrawingFile, Kind, ZoneFile } from './records.ts';
 import { zoneContents } from './scope.ts';
 import { newId } from './ulid.ts';
 
@@ -72,14 +72,15 @@ export async function holding(e: Edit, id: string, span: Rect) {
 
 export const renameZone = (e: Edit, id: string, name: string) => edit(e, 'zone', [id], (zone) => (zone.name = name));
 
-/** Sets the color of cards, zones and drawings, as one edit; null for none, which leaves a card on
- * the theme's plain stock, a zone on its gray and a drawing in its ink. */
+/** Sets the color of cards, zones and every stroke of drawings, as one edit; null for none, which
+ * leaves a card on the theme's plain stock, a zone on its gray and a stroke in the theme's ink. */
 export async function colorItems(e: Edit, cards: string[], zones: string[], drawings: string[], color: string | null) {
 	const paint = (item: { color?: string }) => {
 		if (color === null) delete item.color;
 		else item.color = color;
 	};
-	return apply(e, [...(await edited(e, 'card', cards, paint)), ...(await edited(e, 'zone', zones, paint)), ...(await edited(e, 'drawing', drawings, paint))]);
+	const strokes = (drawing: DrawingFile) => drawing.strokes.forEach(paint);
+	return apply(e, [...(await edited(e, 'card', cards, paint)), ...(await edited(e, 'zone', zones, paint)), ...(await edited(e, 'drawing', drawings, strokes))]);
 }
 
 /** Deletes zones. Their cards, drawings and child zones move up to the nearest zone that stays, or

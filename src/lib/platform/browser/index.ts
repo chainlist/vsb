@@ -11,6 +11,7 @@ import type {
 	ItemState,
 	Link,
 	Move,
+	Pen,
 	Rect,
 	Shape,
 	Stroke,
@@ -38,6 +39,8 @@ const local = <T>(run: () => T) => command(async () => run());
 
 export const deviceInterfaceSize = () => local(vaults.interfaceSize);
 export const setDeviceInterfaceSize = (size: number | null) => local(() => vaults.setInterfaceSize(size));
+export const devicePen = () => local(vaults.pen);
+export const setDevicePen = (pen: Pen) => local(() => vaults.setPen(pen));
 export const deviceWheel = () => local(vaults.wheel);
 export const setDeviceWheel = (wheel: Wheel) => local(() => vaults.setWheel(wheel));
 export const listVaults = () => local(vaults.listVaults);
@@ -106,7 +109,7 @@ export const arrowEdges = (ids: string[], arrow: Arrow) => writing((e) => edges.
 export const strokeEdges = (ids: string[], stroke: Stroke) => writing((e) => edges.strokeEdges(e, ids, stroke));
 export const deleteEdges = (ids: string[]) => writing((e) => edges.deleteEdges(e, ids));
 
-export const addStroke = (points: number[]) => writing((e) => drawings.addStroke(e, points));
+export const addStroke = (points: number[], color: string | null, width: number) => writing((e) => drawings.addStroke(e, points, color, width));
 export const eraseStrokes = (erased: Erased[]) => writing((e) => drawings.eraseStrokes(e, erased));
 export const moveDrawings = (moves: Move[]) => writing((e) => drawings.moveDrawings(e, moves));
 export const deleteDrawings = (ids: string[]) => writing((e) => drawings.deleteDrawings(e, ids));

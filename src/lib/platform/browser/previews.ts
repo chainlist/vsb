@@ -31,11 +31,15 @@ export function previews(layout: Layout, rect: Rect, minSize: number, zones: Zon
 			if (frame && shown(frame)) inner.push(local(frame));
 		}
 		const cards = [...tints].sort(byColor).map(([color, boxes]) => ({ color, boxes: boxes.sort(byPlace) }));
+		// Each drawing's strokes by color, one sketch per drawing and color.
 		const inks = new Map<string | null, Preview['inks'][number]['drawings']>();
 		for (const d of drawings.filter((d) => d.root === top.id)) {
-			const color = d.file.color ?? null;
-			const sketches = inks.get(color) ?? inks.set(color, []).get(color)!;
-			sketches.push({ x: d.ax - top.x, y: d.ay - top.y, strokes: d.file.strokes });
+			const colors = new Map<string | null, number[][]>();
+			for (const s of d.file.strokes) colors.set(s.color ?? null, [...(colors.get(s.color ?? null) ?? []), s.points]);
+			for (const [color, strokes] of colors) {
+				const sketches = inks.get(color) ?? inks.set(color, []).get(color)!;
+				sketches.push({ x: d.ax - top.x, y: d.ay - top.y, strokes });
+			}
 		}
 		const ink = [...inks].sort(byColor).map(([color, drawings]) => ({ color, drawings }));
 		if (cards.length || inner.length || ink.length) found.push({ zone: top.id, cards, zones: inner.sort(byPlace), inks: ink });

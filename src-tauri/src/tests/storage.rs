@@ -1,5 +1,5 @@
 use super::{names, Fixture};
-use crate::device::{self, Wheel};
+use crate::device::{self, Eraser, Pen, Wheel};
 use crate::fsx::{atomic_write, files};
 use crate::items::{self, Arrow, Card, Edge, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign, Zone};
 use crate::vault::Vault;
@@ -139,4 +139,20 @@ fn the_wheel_zooms_unless_this_device_says_it_pans() {
   assert_eq!(file(), serde_json::json!({ "interfaceSize": 115, "wheel": "pan" }));
   device::set_wheel(data.path(), Wheel::Zoom).unwrap();
   assert_eq!(file(), serde_json::json!({ "interfaceSize": 115 }));
+}
+
+#[test]
+fn the_pen_is_kept_per_device_each_part_left_out_at_its_default() {
+  let data = TempDir::new().unwrap();
+  let file = || -> serde_json::Value { serde_json::from_str(&fs::read_to_string(data.path().join("device.json")).unwrap()).unwrap() };
+  let ink = Pen { color: None, width: items::MEDIUM, eraser: Eraser::Stroke };
+  assert_eq!(device::pen(data.path()).unwrap(), ink, "the ink, medium, the stroke eraser");
+  let yellow = Pen { color: Some("#f5d76e".into()), width: 8.0, eraser: Eraser::Cut };
+  device::set_pen(data.path(), yellow.clone()).unwrap();
+  assert_eq!(device::pen(data.path()).unwrap(), yellow);
+  assert_eq!(file(), serde_json::json!({ "pen": { "color": "#f5d76e", "width": 8.0, "eraser": "cut" } }));
+  device::set_pen(data.path(), Pen { width: 1.5, ..ink.clone() }).unwrap();
+  assert_eq!(file(), serde_json::json!({ "pen": { "width": 1.5 } }));
+  device::set_pen(data.path(), ink).unwrap();
+  assert_eq!(file(), serde_json::json!({}));
 }

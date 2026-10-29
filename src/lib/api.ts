@@ -82,12 +82,29 @@ export type EdgeView = {
 	ends: [Frame, Frame];
 };
 
-/** Strokes of the pen grouped as one item, in absolute world coordinates: the box around its strokes'
- * points, and each stroke as its points' x, y and pressure in turn, from the box's corner. */
-export type DrawingView = Frame & { id: string; zone: string | null; color: string | null; strokes: number[][] };
+/** One stroke of the pen, as its drawing's file has it: its points as x, y and pressure in turn, from
+ * the drawing's corner; its color, left out for the theme's ink; its width in world units, left out
+ * at the pen's medium width. */
+export type PenStroke = { points: number[]; color?: string; width?: number };
 
-/** Strokes taken out of a drawing, by their place in it. */
-export type Erased = { id: string; strokes: number[] };
+/** Strokes of the pen grouped as one item, in absolute world coordinates: the box around its ink, and
+ * its strokes, each in its own color and width. */
+export type DrawingView = Frame & { id: string; zone: string | null; strokes: PenStroke[] };
+
+/** What erasing leaves of one stroke of a drawing, by its place in it: the pieces a cutting eraser
+ * left, each with its points from the drawing's corner and kept as a stroke of its own in the same
+ * color and width, or none when the stroke goes whole. */
+export type Cut = { index: number; pieces: number[][] };
+
+/** The strokes of a drawing an eraser passed over. */
+export type Erased = { id: string; strokes: Cut[] };
+
+/** Which eraser the pen takes: one that takes out whole strokes, or one that cuts them where it passes. */
+export type Eraser = 'stroke' | 'cut';
+
+/** The pen as this device last left it: its color (null for the theme's ink), its width in world
+ * units, and the eraser it takes. */
+export type Pen = { color: string | null; width: number; eraser: Eraser };
 
 /** Zoomed out, the loose cards whose centers lie in one square of the grid: the box around them,
  * how many, and the square's column and row counted from the world origin. Never the cards. */
