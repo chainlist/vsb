@@ -4,7 +4,7 @@
 	import { tap } from './drag.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
 	import { asMarker, markerAt, zoneMarkers } from './marker.js';
-	import { NEW_EDGE, route } from './route.js';
+	import { route } from './route.js';
 	import EdgeLine from './EdgeLine.svelte';
 
 	let { bundle }: { bundle: Bundle } = $props();
@@ -16,9 +16,9 @@
 		const zone = items.find(end.zone)?.item ?? end;
 		return asMarker(zone) ? markerAt(zone, zoneMarkers.get(end.zone)) : zone;
 	}
-	// Drawn like a new edge, its arrowheads keeping their size on screen.
+	// Drawn curved and solid, whatever its edges' styles, its arrowheads keeping their size on screen.
 	const line = $derived(
-		route(box(bundle.ends[0]), box(bundle.ends[1]), { ...NEW_EDGE, arrow: bundle.arrow }, 1 / camera.zoom)
+		route(box(bundle.ends[0]), box(bundle.ends[1]), { shape: 'curved', arrow: bundle.arrow }, 1 / camera.zoom)
 	);
 
 	// Clicking frames both ends, zoomed in until their edges show. A drag pans, as on the paper.

@@ -10,9 +10,6 @@ type Ends = { start: Point; tip: Point; d: Point };
 
 export type Style = { shape: Shape; arrow: Arrow };
 
-/** How a new edge looks. */
-export const NEW_EDGE: Style = { shape: 'curved', arrow: 'to' };
-
 const ARROW = { length: 11, width: 10 };
 /** The most a curve runs straight out of a card before turning towards the other one. */
 const MAX_BEND = 120;

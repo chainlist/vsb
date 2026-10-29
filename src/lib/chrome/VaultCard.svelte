@@ -1,12 +1,20 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Settings from '@lucide/svelte/icons/settings';
 	import type { VaultEntry } from '#lib/api.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
+	import { bindKeys, keyName } from '#lib/keys.js';
+	import { PANEL_KEYS } from '#lib/panel/panels.js';
 
 	let { vault }: { vault: VaultEntry } = $props();
+
+	const settings = $derived(resolve('/vault/[vaultId]/settings', { vaultId: vault.id }));
+
+	// From anywhere in the vault, also while typing. Settings bind the same key to close them.
+	$effect(() => bindKeys([{ ...PANEL_KEYS.settings, inText: true, run: () => goto(settings) }]));
 </script>
 
 <!-- The vault in the top-left corner. Its menu leads back to the vaults, and to settings. -->
@@ -28,7 +36,9 @@
 		</DropdownMenu.Item>
 		<DropdownMenu.Item>
 			{#snippet child({ props })}
-				<a {...props} href={resolve('/vault/[vaultId]/settings', { vaultId: vault.id })}><Settings /> Settings</a>
+				<a {...props} href={settings}>
+					<Settings /> Settings <kbd class="shortcut">{keyName(PANEL_KEYS.settings.keys[0])}</kbd>
+				</a>
 			{/snippet}
 		</DropdownMenu.Item>
 	</DropdownMenu.Content>
@@ -80,5 +90,9 @@
 	a {
 		color: inherit;
 		text-decoration: none;
+	}
+
+	.shortcut {
+		margin-left: auto;
 	}
 </style>

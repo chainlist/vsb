@@ -5,12 +5,20 @@
 	import MoveRight from '@lucide/svelte/icons/move-right';
 	import Slash from '@lucide/svelte/icons/slash';
 	import Spline from '@lucide/svelte/icons/spline';
-	import type { Arrow, Shape, Stroke } from '#lib/api.js';
-	import { arrowSelected, shapeSelected, strokeSelected } from './actions.js';
-	import { shared } from './colors.js';
-	import { selection } from './selection.svelte.js';
+	import type { Arrow, EdgeStyle, Shape, Stroke } from '#lib/api.js';
 	import AngledIcon from './AngledIcon.svelte';
 	import StyleSelect from './StyleSelect.svelte';
+
+	// An edge's shape, arrowheads and line, each as a small select: the selection bar's, for the
+	// selected edges, and Settings', for new edges.
+	let {
+		style,
+		pick
+	}: {
+		/** Each part shown; undefined where the edges it stands for differ. */
+		style: Partial<EdgeStyle>;
+		pick: { [K in keyof EdgeStyle]: (value: EdgeStyle[K]) => void };
+	} = $props();
 
 	/** A Lucide icon, or the elements of one Lucide lacks, drawn through its `Icon`. */
 	type Glyph = LucideIcon | LucideIconNode[];
@@ -32,9 +40,6 @@
 		['dotted', 'Dotted line', [['path', { d: 'M3 12h.01M7.5 12h.01M12 12h.01M16.5 12h.01M21 12h.01' }]]],
 		['double', 'Double line', [['path', { d: 'M3 9h18M3 15h18' }]]]
 	];
-
-	const edges = $derived(selection.edges);
-	const same = <K extends 'shape' | 'arrow' | 'stroke'>(key: K) => shared(edges.map((e) => e[key]));
 </script>
 
 {#snippet icon(Icon: Glyph)}
@@ -45,6 +50,6 @@
 	{/if}
 {/snippet}
 
-<StyleSelect label="Edge shape" options={shapes} current={same('shape')} pick={shapeSelected} look={icon} />
-<StyleSelect label="Edge arrows" options={arrows} current={same('arrow')} pick={arrowSelected} look={icon} />
-<StyleSelect label="Edge line" options={strokes} current={same('stroke')} pick={strokeSelected} look={icon} />
+<StyleSelect label="Edge shape" options={shapes} current={style.shape} pick={pick.shape} look={icon} />
+<StyleSelect label="Edge arrows" options={arrows} current={style.arrow} pick={pick.arrow} look={icon} />
+<StyleSelect label="Edge line" options={strokes} current={style.stroke} pick={pick.stroke} look={icon} />

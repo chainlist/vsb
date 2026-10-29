@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { setDeviceInterfaceSize, setVaultTheme } from '#lib/api.js';
+	import Segmented from '#lib/chrome/Segmented.svelte';
 	import { DEFAULT_INTERFACE_SIZE, INTERFACE_SIZES, interfaceSize } from '#lib/interfaceSize.svelte.js';
 	import { DEFAULT_THEME, THEMES, theme } from '#lib/theme.svelte.js';
 
@@ -52,20 +53,12 @@
 <fieldset>
 	<legend>Interface size</legend>
 	<p class="hint">How large controls and panels are on this device. Cards, zones and lines keep their size.</p>
-	<div class="sizes">
-		{#each INTERFACE_SIZES as percent (percent)}
-			<label>
-				<input
-					type="radio"
-					name="size"
-					value={percent}
-					checked={interfaceSize.percent === percent}
-					onchange={() => pickSize(percent)}
-				/>
-				{percent}%
-			</label>
-		{/each}
-	</div>
+	<Segmented
+		name="size"
+		options={INTERFACE_SIZES.map((percent): [number, string] => [percent, `${percent}%`])}
+		value={interfaceSize.percent}
+		pick={pickSize}
+	/>
 </fieldset>
 
 {#if error}
@@ -73,25 +66,6 @@
 {/if}
 
 <style>
-	fieldset {
-		min-width: 0;
-		margin: 0 0 32px;
-		padding: 0;
-		border: none;
-	}
-
-	legend {
-		padding: 0;
-		font-weight: 600;
-		font-size: 16px;
-	}
-
-	.hint {
-		margin: 4px 0 18px;
-		color: var(--ink-soft);
-		font-size: 14px;
-	}
-
 	.themes {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -135,41 +109,5 @@
 	input {
 		margin: 0;
 		accent-color: var(--pen);
-	}
-
-	/* One choice of three, side by side. */
-	.sizes {
-		display: inline-flex;
-		padding: 3px;
-		border-radius: var(--radius-control);
-		background: var(--paper);
-		box-shadow: inset 0 0 0 1px var(--border);
-	}
-
-	.sizes label {
-		position: relative;
-		padding: 6px 16px;
-		border-radius: var(--radius-control);
-		color: var(--ink-soft);
-		font-weight: 500;
-		font-variant-numeric: tabular-nums;
-		cursor: pointer;
-	}
-
-	.sizes label:has(:checked) {
-		background: var(--card);
-		box-shadow: var(--lift);
-		color: var(--ink);
-	}
-
-	.sizes label:has(:focus-visible) {
-		outline: 2px solid var(--pen);
-		outline-offset: 2px;
-	}
-
-	.sizes input {
-		position: absolute;
-		opacity: 0;
-		pointer-events: none;
 	}
 </style>

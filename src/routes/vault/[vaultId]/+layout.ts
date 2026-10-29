@@ -1,4 +1,4 @@
-import { canvasContents, openVault, uiState, vaultSnap, vaultTheme } from '#lib/api.js';
+import { canvasContents, deviceWheel, openVault, uiState, vaultEdgeStyle, vaultSnap, vaultTheme } from '#lib/api.js';
 import { ZONE_LIST } from '#lib/panel/zoneList.svelte.js';
 import type { LayoutLoad } from './$types';
 
@@ -10,6 +10,8 @@ export const load: LayoutLoad = async ({ params }) => {
 		contents: await canvasContents(),
 		theme: await vaultTheme(),
 		snap: await vaultSnap(),
+		edgeStyle: await vaultEdgeStyle(),
+		wheel: await deviceWheel(),
 		zoneList: (await uiState(ZONE_LIST)) === 'open'
 	};
 };

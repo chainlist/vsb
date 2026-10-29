@@ -3,7 +3,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Workflow from '@lucide/svelte/icons/workflow';
 	import { MOD_NAME } from '#lib/keys.js';
-	import { colorSelected, deleteSelected } from './actions.js';
+	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, strokeSelected } from './actions.js';
 	import { arrangeSelected } from './arrange.js';
 	import { batchDialog } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
@@ -36,6 +36,14 @@
 		return { ...camera.toScreen((Math.min(...xs) + Math.max(...xs)) / 2, top - LABEL_HALF), centered: true };
 	});
 	const color = $derived(shared([...cards, ...zones].map((i) => i.color)));
+	const edgeStyle = $derived.by(() => {
+		const edges = selection.edges;
+		return {
+			shape: shared(edges.map((e) => e.shape)),
+			arrow: shared(edges.map((e) => e.arrow)),
+			stroke: shared(edges.map((e) => e.stroke))
+		};
+	});
 </script>
 
 {#snippet swatch(value: string | null)}
@@ -62,7 +70,7 @@
 				<StyleSelect label="Color" options={colors} current={color} pick={colorSelected} look={swatch} />
 			{/if}
 			{#if mids.length}
-				<EdgeStyle />
+				<EdgeStyle style={edgeStyle} pick={{ shape: shapeSelected, arrow: arrowSelected, stroke: strokeSelected }} />
 			{/if}
 			<!-- Arranging and the builder work on the selected cards, or on a lone selected zone's contents. -->
 			{#if cards.length > 1 || zone}

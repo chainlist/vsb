@@ -1,8 +1,10 @@
 // Zooming like a map: the mouse wheel, two fingers on a trackpad and a pinch all zoom around the
-// pointer. Chromium reports a pinch as a wheel turned with Ctrl held, WebKit as gesture events
-// carrying the scale since it began. Zooming must stop the page from scrolling or zooming itself,
-// which a passive listener cannot do.
+// pointer. A device can have the wheel pan instead: then the wheel and two fingers pan, Shift turning
+// the wheel sideways, and Ctrl+wheel and a pinch still zoom. Chromium reports a pinch as a wheel
+// turned with Ctrl held, WebKit as gesture events carrying the scale since it began. Zooming must
+// stop the page from scrolling or zooming itself, which a passive listener cannot do.
 import { camera } from './camera.svelte.js';
+import { wheel } from './wheel.svelte.js';
 
 /** Zoom per pixel of wheel travel. A pinch moves a few pixels per event where a mouse notch moves
  * 100, so it zooms faster, to follow the fingers. */
@@ -34,9 +36,15 @@ export function zoomOn(el: HTMLElement, under: (p: Point) => void) {
 		e.preventDefault();
 		if (pinch !== null) return;
 		const p = pointIn(el, e);
-		// Ctrl+wheel on a mouse still turns by notches, at the wheel's pace.
-		const rate = e.ctrlKey && !notched(e) ? PINCH_ZOOM : WHEEL_ZOOM;
-		camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * rate));
+		if (wheel.does === 'pan' && !e.ctrlKey) {
+			// Some browsers turn Shift+wheel sideways themselves, some leave it to the page.
+			const sideways = e.shiftKey && !e.deltaX;
+			camera.panBy(-(sideways ? e.deltaY : e.deltaX), sideways ? 0 : -e.deltaY);
+		} else {
+			// Ctrl+wheel on a mouse still turns by notches, at the wheel's pace.
+			const rate = e.ctrlKey && !notched(e) ? PINCH_ZOOM : WHEEL_ZOOM;
+			camera.zoomAt(p.x, p.y, Math.exp(-e.deltaY * rate));
+		}
 		if (!e.buttons) under(p);
 	};
 	const onstart = (e: Event) => {

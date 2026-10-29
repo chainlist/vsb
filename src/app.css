@@ -225,6 +225,13 @@ a {
 	--panel: min(75%, 24rem);
 }
 
+/* A control's shortcut after its name, in a tooltip or a menu. */
+.shortcut {
+	margin-left: 8px;
+	font: inherit;
+	opacity: 0.65;
+}
+
 /* An icon beside its text. */
 .icon-label {
 	display: inline-flex;

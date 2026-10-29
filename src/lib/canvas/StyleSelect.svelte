@@ -4,9 +4,9 @@
 	import type { Snippet } from 'svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 
-	// One style of the selection in the selection bar, as a small select: the trigger shows the
-	// current choice's look, or "Mixed" when the selected items differ; its list shows each
-	// choice's look and name.
+	// One style of the selection in the selection bar (or of new edges, in Settings), as a small
+	// select: the trigger shows the current choice's look, or "Mixed" when the selected items differ;
+	// its list shows each choice's look and name.
 	let {
 		label,
 		options,

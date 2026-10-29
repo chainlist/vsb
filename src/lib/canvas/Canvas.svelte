@@ -9,7 +9,8 @@
 	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
-	import { NEW_EDGE, route } from './route.js';
+	import { newEdges } from './newEdges.svelte.js';
+	import { route } from './route.js';
 	import { selection } from './selection.svelte.js';
 	import { shortcuts } from './shortcuts.js';
 	import { pointIn, zoomOn } from './zoom.js';
@@ -156,7 +157,7 @@
 			<Bundle {bundle} />
 		{/each}
 		{#if draft.link}
-			<EdgeLine route={route(...draft.link, NEW_EDGE)} draft />
+			<EdgeLine route={route(...draft.link, newEdges.style)} draft />
 		{/if}
 		{#each items.cards as card (card.id)}
 			<Card {card} />

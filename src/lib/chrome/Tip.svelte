@@ -27,15 +27,7 @@
 	<Tooltip.Content {side} sideOffset={8} class="chrome px-2.5 py-1 text-[13px]">
 		{label}
 		{#if keys}
-			<kbd>{keys}</kbd>
+			<kbd class="shortcut">{keys}</kbd>
 		{/if}
 	</Tooltip.Content>
 </Tooltip.Root>
-
-<style>
-	kbd {
-		margin-left: 8px;
-		font: inherit;
-		opacity: 0.65;
-	}
-</style>
