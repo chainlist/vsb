@@ -20,8 +20,11 @@ export async function scenarios({ base, vaultId, search }) {
 		return out;
 	}
 
-	// Opening the vault, as the vault route's load does.
+	// Opening the vault, as the vault route's load does. The browser keeps its vault open in the page:
+	// it is closed first, so each open is a real one.
+	const browser = !('__TAURI_INTERNALS__' in window) && (await import(`${base}src/lib/platform/browser/session.ts`));
 	for (let i = 0; i < 10; i++) {
+		if (browser) browser.setOpen(null);
 		await time('open', async () => {
 			await api.openVault(vaultId);
 			await api.canvasContents();

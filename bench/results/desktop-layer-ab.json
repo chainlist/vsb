@@ -1,0 +1,36 @@
+{
+	"label": "desktop-layer-ab",
+	"date": "2026-10-29T00:30:27.105Z",
+	"stats": {
+		"viewport 100%": {
+			"n": 200,
+			"direct p50": 8.3,
+			"layer p50": 8.2,
+			"difference ms": -0.1
+		},
+		"move card": {
+			"n": 200,
+			"direct p50": 25.4,
+			"layer p50": 25.5,
+			"difference ms": 0.1
+		},
+		"search": {
+			"n": 200,
+			"direct p50": 8.4,
+			"layer p50": 8.4,
+			"difference ms": 0
+		},
+		"zone rows": {
+			"n": 200,
+			"direct p50": 5.8,
+			"layer p50": 5.9,
+			"difference ms": 0.1
+		},
+		"unplaced page": {
+			"n": 200,
+			"direct p50": 7.5,
+			"layer p50": 7.5,
+			"difference ms": 0
+		}
+	}
+}

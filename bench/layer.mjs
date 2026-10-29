@@ -3,6 +3,7 @@
 // by call, so drift in the machine's load hits both alike.
 //
 //   node bench/layer.mjs --port 9224
+import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { connect } from './cdp.mjs';
 import { generate } from './vault.mjs';
@@ -46,6 +47,8 @@ const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 const table = {};
 for (const [name, { direct, layer }] of Object.entries(raw)) {
 	const [d, l] = [median(direct), median(layer)];
-	table[name] = { 'direct p50': +d.toFixed(2), 'layer p50': +l.toFixed(2), 'difference ms': +(l - d).toFixed(3) };
+	table[name] = { n: direct.length, 'direct p50': +d.toFixed(2), 'layer p50': +l.toFixed(2), 'difference ms': +(l - d).toFixed(3) };
 }
 console.table(table);
+const out = new URL('./results/desktop-layer-ab.json', import.meta.url);
+writeFileSync(out, JSON.stringify({ label: 'desktop-layer-ab', date: new Date().toISOString(), stats: table }, null, '\t') + '\n');

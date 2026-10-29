@@ -84,8 +84,13 @@ export function generate() {
 		clumps.push(rows(null, x0, y0, 8, 40));
 	}
 
-	// 4,500 cards have a note; 500 more notes have no card.
-	const order = cards.map((_, i) => i).sort(() => random() - 0.5);
+	// 4,500 cards have a note; 500 more notes have no card. A Fisher-Yates shuffle, not a sort with a
+	// random comparison, whose result depends on the engine's sort.
+	const order = cards.map((_, i) => i);
+	for (let i = order.length - 1; i > 0; i--) {
+		const j = Math.floor(random() * (i + 1));
+		[order[i], order[j]] = [order[j], order[i]];
+	}
 	const note = () => {
 		const n = { id: id(), text: `${capital(words(2 + Math.floor(random() * 3)))}\n\n${words(10 + Math.floor(random() * 20))}\n${words(8)}` };
 		n.file = `notes/note ${notes.length + 1}.md`;
