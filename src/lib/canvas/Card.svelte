@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { cubicOut } from 'svelte/easing';
 	import type { CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
 	import { edit } from './actions.js';
 	import { startMove } from './gestures.js';
+	import { items } from './items.svelte.js';
 	import { selection } from './selection.svelte.js';
 	import CardContent from './CardContent.svelte';
 	import CardEditor from './CardEditor.svelte';
@@ -25,6 +27,15 @@
 		e.stopPropagation();
 		edit(card);
 	}
+
+	/** As zones collapse, the card fades into the preview drawn beneath it, as long as dimming takes,
+	 * and no longer takes presses. Leaving the canvas any other way, it goes at once. */
+	function collapse(node: HTMLElement) {
+		if (!items.collapsed) return { duration: 0 };
+		node.style.pointerEvents = 'none';
+		const duration = parseFloat(getComputedStyle(node).getPropertyValue('--fade'));
+		return { duration, easing: cubicOut, css: (t: number) => `opacity: ${t}` };
+	}
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -44,6 +55,7 @@
 	style:justify-content={justify[card.valign]}
 	onpointerdown={press}
 	ondblclick={open}
+	out:collapse
 >
 	{#if editing}
 		<CardEditor {card} />
@@ -59,6 +71,16 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		/* As it appears, it fades in: its stock from the faded block a collapsed zone's preview drew,
+		   its text from nothing. Ending an edit does not replay it: the card is the same element. */
+		animation: reveal var(--fade) ease-out;
+	}
+
+	@keyframes reveal {
+		from {
+			--shown: 0;
+			opacity: var(--dim);
+		}
 	}
 
 	/* A light wash of the card's color over its stock, as a zone is washed over the paper. It stays

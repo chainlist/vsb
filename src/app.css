@@ -69,10 +69,19 @@
 	color: var(--ink);
 	background: var(--paper);
 	/* While the selected cards' links stand out, the others fade, still solid: how much of a card's
-	   content shows, the color of an edge, mixed into the paper, and how long they take to fade. */
+	   content shows, the color of an edge, mixed into the paper, and how long they take to fade. A
+	   card appearing fades in over the same time. */
 	--dim: 0.35;
 	--edge-dim: color-mix(in srgb, var(--ink-soft) calc(var(--dim) * 100%), var(--paper));
 	--fade: 200ms;
+}
+
+/* How much of a card's text shows while it appears (Card.svelte animates it), registered so it
+   animates rather than jumping. */
+@property --shown {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 1;
 }
 
 /* A theme whose fonts have a small x-height scales them up to the others' (--font-adjust). Every

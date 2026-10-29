@@ -24,6 +24,15 @@
 {/if}
 
 <style>
+	/* Fading in while the card appears (--shown, from Card.svelte). */
+	.notice,
+	.hint,
+	.clear,
+	.index-card-title,
+	.body {
+		opacity: var(--shown);
+	}
+
 	.notice {
 		font-size: 14px;
 		font-weight: 600;
