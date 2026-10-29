@@ -8,6 +8,7 @@ import type { Layout } from './layout.ts';
 import type { NoteRecord } from './records.ts';
 import { all } from './settle.ts';
 import { holds, wanted, type Wanted } from './text.ts';
+import { postings } from './words.ts';
 
 const notes = (e: Edit) => e.tx.objectStore('notes');
 
@@ -47,22 +48,18 @@ function matching(layout: Layout, words: Wanted[]): [string, number][] {
 }
 
 /** The notes holding every word typed, best first: a word in the title counts thrice, each word of
- * the text that starts as typed once. Read from the word indexes alone, never the notes. */
+ * the text that starts as typed once. Read from the word index alone, never the notes. */
 async function rankedNotes(e: Edit, words: Wanted[]) {
-	const keys = (index: string, range: IDBKeyRange) => request(notes(e).index(index).getAllKeys(range)) as Promise<string[]>;
-	const prefix = (start: string) => IDBKeyRange.bound(start, `${start}￿`);
 	const each = await Promise.all(
 		words.map(async (w) => {
-			const [body, title, ...whole] = await Promise.all([
-				keys('words', prefix(w.start)),
-				keys('tw', prefix(w.start)),
-				...w.whole.map((t) => keys('words', IDBKeyRange.only(t)))
-			]);
-			// Each key is one word of the note starting as typed.
+			const [starting, ...whole] = await Promise.all([postings(e.tx, w.start, `${w.start}￿`), ...w.whole.map((t) => postings(e.tx, t, t))]);
+			// Each posting is one word starting as typed.
 			const score = new Map<string, number>();
-			for (const id of body) score.set(id, (score.get(id) ?? 0) + 1);
-			for (const id of title) score.set(id, (score.get(id) ?? 0) + 2);
-			for (const has of whole.map((ids) => new Set(ids))) for (const id of score.keys()) if (!has.has(id)) score.delete(id);
+			for (const p of starting) {
+				for (const id of p.notes) score.set(id, (score.get(id) ?? 0) + 1);
+				for (const id of p.titled) score.set(id, score.get(id)! + 2);
+			}
+			for (const has of whole.map((ps) => new Set(ps.flatMap((p) => p.notes)))) for (const id of score.keys()) if (!has.has(id)) score.delete(id);
 			return score;
 		})
 	);

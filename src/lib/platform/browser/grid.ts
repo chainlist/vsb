@@ -1,6 +1,6 @@
-// The spatial index the desktop gets from SQLite's R*Tree. Each card, edge and bundle is filed under
-// one square of a grid, of a side picked by its size, so the items meeting a rectangle are read with
-// a few key ranges: one per column of squares, per side.
+// The spatial index the desktop gets from SQLite's R*Tree. Each card and edge is filed under every
+// square of a grid it overlaps, of a side picked by its size, so the items meeting a rectangle are
+// read with a few key ranges: one per column of squares it overlaps, per side.
 import type { Frame, Rect } from '#lib/api.js';
 
 /** An absolute box: minX, minY, maxX, maxY. */
@@ -10,33 +10,39 @@ export type Box = [number, number, number, number];
  * fits the smallest, so a window at full zoom spans a few columns of it. */
 const BASE = 1024;
 const SIDES = 4;
+/** An item spans at most this many squares a side: a long edge is filed under squares a quarter of
+ * its size, so a window reads it only near where it runs. */
+const SPAN = 4;
 /** Past this many columns, one range reads the whole stripe: one read costs about as much as eight
  * small items. */
 const COLUMNS = 16;
 
-/** The square an item is filed under: its side's rank, then the column and row of its top-left
- * corner. An item spans at most this square and the next ones right and down. */
-export function gridKey(b: Box): number[] {
+/** The squares an item is filed under: its side's rank, then each column and row it overlaps. */
+export function gridKeys(b: Box): number[][] {
 	const size = Math.max(b[2] - b[0], b[3] - b[1]);
 	for (let rank = 0, side = BASE; rank < SIDES; rank++, side *= 4) {
-		if (size <= side) return [rank, Math.floor(b[0] / side), Math.floor(b[1] / side)];
+		if (size > side * SPAN) continue;
+		const [x0, y0, x1, y1] = b.map((v) => Math.floor(v / side));
+		const keys = [];
+		for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) keys.push([rank, x, y]);
+		return keys;
 	}
-	return [SIDES, 0, 0];
+	return [[SIDES, 0, 0]];
 }
 
-/** The key ranges, after `prefix`, holding every item filed by `gridKey` that may meet `r`. */
-export function gridRanges(r: Rect, prefix: number[] = []): IDBKeyRange[] {
+/** The key ranges holding every item filed by `gridKeys` that may meet `r`. */
+export function gridRanges(r: Rect): IDBKeyRange[] {
 	const ranges: IDBKeyRange[] = [];
 	for (let rank = 0, side = BASE; rank < SIDES; rank++, side *= 4) {
-		const [x0, x1] = [Math.floor(r.minX / side) - 1, Math.floor(r.maxX / side)];
-		const [y0, y1] = [Math.floor(r.minY / side) - 1, Math.floor(r.maxY / side)];
+		const [x0, x1] = [Math.floor(r.minX / side), Math.floor(r.maxX / side)];
+		const [y0, y1] = [Math.floor(r.minY / side), Math.floor(r.maxY / side)];
 		if (x1 - x0 >= COLUMNS) {
-			ranges.push(IDBKeyRange.bound([...prefix, rank, x0, -Infinity], [...prefix, rank, x1, Infinity]));
+			ranges.push(IDBKeyRange.bound([rank, x0, -Infinity], [rank, x1, Infinity]));
 			continue;
 		}
-		for (let x = x0; x <= x1; x++) ranges.push(IDBKeyRange.bound([...prefix, rank, x, y0], [...prefix, rank, x, y1]));
+		for (let x = x0; x <= x1; x++) ranges.push(IDBKeyRange.bound([rank, x, y0], [rank, x, y1]));
 	}
-	ranges.push(IDBKeyRange.only([...prefix, SIDES, 0, 0]));
+	ranges.push(IDBKeyRange.only([SIDES, 0, 0]));
 	return ranges;
 }
 

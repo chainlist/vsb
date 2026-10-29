@@ -2,7 +2,7 @@
 // and edges sit in the world and on the grid, what cards show of their notes, the clusters and
 // bundles of the zoomed-out map, what each zone holds, and how many cards show each note.
 import type { Frame } from '#lib/api.js';
-import { boxOf, gridKey } from './grid.ts';
+import { boxOf, gridKeys } from './grid.ts';
 import { request } from './idb.ts';
 import type { Layout } from './layout.ts';
 import type { CardFile, CardRecord, EdgeFile, EdgeRecord, NoteRecord, ZoneFile } from './records.ts';
@@ -110,7 +110,7 @@ function cardRecord(layout: Layout, id: string, file: CardFile, old: CardRecord 
 		ax,
 		ay,
 		root: place?.root ?? '',
-		g: gridKey(boxOf({ x: ax, y: ay, w: file.w, h: file.h })),
+		g: gridKeys(boxOf({ x: ax, y: ay, w: file.w, h: file.h })),
 		...(place ? {} : { cl: squares(file) }),
 		title: note.title,
 		excerpt: note.excerpt,
@@ -130,5 +130,5 @@ function edgeRecord(id: string, file: EdgeFile, from: CardRecord | undefined, to
 		const [a, b] = [end(ends[0], roots[0], cell), end(ends[1], roots[1], cell)];
 		if (a !== b) bk.push(a < b ? [cell, a, b] : [cell, b, a]);
 	}
-	return { id, file, ends, roots, g: gridKey(bounds(ends)), bk };
+	return { id, file, ends, roots, g: gridKeys(bounds(ends)), bk };
 }

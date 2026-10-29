@@ -88,7 +88,10 @@ const cluster = (c: ClusterRecord): Cluster => ({ cell: [c.cx, c.cy], count: c.c
 
 /** The bundles one of whose edges may cross the rectangle: those whose edges' box meets it. */
 async function bundlesIn(e: Edit, rect: Rect, cell: number, clusters: Cluster[]): Promise<Bundle[]> {
-	const found = (await inGrid<BundleRecord>(e.tx.objectStore('bundles'), rect, [cell])).filter((b) => meets(b.box, rect));
+	// Every bundle at this cell size: they are few, and a zoomed-out window spans much of the canvas,
+	// where a grid would hand back a long bundle once per square.
+	const range = IDBKeyRange.bound([cell, '', ''], [cell, '￿', '￿']);
+	const found = ((await request(e.tx.objectStore('bundles').getAll(range))) as BundleRecord[]).filter((b) => meets(b.box, rect));
 	// The clusters at their ends: those in view are already read.
 	const known = new Map<string, Cluster>(clusters.map((c) => [`c${c.cell[0]},${c.cell[1]}`, c]));
 	const wanted = [...new Set(found.flatMap((b) => [b.a, b.b]).filter((end) => end[0] === 'c' && !known.has(end)))];

@@ -3,6 +3,7 @@
 // platforms. The rest is derived on every write, as the desktop's index derives it.
 import type { Arrow, Frame, HAlign, Shape, Stroke, VAlign } from '#lib/api.js';
 import type { Box } from './grid.ts';
+import type { Words } from './words.ts';
 
 export type Kind = 'zone' | 'card' | 'edge';
 
@@ -37,7 +38,7 @@ export type CardRecord = {
 	ax: number;
 	ay: number;
 	root: string;
-	g: number[];
+	g: number[][];
 	cl?: number[][];
 	title: string | null;
 	excerpt: string | null;
@@ -51,13 +52,13 @@ export type EdgeRecord = {
 	file: EdgeFile;
 	ends: [Frame, Frame] | null;
 	roots: [string, string];
-	g?: number[];
+	g?: number[][];
 	bk?: (number | string)[][];
 };
 
-/** A note: its text, where it would live as a file, and its words for search. `loose` is set while no
- * card shows it, as the Unplaced tray's order: most recently changed first. */
-export type NoteRecord = {
+/** A note: its text, where it would live as a file, and the words the word index holds it under.
+ * `loose` is set while no card shows it, as the Unplaced tray's order: most recently changed first. */
+export type NoteRecord = Words & {
 	id: string;
 	path: string;
 	/** The path ignoring case, unique, as on the file systems a vault may be written to. */
@@ -68,8 +69,6 @@ export type NoteRecord = {
 	mtime: number;
 	placed: number;
 	loose?: [number, string];
-	tw: string[];
-	words: string[];
 };
 
 /** A note with its place in the Unplaced tray: there while no card shows it. */
@@ -77,7 +76,7 @@ export const tray = (n: NoteRecord): NoteRecord => ({ ...n, loose: n.placed > 0 
 
 /** Clusters and bundles: counts and boxes kept per cell size, never the cards themselves. */
 export type ClusterRecord = { cell: number; cx: number; cy: number; count: number; box: Box };
-export type BundleRecord = { cell: number; a: string; b: string; count: number; ha: number; hb: number; box: Box; g: number[] };
+export type BundleRecord = { cell: number; a: string; b: string; count: number; ha: number; hb: number; box: Box };
 
 const number = (v: unknown, field: string) => {
 	if (typeof v !== 'number') throw new Error(`missing field \`${field}\``);

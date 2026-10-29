@@ -2,7 +2,7 @@
 // and how many cards show each note. A write adds and takes away; a box only shrinks when something
 // reaching its side leaves, and then it is measured again from what is left.
 import type { Frame } from '#lib/api.js';
-import { type Box, boxOf, gridKey, touches, union } from './grid.ts';
+import { type Box, boxOf, touches, union } from './grid.ts';
 import { request } from './idb.ts';
 import type { Layout } from './layout.ts';
 import { tray, type CardFile, type CardRecord, type ClusterRecord, type BundleRecord, type EdgeRecord, type NoteRecord } from './records.ts';
@@ -103,7 +103,7 @@ export async function flush(tx: IDBTransaction, layout: Layout, t: Tallies, next
 			const all = again.entries.get(JSON.stringify(e.key));
 			[count, ha, hb, box] = all ? [all.count, all.ha, all.hb, cover(all.adds)] : [0, 0, 0, null];
 		}
-		return { cell, a, b, count, ha, hb, box: box!, g: box ? [cell, ...gridKey(box)] : [] };
+		return { cell, a, b, count, ha, hb, box: box! };
 	});
 
 	const notes = tx.objectStore('notes');

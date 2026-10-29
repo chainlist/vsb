@@ -7,10 +7,11 @@ import { request } from './idb.ts';
 import { fits } from './layout.ts';
 import type { CardRecord, EdgeRecord, Kind } from './records.ts';
 
-/** Every record filed in the grid squares that may meet `r`. */
-export async function inGrid<T>(store: IDBObjectStore, r: Rect, prefix: number[] = []) {
-	const found = await Promise.all(gridRanges(r, prefix).map((range) => request(store.index('g').getAll(range))));
-	return found.flat() as T[];
+/** Every record filed in the grid squares that may meet `r`, once each: an item spanning several of
+ * them comes back from each. */
+export async function inGrid<T extends { id: string }>(store: IDBObjectStore, r: Rect) {
+	const found = await Promise.all(gridRanges(r).map((range) => request(store.index('g').getAll(range))));
+	return [...new Map((found.flat() as T[]).map((item) => [item.id, item])).values()];
 }
 
 /** The zones, then the cards, directly in `zone` (null: on the canvas). With `within`, only those

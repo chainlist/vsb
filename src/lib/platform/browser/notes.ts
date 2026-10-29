@@ -7,6 +7,7 @@ import { tray, type CardRecord, type NoteRecord } from './records.ts';
 import { showing } from './settle.ts';
 import { excerpt, fileStem, stemFits, title, wordSet } from './text.ts';
 import { newId } from './ulid.ts';
+import { reindex } from './words.ts';
 
 const notes = (e: Edit) => e.tx.objectStore('notes');
 
@@ -22,12 +23,14 @@ function record(id: string, path: string, body: string, placed: number): NoteRec
 	return tray({ id, path, pk: path.toLowerCase(), body, title: t, excerpt: excerpt(body), mtime: Date.now(), placed, tw: wordSet(t), words: wordSet(body) });
 }
 
-/** Keeps a note and redraws the cards showing it; a note gone leaves them unresolved. */
-async function keep(e: Edit, id: string, n: NoteRecord | undefined) {
-	if (n) notes(e).put(n);
+/** Keeps a note as it is now, or deletes it for none, with its words in the word index, and redraws
+ * the cards showing it: a note gone leaves them unresolved. */
+async function keep(e: Edit, id: string, was: NoteRecord | undefined, now: NoteRecord | undefined) {
+	if (now) notes(e).put(now);
 	else notes(e).delete(id);
+	await reindex(e.tx, id, was, now);
 	const cards = e.tx.objectStore('cards');
-	for (const card of (await request(cards.index('note').getAll(id))) as CardRecord[]) cards.put({ ...card, ...showing(n) });
+	for (const card of (await request(cards.index('note').getAll(id))) as CardRecord[]) cards.put({ ...card, ...showing(now) });
 }
 
 /** `<dir>/<stem>.md`, or `<stem> 2.md`, `<stem> 3.md`... : the first name no other note uses,
@@ -45,7 +48,7 @@ export const readNote = async (e: Edit, id: string) => (await note(e, id)).body;
 /** Writes a new note named after its title and returns its ID. */
 export async function newNote(e: Edit, body: string) {
 	const id = newId();
-	notes(e).put(record(id, await freePath(e, 'notes', fileStem(title(body)), null), body, 0));
+	await keep(e, id, undefined, record(id, await freePath(e, 'notes', fileStem(title(body)), null), body, 0));
 	return id;
 }
 
@@ -61,20 +64,21 @@ export async function createNoteForCard(e: Edit, cardId: string, body: string) {
 
 export async function saveNote(e: Edit, id: string, body: string) {
 	const n = await note(e, id);
-	await keep(e, id, record(id, n.path, body, n.placed));
+	await keep(e, id, n, record(id, n.path, body, n.placed));
 	return true;
 }
 
 /** Drops a note created during this edit session and left empty: the card goes back to empty
  * first, then the note goes. A note with content is never dropped here. */
 export async function discardNote(e: Edit, cardId: string, id: string) {
-	if ((await note(e, id)).body.trim()) throw new Error('the note is not empty');
+	const n = await note(e, id);
+	if (n.body.trim()) throw new Error('the note is not empty');
 	const card = await read(e, 'card', cardId);
 	if (card.note === id) {
 		card.note = null;
 		await apply(e, [state('card', cardId, card)]);
 	}
-	await keep(e, id, undefined);
+	await keep(e, id, n, undefined);
 }
 
 /** Renames the note after its title, if the title changed. */

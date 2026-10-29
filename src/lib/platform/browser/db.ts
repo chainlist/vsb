@@ -2,7 +2,7 @@
 // and what the desktop's index derives from it, kept up to date on every write.
 import { request } from './idb.ts';
 
-export const STORES = ['meta', 'ui', 'notes', 'zones', 'cards', 'edges', 'clusters', 'bundles'];
+export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'clusters', 'bundles'];
 
 /** The vault's settings, as the desktop's `vault.json`: settings at their default are left out. */
 export type VaultFile = { format: number; id: string; theme?: string; snap?: boolean };
@@ -20,21 +20,20 @@ export function openDb(vault: string) {
 		const notes = db.createObjectStore('notes', { keyPath: 'id' });
 		notes.createIndex('pk', 'pk', { unique: true });
 		notes.createIndex('loose', 'loose');
-		notes.createIndex('tw', 'tw', { multiEntry: true });
-		notes.createIndex('words', 'words', { multiEntry: true });
+		db.createObjectStore('words', { keyPath: ['word', 'shard'] });
 		db.createObjectStore('zones', { keyPath: 'id' });
 		const cards = db.createObjectStore('cards', { keyPath: 'id' });
-		cards.createIndex('g', 'g');
+		cards.createIndex('g', 'g', { multiEntry: true });
 		cards.createIndex('zk', 'zk');
 		cards.createIndex('note', 'file.note');
 		cards.createIndex('cl', 'cl', { multiEntry: true });
 		const edges = db.createObjectStore('edges', { keyPath: 'id' });
-		edges.createIndex('g', 'g');
+		edges.createIndex('g', 'g', { multiEntry: true });
 		edges.createIndex('from', 'file.from');
 		edges.createIndex('to', 'file.to');
 		edges.createIndex('bk', 'bk', { multiEntry: true });
 		db.createObjectStore('clusters', { keyPath: ['cell', 'cx', 'cy'] });
-		db.createObjectStore('bundles', { keyPath: ['cell', 'a', 'b'] }).createIndex('g', 'g');
+		db.createObjectStore('bundles', { keyPath: ['cell', 'a', 'b'] });
 	};
 	return request(open);
 }
