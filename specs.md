@@ -145,7 +145,7 @@ src/routes/
 
 <OS app-data>/                # this device only, never synced
   vaults.json                 # recent vaults
-  device.json                 # this device's settings: the interface size, what the wheel does
+  device.json                 # this device's settings: the interface size, what the wheel does, the pen
   <vault-id>/
     index.sqlite              # derived cache
 ```
@@ -236,18 +236,20 @@ Competitor scan
   "y": 40.0,
   "w": 300.0,
   "h": 180.0,
-  "color": "#f5d76e",
   "strokes": [
-    [0.0,12.5,0.48,4.2,10.0,0.55,9.8,8.1,0.6],
-    [150.0,0.0,0.5,300.0,180.0,0.42]
+    {"points":[1.5,12.5,0.48,4.2,10.0,0.55,9.8,8.1,0.6]},
+    {"points":[150.0,4.0,0.5,296.0,176.0,0.42],"color":"#f5d76e","width":8.0}
   ]
 }
 ```
 
 - `zone`: zone ULID, or `null` for a drawing directly on the canvas, as a card's.
-- `x`, `y`: relative to the drawing's zone, as a card's. `w`, `h`: the box around its ink, its strokes' points and half the pen's width (1.5 world units) around them, so a lone dot has a size and shows when zoomed in.
-- `strokes`: each stroke as a flat list of its points, x, y and pressure (0 to 1) in turn, x and y from the drawing's top-left corner. Coordinates are rounded to 0.1, pressure to 0.01. Each stroke is written on one line; the rest is laid out as every item file.
-- `color`: one of the highlighters (see [Drawings](#drawings)), or left out for the theme's ink.
+- `x`, `y`: relative to the drawing's zone, as a card's. `w`, `h`: the box around its ink: each stroke's points, with half the stroke's width around them, so a lone dot has a size and shows when zoomed in.
+- `strokes`, each written on one line, the rest laid out as every item file:
+  - `points`: a flat list of the stroke's points, x, y and pressure (0 to 1) in turn, x and y from the drawing's top-left corner. Coordinates are rounded to 0.1, pressure to 0.01.
+  - `color`: one of the highlighters (see [Drawings](#drawings)), or left out for the theme's ink.
+  - `width`: in world units at middling pressure, 1.5 (thin), 3 (medium) or 8 (thick); left out at 3.
+- A file written before strokes had their own color and width holds each stroke as a bare list of points, and the drawing's `color` for all of them. It is read so, keeping its look, and written in the shape above the next time it changes.
 
 ## Zones and membership
 
@@ -342,14 +344,19 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 
 ## Drawings
 
-- **The pen and the eraser** sit on the [rail](#canvas-chrome), under the builder: Pen (P) and Eraser (E). A key or a button picks its tool up, or puts it down; picking one puts the other down, and Escape puts either down. The tool in hand shows on its button, as an open panel's does. With the pen, the pointer is a crosshair; with the eraser, a ring the eraser's size.
-- **While one is in hand,** a left drag anywhere on the canvas (the paper, zone bodies, cards, edges) draws or erases instead of panning, moving or selecting, and a double-click places nothing. The wheel, a pinch and the middle button still zoom and pan, the other keys (undo, Mod+1...) still work, and the chrome over the canvas keeps its clicks.
-- **One pen,** in the theme's ink, about 3 world units wide at middling pressure, so it scales with the zoom as cards do. A stylus draws thinner pressed lightly and thicker pressed hard; a mouse, which has no pressure, draws thicker slow than fast, its pressure made up from its speed as perfect-freehand would. The file keeps each point's pressure, and the outline is drawn from it, so a stroke looks the same everywhere. A stroke shows as it is drawn and is written on release: one write and one undo step per stroke.
-- **Strokes group into drawings.** A stroke starting within 40 world units (two graph-paper squares) of a drawing's box joins it, the nearest one, so a sketch can be added to later; otherwise it starts a drawing. A new drawing joins the innermost zone under its first stroke's start, as a card placed by double-click does; strokes added later never change its zone. A stroke grows its drawing's box; grown left or up, its corner moves and its stored points shift back by as much.
-- **The eraser takes out whole strokes:** every stroke it passes over, within its radius (8 screen pixels to the ink's edge), fades at once, and on release they all go, as one undo step. A drawing left with no strokes is deleted; one left with some shrinks its box to them.
+- **Pen mode** is on the [rail](#canvas-chrome), under the builder: the Pen button and P turn it on or off, on the tool last in hand; Escape turns it off. In it the hand holds one of three tools: the pen, the stroke eraser or the cutting eraser. E takes the eraser last used, from anywhere, pen mode off or not; E again goes back to the pen. The Pen button shows while pen mode is on, as an open panel's does. With the pen, the pointer is a crosshair; with an eraser, a ring the eraser's size.
+- **While it is on,** a left drag anywhere on the canvas (the paper, zone bodies, cards, edges) draws or erases instead of panning, moving or selecting, and a double-click places nothing. The wheel, a pinch and the middle button still zoom and pan, the other keys (undo, Mod+1...) still work, and the chrome over the canvas keeps its clicks.
+- **The pen bar** shows while pen mode is on: a small card of the chrome centered at the bottom of the canvas, as the zoom controls are cards (left of a panel's sheet while one is open, as they are). In three groups, each with the current pick shown as chosen: the three tools (Lucide's pen, eraser and scissors); the colors, the ink first, then the highlighters cards and zones take, each drawn as the pen draws it; the three widths, as three dots of their size. Picking a color or a width while an eraser is in hand goes back to the pen with it. Each button has a tooltip and a screen-reader label. The bar's buttons keep their keys, as the selection bar's menus do, and a pick gives the keyboard back to the canvas.
+- **The pen** draws in its color and width: thin, medium or thick, 1.5, 3 and 8 world units at middling pressure, so it scales with the zoom as cards do. A stylus draws thinner pressed lightly and thicker pressed hard; a mouse, which has no pressure, draws thicker slow than fast, its pressure made up from its speed as perfect-freehand would. The file keeps each point's pressure, and the outline is drawn from it, so a stroke looks the same everywhere. A stroke shows as it is drawn and is written on release: one write and one undo step per stroke.
+- **The pen's color, width and eraser are this device's:** the same in every vault, kept with the interface size and the wheel (`device.json` on the desktop, localStorage in the browser) as `"pen": { "color": "#f5d76e", "width": 8, "eraser": "cut" }`, each part left out at its default (the ink, medium, the stroke eraser) and the whole of it while all are.
+- **Strokes group into drawings.** A stroke starting within 40 world units (two graph-paper squares) of a drawing's box joins it, the nearest one, whatever its color and width, so a sketch can be added to later and mix them; otherwise it starts a drawing. A new drawing joins the innermost zone under its first stroke's start, as a card placed by double-click does; strokes added later never change its zone. A stroke grows its drawing's box; grown left or up, its corner moves and its stored points shift back by as much.
+- **Two erasers,** each reaching 8 screen pixels from the pointer to the ink's edge, each erasing as one undo step per drag:
+  - **The stroke eraser** takes out whole strokes: every stroke it passes over fades at once, and on release they all go.
+  - **The cutting eraser** takes out only what it passes over, at once, cutting a stroke in two where it crosses it. The pieces left are strokes of their own, in its color and width; a lone point left at a cut's edge goes too.
+  - A drawing left with no ink is deleted; one left with some shrinks its box to it.
 - **A drawing is one item:** moved, recolored and deleted as a whole. A press on its ink, not on the empty parts of its box, selects it, Shift toggles it, and dragging moves it with the rest of the selection, its top-left corner snapping to the grid as a card's does (Alt moves freely). Mod+drag from its ink still draws an edge from a card beneath, or a zone. A selected drawing shows its box; it has no resize handles.
 - **Its zone is a card's:** see [Zones and membership](#zones-and-membership). A moved drawing joins the innermost zone under its box's center. Inserting a card on an edge moves drawings out of the way as it moves cards; arranging leaves them where they are.
-- **Color:** the selection bar's color select colors the selected drawings with the highlighters cards and zones take, drawn darker so they read on the paper: mixed toward the ink, 70% the color, as a color's swatch is rimmed. No color goes back to the ink. With drawings alone selected, the bar holds the color select and Delete.
+- **Color:** a stroke's color is one of the highlighters cards and zones take, drawn darker so it reads on the paper: mixed toward the ink, 70% the color, as a color's swatch is rimmed. The selection bar's color select recolors every stroke of the selected drawings, and shows Mixed when their strokes differ; No color takes them back to the ink. With drawings alone selected, the bar holds the color select and Delete.
 - **Deleting:** Delete, or the selection bar's, takes the selected drawings with the selected cards, zones and edges, as one undo step.
 - **Drawn above cards and edges,** below the chrome; zone names and cluster markers stay above them, so a zone's handle and a marker's count are never covered. Presses go through a drawing except on its ink, and a few pixels around it. Drawings never dim when cards are selected, as zones do not. Each drawing is drawn in its own error boundary, as each card is.
 - **Zoomed out,** a loose drawing is drawn as itself at any zoom, skipped when smaller than a few pixels on screen like everything else, and never counted in a cluster. Below 40%, a drawing inside a collapsed zone is not drawn as itself: the zone's [preview](#previews) draws its strokes. Fit (Mod+1, opening a vault) frames drawings too.
@@ -358,14 +365,15 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 
 - **The controls sit in the canvas's corners,** never across it: the vault top left, the tools down the left edge, the zoom bottom right. Each is a small card of the theme's stock floating over the canvas, which runs under them to the window's edges.
 - **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings, which shows its key, Mod+, (Ctrl+, or Cmd+, on macOS).
-- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B), [Pen (P) and Eraser (E)](#drawings). The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the pen's or the eraser's while it is in hand. The panels stay routes, reached through links.
+- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B) and [Pen (P)](#drawings). The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the Pen button while pen mode is on. The panels stay routes, reached through links.
+- **The pen bar,** at the bottom center while [pen mode](#drawings) is on: the tool in hand, the pen's color and its width.
 - **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
   - Fit frames everything on the canvas, as opening the vault does, gliding there; Mod+1 does the same. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
 - **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards, zones and drawings, the edges' style, Arrange, Builder and Delete.
   - The color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
-  - One color select serves the selected cards, zones and drawings together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray, a drawing to the theme's ink.
+  - One color select serves the selected cards, zones and drawings together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray, every stroke of a drawing to the theme's ink.
   - A menu keeps its keys: Escape, Enter or Delete pressed in it never reach the canvas. Choosing leaves the selection and the view as they are, and the focus goes back to the canvas.
 - **Framing stays clear of the chrome:** whatever is framed (opening a vault, fit, a search result, a zone list row) keeps 80 pixels free on every side, at the interface size, so the rail and the corner cards never cover it.
 
@@ -516,8 +524,7 @@ CREATE TABLE drawings (
   id        TEXT UNIQUE NOT NULL,
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
-  color     TEXT,                     -- NULL = the theme's ink
-  strokes   TEXT NOT NULL,            -- JSON, as in the file
+  strokes   TEXT NOT NULL,            -- JSON, as the file has them now, each with its color and width
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX drawings_zone ON drawings(zone);
@@ -556,7 +563,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 - Opening a vault frames everything on its canvas: centered, zoomed out until it all fits, never zoomed in past 100%. An empty canvas opens at 100% on the origin.
 - **Mouse and trackpad, like a map:** the mouse wheel, two fingers on a trackpad and a pinch all zoom around the pointer; dragging the paper pans, in any direction. A pinch follows the fingers. Two-finger panning is left out by default because on Windows the touchpad locks each swipe to one axis before the page sees it. A pinch never zooms the window itself.
-  - **The wheel can pan instead,** for each device, in Settings > Canvas: Zoom (the default) or Pan. Panning, the wheel and two fingers move the canvas, Shift+wheel sideways (the page turns it sideways when the browser leaves that to it), and Ctrl+wheel and a pinch still zoom around the pointer. It is kept with the interface size: in `device.json` on the desktop, in localStorage in the browser, the default left out.
+  - **The wheel can pan instead,** for each device, in Settings > Canvas: Zoom (the default) or Pan. Panning, the wheel and two fingers move the canvas, Shift+wheel sideways (the page turns it sideways when the browser leaves that to it), and Ctrl+wheel and a pinch still zoom around the pointer. It is kept with the interface size and the pen: in `device.json` on the desktop, in localStorage in the browser, the default left out.
   - On Windows, Tauri leaves WebView2's pinch zoom off, which drops the pinch before the page sees it; the app turns it on at startup, before the first page loads, so the pinch arrives as a wheel turned with Ctrl held. WebKit, on macOS, reports it as gesture events instead.
 - **Framing glides.** Every jump that frames something (a zone list row, a search result, a cluster marker, a bundle, double-clicking a collapsed zone, new cards framed while zoomed out) glides there like a map: a far jump zooms out, travels and zooms back in, along the path that feels shortest (van Wijk and Nuij's, as d3 draws it). It takes 0.25 to 0.8 s, by the length of the path, eased in and out. Opening a vault frames everything at once. The wheel, a pinch and dragging stay direct, and stop a glide where it is.
 - **Reduced motion.** When the system asks for reduced motion, glides jump and the panels' animations are off.
@@ -573,7 +580,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ### Previews
 
 - **A collapsed zone drawn as a frame shows what it holds**, at any depth: every card as a faded block at its real place and size, every inner zone as a faint frame, and every drawing's strokes. It is the zone's general shape at a glance; it has no text.
-- **A block is the card's stock:** washed with its color as the card is, or the theme's plain stock for a card with none. A drawing's strokes are plain lines through their points at the pen's width, inked as on the canvas. The whole preview is faded as a dimmed card is, and an inner zone's frame is drawn as the zone's own frame is.
+- **A block is the card's stock:** washed with its color as the card is, or the theme's plain stock for a card with none. A drawing's strokes are plain lines through their points at the pen's medium width, inked as on the canvas, grouped by color. The whole preview is faded as a dimmed card is, and an inner zone's frame is drawn as the zone's own frame is.
 - **It is not interactive.** Presses go through to the zone's body, which keeps its behavior (dragging pans, double-clicking frames the zone). While a collapsed zone is dragged, its preview moves with it, as its bundles do.
 - **The query brings it:** zoomed out, the viewport answer holds, for each collapsed zone it returns, the boxes of the cards and inner zones meeting the queried area, in the zone's coordinates from its corner, the cards grouped by color, and the drawings meeting it, each as its corner and its strokes, grouped by color. Anything smaller than a few pixels on screen is left out, as everywhere, so far out the preview thins to the bigger cards. Loose cards keep their cluster markers.
 - **Drawn cheaply:** one SVG inside the zone, with one path per color of cards, one for the inner frames and one per color of ink, whatever the number of cards and drawings.
@@ -615,7 +622,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **Screens outside a vault** (the vault picker, errors) use the default theme.
 - **The interface size belongs to the device:** 100% (the default), 115% or 130%, picked in Appearance, applied at once and kept in the app-data folder's `device.json`, the same in every vault and never synced. The default is left out of the file.
-  - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the batch dialog, menus and tooltips, the settings dialog and the vault picker.
+  - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the pen bar, the batch dialog, menus and tooltips, the settings dialog and the vault picker.
   - It never scales the canvas's cards, zones and edges, nor the marks drawn at a constant size on screen over them: zone names once collapsed, zone and cluster markers, bundles and resize handles. They belong to the map, and the zoomed-out map is built on their sizes.
   - It works through CSS `zoom` on each piece of chrome, never through the WebView's own zoom, which would scale the canvas too and fight the pinch. `zoom` scales viewport units along with everything else, so chrome sizes itself against the window with percentages instead.
 - Zone and card colors live in their files, so they are the same in every theme. The default zone gray, for a zone with no color, and the plain card stock, for a card with none, come from the theme.
@@ -643,14 +650,14 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
   - **The zoomed-out map.** Cluster counts and boxes per cell, and bundle counts, arrowheads and boxes per pair of ends, are kept on every write for the cell sizes the canvas asks for, 512 to 4096 (40% zoom down to 5%); another size is refused. A zoomed-out query reads them, never the cards: the clusters of the columns it covers, and every bundle of its cell size, kept when the box around its edges meets the queried area. A box only shrinks when something reaching its side leaves, and is then measured again from what is left.
   - **A bundle counts all its edges.** On the desktop a bundle's count and arrowheads come from those of its edges whose own box meets the queried area, so they change as the window moves; in the browser they come from all the edges between its two ends, as [Bundles](#bundles) describes them. A bundle is found when the box around all its edges meets the area: on rare layouts one more than on the desktop, never one fewer.
   - **Search.** A word index of its own: for each word, folded (case and accents left out), the notes holding it and those holding it in their title, split in sixteen shards by note, so a save rewrites small records and a word typed reads a few. Every word typed must start a word of the note, as with FTS5. Best first means: a title word counts thrice, every other word starting as typed once; the matches are the desktop's, their order is not bm25's.
-  - **Zones in memory.** While a vault is open its zones are held in memory: a vault has few, and the desktop walks them all on every query too. Each zone record keeps the cards it holds directly, each card's box and color, for the zone list's counts, framing and the [previews](#previews), so a zoomed-out query never reads the cards. A vault from before (database version 1, which kept a count and a box) gets them when it is next opened, and one from before drawings (version 2) gets their store.
+  - **Zones in memory.** While a vault is open its zones are held in memory: a vault has few, and the desktop walks them all on every query too. Each zone record keeps the cards it holds directly, each card's box and color, for the zone list's counts, framing and the [previews](#previews), so a zoomed-out query never reads the cards. A vault from before (database version 1, which kept a count and a box) gets them when it is next opened, one from before drawings (version 2) gets their store, and one from before strokes had their own color (version 3) gets its drawings in the shape strokes have now.
 - **One command at a time**, as the desktop's lock runs them, and each edit is one transaction: it lands whole or not at all.
 
 ### Vaults by name
 
 - **A vault is chosen by name**, not by folder. The vault picker says "Name a vault. Your notes stay in this browser.", and its button, "Open a vault", asks for a name, in a dialog the browser backend mounts. A name already used, ignoring case, opens that vault, as choosing a folder that already is a vault does.
 - **The vault list lives in localStorage**, most recent first, as `vaults.json` does on the desktop. A browser vault has no path.
-- **This device's settings live in localStorage too:** the interface size and what the wheel does, as `device.json` holds them.
+- **This device's settings live in localStorage too:** the interface size, what the wheel does and the pen, as `device.json` holds them.
 - **One tab per vault.** A tab holds a Web Lock on the vault while it is open. Another tab opening it gets "This vault is open in another tab", on the error page, rather than two tabs writing over each other. Closing the tab, or opening another vault in it, lets it go.
 
 ### What does not apply
