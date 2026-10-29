@@ -3,10 +3,13 @@
 	import Eraser from '@lucide/svelte/icons/eraser';
 	import PenLine from '@lucide/svelte/icons/pen-line';
 	import Scissors from '@lucide/svelte/icons/scissors';
+	import { cubicOut } from 'svelte/easing';
+	import { fly } from 'svelte/transition';
 	import { COLORS } from '#lib/canvas/colors.js';
 	import { WIDTHS } from '#lib/canvas/ink.js';
 	import { DRAWING_KEYS, ink, type Tool } from '#lib/canvas/pen.svelte.js';
 	import { keyName } from '#lib/keys.js';
+	import { motion } from '#lib/motion.js';
 	import { PANELS } from '#lib/panel/panels.js';
 	import Tip from './Tip.svelte';
 
@@ -29,8 +32,16 @@
 </script>
 
 <!-- While pen mode is on: what the hand holds, and the pen's color and width. Its buttons keep their
-     keys, as the selection bar's menus do, until a pick gives the keyboard back to the canvas. -->
-<div class="pens index-card chrome" class:beside role="toolbar" aria-label="Pen" data-own-keys>
+     keys, as the selection bar's menus do, until a pick gives the keyboard back to the canvas. It rises
+     from below the window's bottom edge while fading in (its 44 pixels and the inset), and sinks back. -->
+<div
+	class="pens index-card chrome"
+	class:beside
+	role="toolbar"
+	aria-label="Pen"
+	data-own-keys
+	transition:fly={{ y: 60, duration: motion(200), easing: cubicOut }}
+>
 	<div class="group" role="radiogroup" aria-label="Tool">
 		{#each TOOLS as [tool, label, Icon, keys] (tool)}
 			<Tip {label} {keys} side="top">
