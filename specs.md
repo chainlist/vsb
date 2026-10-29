@@ -23,6 +23,7 @@ Principles:
 | Frontend | SvelteKit 3 with Svelte 5, built as a static single-page app (`@sveltejs/adapter-static`) |
 | Index | SQLite, used only from Rust. The build must include FTS5, R*Tree and math functions (`floor()`). |
 | Batch creation layout | `@dagrejs/dagre` |
+| Pen strokes | `perfect-freehand`, which outlines a stroke from its points and their pressure |
 | Dialogs, menus and tooltips | shadcn-svelte (on bits-ui), styled with Tailwind CSS 4 |
 | Icons | Lucide (`@lucide/svelte`) |
 
@@ -94,7 +95,7 @@ src/routes/
 ### Shared pieces
 
 - **`#lib/api`:** the platform layer, one typed function per backend command and event (SvelteKit 3 replaced `$lib` with the `#lib` subpath import). Components never call `invoke` or `listen` directly, nor the browser's storage.
-- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's and where Settings > Vault says the vault lives, come from the backend too, so no page knows which platform it runs on.
+- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone, edge and drawing edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's and where Settings > Vault says the vault lives, come from the backend too, so no page knows which platform it runs on.
 - **Shared state** lives in `.svelte.ts` modules using runes, not passed down through many component levels.
 - **One system per cross-cutting behavior**, never a copy per component or route:
   - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open. Each part keeps its keys, with what each does, in a table its bindings take them from; Settings > Keyboard lists those tables, so the list is what is bound. A digit is read from the key's place, not what it types, so Mod+1 is the same key on AZERTY, where that key types & unshifted.
@@ -120,6 +121,7 @@ src/routes/
 | Card | A placement on the canvas: position, size, alignment, and optionally a note | `.canvas/cards/<card-id>.json` |
 | Zone | A user-defined area that groups cards and other zones | `.canvas/zones/<zone-id>.json` |
 | Edge | A connection between two cards | `.canvas/edges/<edge-id>.json` |
+| Drawing | Strokes of the pen grouped as one item, in a zone or on the canvas | `.canvas/drawings/<drawing-id>.json` |
 
 - A card can have no note: an empty card, used to preplace structure.
 - A note can have no card: it appears in the Unplaced tray.
@@ -139,6 +141,7 @@ src/routes/
     zones/<zone-id>.json
     cards/<card-id>.json
     edges/<edge-id>.json
+    drawings/<drawing-id>.json
 
 <OS app-data>/                # this device only, never synced
   vaults.json                 # recent vaults
@@ -149,14 +152,14 @@ src/routes/
 
 ### Rules
 
-- **One file per zone, card and edge.** Two devices only conflict when they changed the same item before syncing.
+- **One file per zone, card, edge and drawing.** Two devices only conflict when they changed the same item before syncing.
 - **The parent is stored on the child**, never as a list of children on the parent. Moving anything is a single file write.
 - **References point one way:** cards point to notes, edges point to cards. A note never references its cards.
 - **Writes are atomic:** write a temp file, then rename it, so a sync tool never uploads half a file.
 - **Check before every write or delete.** There is no file watcher, so a sync tool can replace a file while the app is open. Before writing or deleting a file, the app compares its current modified time and size with the index. If either differs, the file changed outside the app:
-  - **Card, zone or edge file:** re-read it, then apply the edit on top of it.
+  - **Card, zone, edge or drawing file:** re-read it, then apply the edit on top of it.
   - **`.md` file:** never overwritten or deleted. The version on disk stays, and the card reloads from it. If the app had text to save, it goes into a new note, `<title> (conflict).md`, without the original's ID, so it lands in the Unplaced tray. Nothing is lost.
-- **Write each thing before anything that points at it:** notes, then zones (parents first), then cards, then edges. A crash can leave unplaced notes or empty zones, never a reference to a missing file.
+- **Write each thing before anything that points at it:** notes, then zones (parents first), then cards and drawings, then edges. A crash can leave unplaced notes or empty zones, never a reference to a missing file.
 - **Per-device state** (viewport, zoom, last opened zone) is never written to a synced file.
 
 ### `vault.json`
@@ -224,17 +227,39 @@ Competitor scan
 - `stroke`: how the line is drawn: `solid` (default), `dashed`, `dotted`, `double` (two parallel lines).
 - Fields at their default value are left out of the file.
 
+### Drawing: `.canvas/drawings/<drawing-id>.json`
+
+```json
+{
+  "zone": null,
+  "x": 120.0,
+  "y": 40.0,
+  "w": 300.0,
+  "h": 180.0,
+  "color": "#f5d76e",
+  "strokes": [
+    [0.0,12.5,0.48,4.2,10.0,0.55,9.8,8.1,0.6],
+    [150.0,0.0,0.5,300.0,180.0,0.42]
+  ]
+}
+```
+
+- `zone`: zone ULID, or `null` for a drawing directly on the canvas, as a card's.
+- `x`, `y`: relative to the drawing's zone, as a card's. `w`, `h`: the box around its ink, its strokes' points and half the pen's width (1.5 world units) around them, so a lone dot has a size and shows when zoomed in.
+- `strokes`: each stroke as a flat list of its points, x, y and pressure (0 to 1) in turn, x and y from the drawing's top-left corner. Coordinates are rounded to 0.1, pressure to 0.01. Each stroke is written on one line; the rest is laid out as every item file.
+- `color`: one of the highlighters (see [Drawings](#drawings)), or left out for the theme's ink.
+
 ## Zones and membership
 
-- A card belongs to one zone or to none. A card inside two overlapping zones belongs to the innermost one it was dropped in.
+- A card belongs to one zone or to none. A card inside two overlapping zones belongs to the innermost one it was dropped in. A [drawing](#drawings) belongs to a zone as a card does.
 - Nested zones use `parent`, the same mechanism as cards.
 - Membership changes only when the user does one of these:
-  - **Moves a card:** dropping it into a zone sets `zone` and converts its coordinates. One write.
+  - **Moves a card or a drawing:** dropping it into a zone sets `zone` and converts its coordinates. One write.
   - **Moves a zone:** dropping it fully inside another zone sets its `parent`, the same way; dragging it out puts it back on the canvas. One write: its contents come along.
-  - **Creates a zone:** the new zone sits in the innermost zone that fully contains it. The cards and zones at that level lying fully inside it join it.
-  - **Deletes a zone:** its cards and child zones move to its parent (or the canvas), with coordinates converted. Nothing inside is deleted.
+  - **Creates a zone:** the new zone sits in the innermost zone that fully contains it. The cards, drawings and zones at that level lying fully inside it join it.
+  - **Deletes a zone:** its cards, drawings and child zones move to its parent (or the canvas), with coordinates converted. Nothing inside is deleted.
 - Moving or resizing a zone never changes what is inside it. Moving a zone over loose cards does not capture them.
-- A zone cannot be resized smaller than the area its contents cover. Resizing from the left or top keeps the contents in place, so its direct children's coordinates are rewritten.
+- A zone cannot be resized smaller than the area its contents cover, drawings included. Resizing from the left or top keeps the contents in place, so its direct children's coordinates are rewritten.
 - Ctrl+drag (Cmd on macOS) on the paper draws a zone. A zone's name is its handle: click selects, drag moves, double-click renames. Its body behaves like the paper: dragging pans, double-clicking places a card inside.
 - **Resizing:** dragging a side or corner of a card or zone resizes it, selected or not. The card or zone under the pointer, and the single selected one, show a square on each corner; the sides are 10 screen pixels wide, half inside the item. A click on a side or corner selects the item, and a double-click on a card's side edits it.
 - **Snap to grid**, on by default: a card or zone being moved lands with its top-left corner on a crossing of the minor grid (20 world units). With several items selected, the one pressed snaps and the others keep their places around it. Resizing, the sides pulled land on grid lines; the minimum size and a zone's contents still win over the grid. Holding Alt (Option on macOS) while dragging moves or resizes freely. A drag that snaps back to where it started writes nothing. Turned off in Settings > Canvas, which writes `snap: false` to `vault.json`.
@@ -311,22 +336,36 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - Pressing the line or its label selects the edge. Double-clicking it, or Enter while it is selected, edits the label in place at the curve's middle. New edges have no label; clearing a label removes it from the file.
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
 - **Inserting a card on an edge.** A lone selected edge shows a + on its middle, or just under its label when it has one, so the label stays readable. Clicking it places an empty card, the size of a card placed by double-click, between the edge's two cards, in the innermost zone at the edge's middle, and opens it for editing, as a placed card. The edge is split in two, from its first card to the new one and from the new one to its second: both keep its shape, arrowheads and line, and the first keeps its label.
-  - **Making room,** like inserting a row: along the way the line leaves its first card, across or down as it is routed, the new card is centered on the edge's middle, or put the usual gap past the first card when the middle is nearer (80 world units, the gap between linked cards in a batch). Across that way it is centered on the middle. Every card and inner zone directly in that zone (on the paper, the canvas's own cards and zones) lying wholly past the middle moves along by the same amount, just enough to leave that gap after the new card; an inner zone moves with everything in it. With snapping on, the card lands on the grid and the moves are whole squares. Nothing outside that zone moves, and the zone grows to hold what moved, as for a batch.
+  - **Making room,** like inserting a row: along the way the line leaves its first card, across or down as it is routed, the new card is centered on the edge's middle, or put the usual gap past the first card when the middle is nearer (80 world units, the gap between linked cards in a batch). Across that way it is centered on the middle. Every card, drawing and inner zone directly in that zone (on the paper, the canvas's own cards, drawings and zones) lying wholly past the middle moves along by the same amount, just enough to leave that gap after the new card; an inner zone moves with everything in it. With snapping on, the card lands on the grid and the moves are whole squares. Nothing outside that zone moves, and the zone grows to hold what moved, as for a batch.
   - The card, both edges and every move are one undo step.
 - Selecting cards brings out their links: every other card that no edge joins to one of them dims, and so does every edge that touches none of them. They stay solid, nothing shows through: a card's content fades into its stock, an edge's color into the paper. Dimming and undimming fade over 200 ms; selecting shows at once. Zones never dim. A card with no edges dims all the others.
+
+## Drawings
+
+- **The pen and the eraser** sit on the [rail](#canvas-chrome), under the builder: Pen (P) and Eraser (E). A key or a button picks its tool up, or puts it down; picking one puts the other down, and Escape puts either down. The tool in hand shows on its button, as an open panel's does. With the pen, the pointer is a crosshair; with the eraser, a ring the eraser's size.
+- **While one is in hand,** a left drag anywhere on the canvas (the paper, zone bodies, cards, edges) draws or erases instead of panning, moving or selecting, and a double-click places nothing. The wheel, a pinch and the middle button still zoom and pan, the other keys (undo, Mod+1...) still work, and the chrome over the canvas keeps its clicks.
+- **One pen,** in the theme's ink, about 3 world units wide at middling pressure, so it scales with the zoom as cards do. A stylus draws thinner pressed lightly and thicker pressed hard; a mouse, which has no pressure, draws thicker slow than fast, its pressure made up from its speed as perfect-freehand would. The file keeps each point's pressure, and the outline is drawn from it, so a stroke looks the same everywhere. A stroke shows as it is drawn and is written on release: one write and one undo step per stroke.
+- **Strokes group into drawings.** A stroke starting within 40 world units (two graph-paper squares) of a drawing's box joins it, the nearest one, so a sketch can be added to later; otherwise it starts a drawing. A new drawing joins the innermost zone under its first stroke's start, as a card placed by double-click does; strokes added later never change its zone. A stroke grows its drawing's box; grown left or up, its corner moves and its stored points shift back by as much.
+- **The eraser takes out whole strokes:** every stroke it passes over, within its radius (8 screen pixels to the ink's edge), fades at once, and on release they all go, as one undo step. A drawing left with no strokes is deleted; one left with some shrinks its box to them.
+- **A drawing is one item:** moved, recolored and deleted as a whole. A press on its ink, not on the empty parts of its box, selects it, Shift toggles it, and dragging moves it with the rest of the selection, its top-left corner snapping to the grid as a card's does (Alt moves freely). Mod+drag from its ink still draws an edge from a card beneath, or a zone. A selected drawing shows its box; it has no resize handles.
+- **Its zone is a card's:** see [Zones and membership](#zones-and-membership). A moved drawing joins the innermost zone under its box's center. Inserting a card on an edge moves drawings out of the way as it moves cards; arranging leaves them where they are.
+- **Color:** the selection bar's color select colors the selected drawings with the highlighters cards and zones take, drawn darker so they read on the paper: mixed toward the ink, 70% the color, as a color's swatch is rimmed. No color goes back to the ink. With drawings alone selected, the bar holds the color select and Delete.
+- **Deleting:** Delete, or the selection bar's, takes the selected drawings with the selected cards, zones and edges, as one undo step.
+- **Drawn above cards and edges,** below the chrome; zone names and cluster markers stay above them, so a zone's handle and a marker's count are never covered. Presses go through a drawing except on its ink, and a few pixels around it. Drawings never dim when cards are selected, as zones do not. Each drawing is drawn in its own error boundary, as each card is.
+- **Zoomed out,** a loose drawing is drawn as itself at any zoom, skipped when smaller than a few pixels on screen like everything else, and never counted in a cluster. Below 40%, a drawing inside a collapsed zone is not drawn as itself: the zone's [preview](#previews) draws its strokes. Fit (Mod+1, opening a vault) frames drawings too.
 
 ## Canvas chrome
 
 - **The controls sit in the canvas's corners,** never across it: the vault top left, the tools down the left edge, the zoom bottom right. Each is a small card of the theme's stock floating over the canvas, which runs under them to the window's edges.
 - **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings, which shows its key, Mod+, (Ctrl+, or Cmd+, on macOS).
-- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B). The Zones button shows when the [zone list](#zone-list) is open, and a panel's button when its route is. The panels stay routes, reached through links.
+- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B), [Pen (P) and Eraser (E)](#drawings). The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the pen's or the eraser's while it is in hand. The panels stay routes, reached through links.
 - **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
   - Fit frames everything on the canvas, as opening the vault does, gliding there; Mod+1 does the same. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
-- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards and zones, the edges' style, Arrange, Builder and Delete.
+- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards, zones and drawings, the edges' style, Arrange, Builder and Delete.
   - The color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
-  - One color select serves the selected cards and zones together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray.
+  - One color select serves the selected cards, zones and drawings together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray, a drawing to the theme's ink.
   - A menu keeps its keys: Escape, Enter or Delete pressed in it never reach the canvas. Choosing leaves the selection and the view as they are, and the focus goes back to the canvas.
 - **Framing stays clear of the chrome:** whatever is framed (opening a vault, fit, a search result, a zone list row) keeps 80 pixels free on every side, at the interface size, so the rail and the corner cards never cover it.
 
@@ -472,10 +511,22 @@ CREATE TABLE edges (
 CREATE INDEX edges_from ON edges(from_card);
 CREATE INDEX edges_to ON edges(to_card);
 
+CREATE TABLE drawings (
+  key       INTEGER PRIMARY KEY,      -- shared with drawing_bounds
+  id        TEXT UNIQUE NOT NULL,
+  zone      TEXT,                     -- NULL = canvas
+  x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
+  color     TEXT,                     -- NULL = the theme's ink
+  strokes   TEXT NOT NULL,            -- JSON, as in the file
+  mtime     INTEGER, size INTEGER
+);
+CREATE INDEX drawings_zone ON drawings(zone);
+
 -- absolute world coordinates
 CREATE VIRTUAL TABLE zone_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 CREATE VIRTUAL TABLE card_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 CREATE VIRTUAL TABLE edge_bounds USING rtree(key, min_x, max_x, min_y, max_y);
+CREATE VIRTUAL TABLE drawing_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 
 CREATE VIRTUAL TABLE notes_fts USING fts5(title, body);   -- rowid = notes.key
 CREATE VIRTUAL TABLE zones_fts USING fts5(name);          -- rowid = zones.key
@@ -488,13 +539,13 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 - Files store coordinates relative to the zone; the R*Trees store absolute bounds.
 - Moving a zone is one file write. The index recomputes the bounds of everything inside it with a recursive CTE over `zones.parent`.
-- An edge's bounds are the box around both of its cards, updated when either card moves.
+- An edge's bounds are the box around both of its cards, updated when either card moves. A drawing's are its box.
 - The R*Tree stores 32-bit floats rounded outward, so it is only a filter. Exact coordinates live in the tables. Bounds are always recomputed from those values, never shifted by adding offsets inside the R*Tree.
 
 ### Startup scan
 
 - **There is no live file watcher**, so no background process. Changes made outside the app while it is open (another editor, a sync tool) are picked up at the next startup. Until then, the check before every write (see [Storage](#storage)) keeps the app from overwriting them.
-- **At startup, the app compares every file's modified time and size with the index**, and re-reads a file when either one differs. The test is "differs", not "newer": sync tools keep the modification time of the device that made the change, so a synced, restored or copied file can carry an older time than the one in the index. Only a cold start (no index) reads everything.
+- **At startup, the app compares every file's modified time and size with the index** (notes, zones, cards, edges and drawings), and re-reads a file when either one differs. The test is "differs", not "newer": sync tools keep the modification time of the device that made the change, so a synced, restored or copied file can carry an older time than the one in the index. Only a cold start (no index) reads everything.
 - **The scan handles files added, deleted, renamed or moved while the app was closed:**
   - A renamed or moved `.md` keeps its ULID, so the scan only updates `path`. No card file changes.
   - A new `.md` becomes an unplaced note.
@@ -510,7 +561,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 - **Framing glides.** Every jump that frames something (a zone list row, a search result, a cluster marker, a bundle, double-clicking a collapsed zone, new cards framed while zoomed out) glides there like a map: a far jump zooms out, travels and zooms back in, along the path that feels shortest (van Wijk and Nuij's, as d3 draws it). It takes 0.25 to 0.8 s, by the length of the path, eased in and out. Opening a vault frames everything at once. The wheel, a pinch and dragging stay direct, and stop a glide where it is.
 - **Reduced motion.** When the system asks for reduced motion, glides jump and the panels' animations are off.
 - One viewport query per pan or zoom, with a margin so small pans don't need a new query.
-- Queries depend on zoom: zoomed out, what is inside a zone comes back only as the boxes of its [preview](#previews), never as cards, and anything smaller than a few pixels on screen is skipped.
+- Queries depend on zoom: zoomed out, what is inside a zone comes back only as its [preview](#previews), never as cards or drawings, and anything smaller than a few pixels on screen is skipped. Loose drawings come back at every zoom (see [Drawings](#drawings)).
 - A card's title and excerpt come from the index. The `.md` is read only when a card is opened or zoomed in enough to show its body.
 - Zoomed out below 40%, where 14px card text would be under 6px on screen, every zone collapses at once, and loose cards cluster:
   - A collapsed zone draws its frame, its name centered, and a [preview](#previews) of what it holds. The name keeps its size on screen (20px) at any zoom and is cut with an ellipsis at the zone's sides. The frame keeps its line width and corners on screen too.
@@ -521,11 +572,11 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 ### Previews
 
-- **A collapsed zone drawn as a frame shows what it holds**, at any depth: every card as a faded block at its real place and size, and every inner zone as a faint frame. It is the zone's general shape at a glance; it has no text.
-- **A block is the card's stock:** washed with its color as the card is, or the theme's plain stock for a card with none. The whole preview is faded as a dimmed card is, and an inner zone's frame is drawn as the zone's own frame is.
+- **A collapsed zone drawn as a frame shows what it holds**, at any depth: every card as a faded block at its real place and size, every inner zone as a faint frame, and every drawing's strokes. It is the zone's general shape at a glance; it has no text.
+- **A block is the card's stock:** washed with its color as the card is, or the theme's plain stock for a card with none. A drawing's strokes are plain lines through their points at the pen's width, inked as on the canvas. The whole preview is faded as a dimmed card is, and an inner zone's frame is drawn as the zone's own frame is.
 - **It is not interactive.** Presses go through to the zone's body, which keeps its behavior (dragging pans, double-clicking frames the zone). While a collapsed zone is dragged, its preview moves with it, as its bundles do.
-- **The query brings it:** zoomed out, the viewport answer holds, for each collapsed zone it returns, the boxes of the cards and inner zones meeting the queried area, in the zone's coordinates from its corner, the cards grouped by color. Anything smaller than a few pixels on screen is left out, as everywhere, so far out the preview thins to the bigger cards. Loose cards keep their cluster markers.
-- **Drawn cheaply:** one SVG inside the zone, with one path per color and one for the inner frames, whatever the number of cards.
+- **The query brings it:** zoomed out, the viewport answer holds, for each collapsed zone it returns, the boxes of the cards and inner zones meeting the queried area, in the zone's coordinates from its corner, the cards grouped by color, and the drawings meeting it, each as its corner and its strokes, grouped by color. Anything smaller than a few pixels on screen is left out, as everywhere, so far out the preview thins to the bigger cards. Loose cards keep their cluster markers.
+- **Drawn cheaply:** one SVG inside the zone, with one path per color of cards, one for the inner frames and one per color of ink, whatever the number of cards and drawings.
 
 ### Clusters
 
@@ -551,7 +602,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - **Mod+, opens it** (Ctrl+, or Cmd+, on macOS) from anywhere in a vault, also while typing, on its first tab; the same key again closes it, as the rail's keys open and close the panels.
   - **Appearance:** the vault's theme and the device's interface size, below.
   - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
-  - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Mod+drag and Alt while dragging.
+  - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, drawing, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Mod+drag and Alt while dragging.
   - **Vault:** the vault's name and where it lives, in its backend's words. On the desktop, its folder's path and Show in folder, which opens the folder around it in Explorer or Finder with the vault selected (the opener plugin's Rust function, called by a command of the app's own; the plugin is not registered, so its commands stay out of the page's reach). In the browser, that it is kept in this browser and whether the browser agreed to keep it (see [Persistence](#persistence)).
 - **Four themes:** Studio, the default, Engineering pad, and two dark ones, Orbit and Cairn.
   - Studio: a cool gray canvas dotted at the grid crossings, white cards with a hairline edge, graphite text and a petrol accent. Instrument Sans for notes and controls; zone names are set narrower.
@@ -573,7 +624,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ## Sync
 
 - The vault works with folder-sync tools (Syncthing, Dropbox, Google Drive). They don't merge files: two devices writing the same file before syncing produce a conflict copy.
-- With one file per item, conflicts only happen when two devices change the same note, card, zone or edge before syncing, and the conflict copy is a small file.
+- With one file per item, conflicts only happen when two devices change the same note, card, zone, edge or drawing before syncing, and the conflict copy is a small file.
 - Files synced in while the app is open show up at the next startup.
 - Files can arrive out of order. A card whose note hasn't arrived yet shows as unresolved until the first startup after it arrives.
 - Known case: the same empty card filled on two offline devices. Each device creates its own note and points the card at it, so the card file conflicts. The card is pointed at one note and the other goes to the Unplaced tray. Both texts survive.
@@ -585,14 +636,14 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 ### Storage
 
-- **One IndexedDB database per vault** (`vsb-<vault-id>`), holding what a vault folder holds on the desktop: the vault's settings as `vault.json` has them, the notes, and one record per zone, card and edge holding exactly the JSON its file would hold, defaults left out. Item states, undo and every edit are the desktop's.
+- **One IndexedDB database per vault** (`vsb-<vault-id>`), holding what a vault folder holds on the desktop: the vault's settings as `vault.json` has them, the notes, and one record per zone, card, edge and drawing holding exactly the JSON its file would hold, defaults left out. Item states, undo and every edit are the desktop's.
 - **A note keeps a path**, `notes/<title>.md`, named after its title as on the desktop: characters Windows rejects left out, a clash numbered (ignoring case), renamed on blur. Search and the tray show it, and a vault written out as files would use it.
 - **The same records hold what the desktop's index derives**, kept up to date in the transaction of every write: each card's absolute box and its note's title and excerpt, each edge's two card boxes. This device's `ui_state` is kept in the vault's database too. What SQLite gives the desktop, the browser backend builds itself:
-  - **A spatial index.** Each card and edge is filed under every square of a grid it overlaps, the squares 1024, 4096, 16,384 or 65,536 world units wide, the smallest at least a quarter of its size, so a long edge spans at most five a side; bigger ones go in one bucket. A viewport query reads one key range per column of squares the queried area overlaps, never every card.
+  - **A spatial index.** Each card, edge and drawing is filed under every square of a grid it overlaps, the squares 1024, 4096, 16,384 or 65,536 world units wide, the smallest at least a quarter of its size, so a long edge spans at most five a side; bigger ones go in one bucket. A viewport query reads one key range per column of squares the queried area overlaps, never every card.
   - **The zoomed-out map.** Cluster counts and boxes per cell, and bundle counts, arrowheads and boxes per pair of ends, are kept on every write for the cell sizes the canvas asks for, 512 to 4096 (40% zoom down to 5%); another size is refused. A zoomed-out query reads them, never the cards: the clusters of the columns it covers, and every bundle of its cell size, kept when the box around its edges meets the queried area. A box only shrinks when something reaching its side leaves, and is then measured again from what is left.
   - **A bundle counts all its edges.** On the desktop a bundle's count and arrowheads come from those of its edges whose own box meets the queried area, so they change as the window moves; in the browser they come from all the edges between its two ends, as [Bundles](#bundles) describes them. A bundle is found when the box around all its edges meets the area: on rare layouts one more than on the desktop, never one fewer.
   - **Search.** A word index of its own: for each word, folded (case and accents left out), the notes holding it and those holding it in their title, split in sixteen shards by note, so a save rewrites small records and a word typed reads a few. Every word typed must start a word of the note, as with FTS5. Best first means: a title word counts thrice, every other word starting as typed once; the matches are the desktop's, their order is not bm25's.
-  - **Zones in memory.** While a vault is open its zones are held in memory: a vault has few, and the desktop walks them all on every query too. Each zone record keeps the cards it holds directly, each card's box and color, for the zone list's counts, framing and the [previews](#previews), so a zoomed-out query never reads the cards. A vault from before (database version 1, which kept a count and a box) gets them when it is next opened.
+  - **Zones in memory.** While a vault is open its zones are held in memory: a vault has few, and the desktop walks them all on every query too. Each zone record keeps the cards it holds directly, each card's box and color, for the zone list's counts, framing and the [previews](#previews), so a zoomed-out query never reads the cards. A vault from before (database version 1, which kept a count and a box) gets them when it is next opened, and one from before drawings (version 2) gets their store.
 - **One command at a time**, as the desktop's lock runs them, and each edit is one transaction: it lands whole or not at all.
 
 ### Vaults by name
