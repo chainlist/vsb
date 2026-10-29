@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ZoneView } from '#lib/api.js';
+	import type { Frame, ZoneView } from '#lib/api.js';
 	import { edit, rename } from './actions.js';
 	import { camera } from './camera.svelte.js';
 	import { startMove } from './gestures.js';
@@ -13,7 +13,12 @@
 	const selected = $derived(selection.has(zone.id));
 	const editing = $derived(selection.editing === zone.id);
 	const marker = $derived(asMarker(zone));
+	/** Collapsed and drawn as a frame, what the zone holds, faded inside it. */
+	const preview = $derived(items.collapsed && !marker ? items.previewOf(zone.id) : undefined);
 	let width = $state(0);
+
+	/** Boxes as one SVG path: thousands of cards are a few paths, not thousands of elements. */
+	const outline = (boxes: Frame[]) => boxes.map((b) => `M${b.x} ${b.y}h${b.w}v${b.h}h${-b.w}z`).join('');
 
 	// Bundles end at the marker's sides: it is as wide as the name.
 	$effect(() => {
@@ -55,6 +60,16 @@
 	style:--marker-h="{MARKER.h}px"
 	ondblclick={zoomIn}
 >
+	{#if preview}
+		<!-- One path per color, and one for the inner zones' frames, in the zone's coordinates: it moves
+		     with the zone, and leaves the body's gestures to the zone. -->
+		<svg class="preview" width={zone.w} height={zone.h} aria-hidden="true">
+			{#each preview.cards as { color, boxes } (color)}
+				<path class:tinted={color !== null} style:--tint={color} d={outline(boxes)} />
+			{/each}
+			<path class="inner" d={outline(preview.zones)} />
+		</svg>
+	{/if}
 	<div class="title" bind:offsetWidth={width}>
 		{#if editing}
 			<InlineField value={zone.name} placeholder="Untitled" save={(name) => rename(zone.id, name)} />
@@ -68,13 +83,37 @@
 </div>
 
 <style>
-	/* A highlighter wash over the paper: the grid shows through. */
+	/* A highlighter wash over the paper: the grid shows through. Its frame, the zone's color inked,
+	   also draws its marker and the frames in its preview. */
 	.zone {
+		--frame: color-mix(in srgb, var(--zone-color) 70%, var(--ink));
+		--frame-width: calc(1.5 * var(--px));
 		position: absolute;
 		box-sizing: border-box;
-		border: calc(1.5 * var(--px)) solid color-mix(in srgb, var(--zone-color) 70%, var(--ink));
+		border: var(--frame-width) solid var(--frame);
 		border-radius: var(--radius-zone);
 		background: color-mix(in srgb, var(--zone-color) var(--zone-wash), transparent);
+	}
+
+	/* What a collapsed zone holds, faded as a dimmed card is: its cards as blocks of their stock, its
+	   inner zones as frames. Drawn from the zone's outer corner, past its sides if they reach there. */
+	.preview {
+		position: absolute;
+		left: calc(-1 * var(--frame-width));
+		top: calc(-1 * var(--frame-width));
+		overflow: visible;
+		opacity: var(--dim);
+		pointer-events: none;
+	}
+
+	.preview path {
+		fill: var(--stock, var(--card));
+	}
+
+	.preview .inner {
+		fill: none;
+		stroke: var(--frame);
+		stroke-width: var(--frame-width);
 	}
 
 	/* Zoomed out, the zone is only its frame and its name, which keep their size on screen. */
@@ -123,7 +162,7 @@
 		max-width: calc(2 * var(--marker-w));
 		height: var(--marker-h);
 		padding: 0 12px;
-		border: 1.5px solid color-mix(in srgb, var(--zone-color) 70%, var(--ink));
+		border: 1.5px solid var(--frame);
 		border-radius: var(--radius-zone);
 		background: color-mix(in srgb, var(--zone-color) var(--zone-wash), var(--paper));
 		font-size: 14px;

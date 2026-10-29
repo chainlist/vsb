@@ -1,5 +1,5 @@
-// What the canvas holds: only the zones, cards and edges, or zoomed out the clusters and bundles,
-// returned by the last viewport query.
+// What the canvas holds: only the zones, cards and edges, or zoomed out the zones with a preview of
+// what they hold, the clusters and bundles, returned by the last viewport query.
 import {
 	queryViewport,
 	type Bundle,
@@ -7,6 +7,7 @@ import {
 	type Cluster,
 	type EdgeView,
 	type Frame,
+	type Preview,
 	type Rect,
 	type ZoneView
 } from '#lib/api.js';
@@ -17,8 +18,8 @@ import { route } from './route.js';
 const MARGIN = 0.5;
 /** Items smaller than this on screen are skipped. */
 const MIN_PIXELS = 4;
-/** Below this zoom, 14px card text would be under 6px on screen: zones collapse to their frame and
- * title, nothing inside them is queried, and loose cards are counted per cell of a grid. */
+/** Below this zoom, 14px card text would be under 6px on screen: zones collapse to their frame, their
+ * title and a faded preview of what they hold, and loose cards are counted per cell of a grid. */
 export const OPEN_ZOOM = 0.4;
 /** Smallest side of a cell on screen, in pixels. A cell is a power of two world units wide, so it
  * measures 160 to 320 pixels, and four cells merge into one as the zoom halves. */
@@ -54,11 +55,14 @@ class Items {
 	/** Zoomed out, the loose cards counted per cell, and the edges drawn as one line per pair of ends. */
 	clusters = $state<Cluster[]>([]);
 	bundles = $state<Bundle[]>([]);
+	/** Zoomed out, what each zone holds, drawn faded inside it. */
+	previews = $state<Preview[]>([]);
 	/** Whether the zones above were queried zoomed out, without what lies inside them. */
 	collapsed = $state(false);
 	/** Counts edits to the vault, so the lists beside the canvas reload after each. */
 	revision = $state(0);
 	#byId = $derived(new Map(this.cards.map((c) => [c.id, c])));
+	#previews = $derived(new Map(this.previews.map((p) => [p.zone, p])));
 	/** The cards as plain boxes, for edges to route around: one value every edge reads, rather than
 	 * every edge watching every card. */
 	#boxes = $derived(this.cards.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })));
@@ -72,8 +76,14 @@ class Items {
 		this.edges = [];
 		this.clusters = [];
 		this.bundles = [];
+		this.previews = [];
 		this.collapsed = false;
 		this.#queried = null;
+	}
+
+	/** Zoomed out, what a zone holds, as its preview draws it. */
+	previewOf(zone: string) {
+		return this.#previews.get(zone);
 	}
 
 	/** The topmost card under a world point. */
@@ -150,6 +160,7 @@ class Items {
 		this.edges = found.edges;
 		this.clusters = found.clusters;
 		this.bundles = found.bundles;
+		this.previews = found.previews;
 	}
 }
 

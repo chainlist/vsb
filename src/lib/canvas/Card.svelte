@@ -64,7 +64,7 @@
 	/* A light wash of the card's color over its stock, as a zone is washed over the paper. It stays
 	   while the card is edited, and a dimmed card fades into it. */
 	.tinted {
-		background: color-mix(in srgb, var(--tint) var(--card-wash), var(--card));
+		background: var(--stock);
 	}
 
 	/* After the tint: a missing note looks the same whatever its card's color. */

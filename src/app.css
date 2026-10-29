@@ -151,6 +151,12 @@ a {
 	box-shadow: var(--lift);
 }
 
+/* A card's stock washed with its color (set --tint), as a zone is washed over the paper: what a card
+   is drawn on, and its block in a collapsed zone's preview. */
+.tinted {
+	--stock: color-mix(in srgb, var(--tint) var(--card-wash), var(--card));
+}
+
 /* A note written on an index card. */
 .note-card {
 	padding: 12px 14px;
