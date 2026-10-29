@@ -34,6 +34,12 @@ export const listVaults = () => invoke<VaultEntry[]>('list_vaults');
 /** Asks for a folder and makes it a vault if needed. Null if the dialog was cancelled. */
 export const chooseVault = () => invoke<VaultEntry | null>('choose_vault');
 
+/** What the vault picker says, above and on its button: here, choosing a folder. */
+export const vaultPicker = {
+	lede: 'Pick any folder. Your notes stay in it as plain Markdown files.',
+	action: 'Open a folder'
+};
+
 /** Opens the vault and brings its index up to date. */
 export const openVault = (id: string) => invoke<VaultEntry>('open_vault', { id });
 

@@ -42,6 +42,11 @@ export const chooseVault = () =>
 		const name = await askName();
 		return name === null ? null : vaults.createVault(name);
 	});
+/** What the vault picker says, above and on its button: here, naming a vault. */
+export const vaultPicker = {
+	lede: 'Name a vault. Your notes stay in this browser.',
+	action: 'Open a vault'
+};
 export const openVault = (id: string) => command(() => vaults.openVault(id));
 export const vaultTheme = () => reading(settings.theme);
 export const setVaultTheme = (theme: string | null) => writing((e) => settings.setTheme(e, theme));

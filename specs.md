@@ -73,7 +73,7 @@ The frontend never reads files or SQLite directly. It calls typed Tauri commands
 src/routes/
   +layout.svelte              # app shell
   +layout.ts                  # SPA mode: SSR off
-  +page.svelte                # /: vault picker (open a folder, recent vaults)
+  +page.svelte                # /: vault picker (choose a vault, recent vaults)
   vault/[vaultId]/
     +layout.svelte            # the canvas, mounted for every child route, and its chrome
     +layout.ts                # opens the vault
@@ -92,7 +92,7 @@ src/routes/
 ### Shared pieces
 
 - **`#lib/api`:** the platform layer, one typed function per backend command and event (SvelteKit 3 replaced `$lib` with the `#lib` subpath import). Components never call `invoke` or `listen` directly, nor the browser's storage.
-- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, so no page knows which platform it runs on.
+- **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's, come from the backend too, so no page knows which platform it runs on.
 - **Shared state** lives in `.svelte.ts` modules using runes, not passed down through many component levels.
 - **One system per cross-cutting behavior**, never a copy per component or route:
   - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open.
@@ -576,7 +576,7 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 ### Vaults by name
 
-- **A vault is chosen by name**, not by folder. "Open a folder" asks for a name, in a dialog the browser backend mounts. A name already used, ignoring case, opens that vault, as choosing a folder that already is a vault does.
+- **A vault is chosen by name**, not by folder. The vault picker says "Name a vault. Your notes stay in this browser.", and its button, "Open a vault", asks for a name, in a dialog the browser backend mounts. A name already used, ignoring case, opens that vault, as choosing a folder that already is a vault does.
 - **The vault list lives in localStorage**, most recent first, as `vaults.json` does on the desktop. A browser vault has no path.
 - **This device's settings live in localStorage too:** the interface size, as `device.json` holds it.
 - **One tab per vault.** A tab holds a Web Lock on the vault while it is open. Another tab opening it gets "This vault is open in another tab", on the error page, rather than two tabs writing over each other. Closing the tab, or opening another vault in it, lets it go.
@@ -616,4 +616,3 @@ The model already supports it:
 - How conflict copies are detected (`.sync-conflict-`, `(conflicted copy)`, `(1)`) and resolved (per field, or last write wins).
 - AI assistance and paper import are not covered by this spec.
 - Exporting a browser vault as vault files, and importing a vault folder into the browser: not built. The records already hold each file's JSON and each note's path.
-- The vault picker speaks of folders ("Pick any folder", "Open a folder"), also in the browser, where a vault has a name. Saying so in the browser means the page asking the platform layer which platform it runs on.

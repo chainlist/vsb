@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import FolderOpen from '@lucide/svelte/icons/folder-open';
-	import { chooseVault } from '#lib/api.js';
+	import { chooseVault, vaultPicker } from '#lib/api.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -20,8 +20,8 @@
 
 <main class="page graph-paper chrome">
 	<h1>Visual Second Brain</h1>
-	<p class="lede">Pick any folder. Your notes stay in it as plain Markdown files.</p>
-	<button class="button" onclick={choose}><FolderOpen /> Open a folder</button>
+	<p class="lede">{vaultPicker.lede}</p>
+	<button class="button" onclick={choose}><FolderOpen /> {vaultPicker.action}</button>
 	{#if error}
 		<p class="error">{error}</p>
 	{/if}
