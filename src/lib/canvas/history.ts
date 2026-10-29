@@ -1,6 +1,7 @@
 // The one undo history. A step is the list of item states that reverses an edit. Applying it
 // returns the states that reverse the undo, which become the redo step, and the other way round.
 import { applyStates, type ItemState } from '#lib/api.js';
+import { failure } from '#lib/failure.svelte.js';
 import { items } from './items.svelte.js';
 
 const LIMIT = 200;
@@ -14,12 +15,13 @@ function push(stack: ItemState[][], step: ItemState[]) {
 	if (stack.length > LIMIT) stack.shift();
 }
 
-/** Runs steps one after another, so quick repeats never interleave, then redraws. */
+/** Runs steps one after another, so quick repeats never interleave, then redraws. A step that fails
+ * says so and redraws too, so a card dragged before its move failed goes back where it is saved. */
 function enqueue(step: () => Promise<void>) {
 	queue = queue
 		.then(step)
-		.then(() => items.changed())
-		.catch((e) => console.error(e));
+		.finally(() => items.changed())
+		.catch(failure.report);
 	return queue;
 }
 

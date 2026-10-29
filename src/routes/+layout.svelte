@@ -3,7 +3,9 @@
 	import { setLucideProps } from '@lucide/svelte/context';
 	import favicon from '#lib/assets/favicon.svg';
 	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
+	import FailureNotice from '#lib/chrome/FailureNotice.svelte';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
+	import { failure } from '#lib/failure.svelte.js';
 	import { interfaceSize } from '#lib/interfaceSize.svelte.js';
 	import { theme } from '#lib/theme.svelte.js';
 	import type { LayoutProps } from './$types';
@@ -31,6 +33,16 @@
 		addEventListener('wheel', onwheel, { passive: false });
 		return () => removeEventListener('wheel', onwheel);
 	});
+
+	// A command that fails from a click or a key, with nothing to catch it, says so.
+	$effect(() => {
+		const onrejection = (e: PromiseRejectionEvent) => {
+			e.preventDefault();
+			failure.report(e.reason);
+		};
+		addEventListener('unhandledrejection', onrejection);
+		return () => removeEventListener('unhandledrejection', onrejection);
+	});
 </script>
 
 <svelte:head>
@@ -42,4 +54,5 @@
 	<ErrorBoundary what="This screen" center>
 		{@render children()}
 	</ErrorBoundary>
+	<FailureNotice />
 </Tooltip.Provider>
