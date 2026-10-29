@@ -6,7 +6,7 @@
 use crate::batch::{Batch, BatchCard};
 use crate::error::{msg, Result};
 use crate::index::ScopeEdge;
-use crate::items::{Arrow, Card, Edge, Kind, Shape, Stroke};
+use crate::items::{Arrow, Card, Edge, Kind, Stroke};
 use crate::session::Session;
 use crate::states::ItemState;
 use serde::{Deserialize, Serialize};
@@ -104,9 +104,11 @@ impl Session {
       (edge.from, edge.to, edge.arrow, edge.stroke) = (card(&l.from)?, card(&l.to)?, l.arrow, l.stroke);
       states.push(ItemState::of(id, &edge)?);
     }
+    // The text always says a new edge's arrowheads and line, never its shape: that is the vault's.
+    let shape = self.vault.edge_style()?.shape;
     for &i in &plan.created {
       let l = &links[i];
-      let edge = Edge { from: card(&l.from)?, to: card(&l.to)?, label: None, shape: Shape::default(), arrow: l.arrow, stroke: l.stroke };
+      let edge = Edge { from: card(&l.from)?, to: card(&l.to)?, label: None, shape, arrow: l.arrow, stroke: l.stroke };
       states.push(ItemState::of(&crate::new_id(), &edge)?);
     }
     Ok(Batch { cards: ids, undo: self.apply(states)? })

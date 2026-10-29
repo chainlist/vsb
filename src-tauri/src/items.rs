@@ -126,7 +126,16 @@ impl Stroke {
   }
 }
 
-fn is_default<T: Default + PartialEq>(v: &T) -> bool {
+/// An edge's style: its shape, arrowheads and line. Every edge the app creates takes the vault's
+/// style for new edges, unless the builder's text says otherwise.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+pub struct EdgeStyle {
+  pub shape: Shape,
+  pub arrow: Arrow,
+  pub stroke: Stroke,
+}
+
+pub(crate) fn is_default<T: Default + PartialEq>(v: &T) -> bool {
   *v == T::default()
 }
 

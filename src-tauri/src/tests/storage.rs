@@ -1,7 +1,7 @@
 use super::{names, Fixture};
-use crate::device;
+use crate::device::{self, Wheel};
 use crate::fsx::{atomic_write, files};
-use crate::items::{self, Card, Edge, HAlign, Kind, VAlign, Zone};
+use crate::items::{self, Arrow, Card, Edge, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign, Zone};
 use crate::vault::Vault;
 use std::fs;
 use tempfile::TempDir;
@@ -70,6 +70,19 @@ fn snap_is_on_by_default_and_only_written_while_off() {
 }
 
 #[test]
+fn the_style_for_new_edges_is_kept_in_vault_json_each_part_left_out_at_its_default() {
+  let f = Fixture::new();
+  assert_eq!(f.vault.edge_style().unwrap(), EdgeStyle::default());
+  let style = EdgeStyle { shape: Shape::Angled, arrow: Arrow::To, stroke: Stroke::Dashed };
+  f.vault.set_edge_style(style).unwrap();
+  let json: serde_json::Value = serde_json::from_str(&f.read(".canvas/vault.json")).unwrap();
+  assert_eq!(json["newEdges"], serde_json::json!({ "shape": "angled", "stroke": "dashed" }));
+  assert_eq!(Vault::open(f.dir.path()).unwrap().edge_style().unwrap(), style);
+  f.vault.set_edge_style(EdgeStyle::default()).unwrap();
+  assert!(!f.read(".canvas/vault.json").contains("newEdges"));
+}
+
+#[test]
 fn open_refuses_a_folder_that_is_not_a_vault() {
   let dir = TempDir::new().unwrap();
   assert!(Vault::open(dir.path()).is_err());
@@ -113,4 +126,17 @@ fn interface_size_is_kept_per_device_and_left_out_for_the_default() {
   assert_eq!(json["interfaceSize"], 130);
   device::set_interface_size(data.path(), None).unwrap();
   assert!(!fs::read_to_string(data.path().join("device.json")).unwrap().contains("interfaceSize"));
+}
+
+#[test]
+fn the_wheel_zooms_unless_this_device_says_it_pans() {
+  let data = TempDir::new().unwrap();
+  let file = || -> serde_json::Value { serde_json::from_str(&fs::read_to_string(data.path().join("device.json")).unwrap()).unwrap() };
+  assert_eq!(device::wheel(data.path()).unwrap(), Wheel::Zoom);
+  device::set_interface_size(data.path(), Some(115)).unwrap();
+  device::set_wheel(data.path(), Wheel::Pan).unwrap();
+  assert_eq!(device::wheel(data.path()).unwrap(), Wheel::Pan);
+  assert_eq!(file(), serde_json::json!({ "interfaceSize": 115, "wheel": "pan" }));
+  device::set_wheel(data.path(), Wheel::Zoom).unwrap();
+  assert_eq!(file(), serde_json::json!({ "interfaceSize": 115 }));
 }

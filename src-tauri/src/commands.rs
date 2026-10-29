@@ -2,10 +2,10 @@
 
 use crate::batch::{Batch, BatchCard, BatchEdge};
 use crate::batch_edit::{Link, LinkPlan};
-use crate::device;
+use crate::device::{self, Wheel};
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
-use crate::items::{Arrow, HAlign, Kind, Shape, Stroke, VAlign};
+use crate::items::{Arrow, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::states::{Created, ItemState};
 use crate::registry::{self, VaultEntry};
@@ -48,6 +48,17 @@ pub async fn device_interface_size(app: AppHandle) -> Result<Option<u32>> {
 #[tauri::command]
 pub async fn set_device_interface_size(app: AppHandle, size: Option<u32>) -> Result<()> {
   device::set_interface_size(&data_dir(&app)?, size)
+}
+
+/// What the mouse wheel does on the canvas on this device.
+#[tauri::command]
+pub async fn device_wheel(app: AppHandle) -> Result<Wheel> {
+  device::wheel(&data_dir(&app)?)
+}
+
+#[tauri::command]
+pub async fn set_device_wheel(app: AppHandle, wheel: Wheel) -> Result<()> {
+  device::set_wheel(&data_dir(&app)?, wheel)
 }
 
 #[tauri::command]
@@ -98,6 +109,29 @@ pub async fn vault_snap(state: State<'_, AppState>) -> Result<bool> {
 #[tauri::command]
 pub async fn set_vault_snap(state: State<'_, AppState>, snap: bool) -> Result<()> {
   state.with(|s| s.vault.set_snap(snap))
+}
+
+#[tauri::command]
+pub async fn vault_edge_style(state: State<'_, AppState>) -> Result<EdgeStyle> {
+  state.with(|s| s.vault.edge_style())
+}
+
+#[tauri::command]
+pub async fn set_vault_edge_style(state: State<'_, AppState>, style: EdgeStyle) -> Result<()> {
+  state.with(|s| s.vault.set_edge_style(style))
+}
+
+/// The open vault's folder.
+#[tauri::command]
+pub async fn vault_folder(state: State<'_, AppState>) -> Result<String> {
+  state.with(|s| Ok(s.vault.root.display().to_string()))
+}
+
+/// Shows the open vault's folder in Explorer or Finder, selected in the folder around it.
+#[tauri::command]
+pub async fn reveal_vault(state: State<'_, AppState>) -> Result<()> {
+  // The opener plugin's own function: the plugin is not registered, so its commands stay out of reach.
+  state.with(|s| tauri_plugin_opener::reveal_item_in_dir(&s.vault.root).map_err(|e| Error::Msg(e.to_string())))
 }
 
 #[tauri::command]

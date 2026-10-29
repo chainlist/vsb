@@ -1,12 +1,14 @@
 // One IndexedDB database per vault: the vault itself (its settings, notes, zones, cards and edges)
 // and what the desktop's index derives from it, kept up to date on every write.
+import type { EdgeStyle } from '#lib/api.js';
 import { request } from './idb.ts';
 import type { CardRecord, ZoneRecord } from './records.ts';
 
 export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'clusters', 'bundles'];
 
-/** The vault's settings, as the desktop's `vault.json`: settings at their default are left out. */
-export type VaultFile = { format: number; id: string; theme?: string; snap?: boolean };
+/** The vault's settings, as the desktop's `vault.json`: settings at their default are left out, and
+ * so is each part of the style for new edges, as in an edge file. */
+export type VaultFile = { format: number; id: string; theme?: string; snap?: boolean; newEdges?: Partial<EdgeStyle> };
 
 /** Version of the format written by this build. */
 export const FORMAT = 1;

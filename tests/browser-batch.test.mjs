@@ -138,6 +138,24 @@ test('the text removes, restyles and creates edges and adds cards in one step', 
 	assert.deepEqual(await files(), before);
 });
 
+test("a new edge takes the vault's shape and the text's heads and line", async () => {
+	const id = await linked();
+	await api.setVaultEdgeStyle({ shape: 'straight', arrow: 'none', stroke: 'dotted' });
+	const scope = [id.A, id.B, id.C, id.D];
+	const links = [
+		link({ card: id.A }, { card: id.B }, 'to', 'solid'),
+		link({ card: id.B }, { card: id.C }, 'none', 'solid'),
+		link({ card: id.A }, { card: id.C }, 'both', 'dotted'),
+		link({ card: id.A }, { card: id.D }, 'to', 'solid')
+	];
+	const before = await files();
+	await api.editBatch(null, scope, [], links);
+	const after = await files();
+	const fresh = Object.entries(after).filter(([k]) => k.startsWith('edges/') && !(k in before)).map(([, v]) => v);
+	assert.deepEqual(fresh, [{ from: id.A, to: id.D, shape: 'straight' }]);
+	assert.equal(after['edges/E1'].shape, 'angled', 'an edge the text keeps keeps its shape');
+});
+
 test('links join two different cards of the batch', async () => {
 	const id = await linked();
 	const scope = [id.A, id.B, id.C, id.D];

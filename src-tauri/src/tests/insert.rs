@@ -2,7 +2,7 @@
 
 use super::{card_file, files, move_to, open, put_card, put_zone, Fixture, WORLD};
 use crate::index::Rect;
-use crate::items::{self, Edge, Kind, Shape, Stroke, Zone};
+use crate::items::{self, Arrow, Edge, EdgeStyle, Kind, Shape, Stroke, Zone};
 use std::collections::BTreeMap;
 
 /// A zone holding Name above a row of three cards, Name joined to Space by a labeled, styled edge.
@@ -30,6 +30,8 @@ fn edges(f: &Fixture) -> BTreeMap<(String, String), Edge> {
 #[test]
 fn inserting_a_card_splits_the_edge_moves_the_row_and_grows_the_zone_in_one_step() {
   let f = row();
+  // The halves are the old edge cut in two: the style for new edges is not theirs.
+  f.vault.set_edge_style(EdgeStyle { shape: Shape::Straight, arrow: Arrow::Both, stroke: Stroke::Dotted }).unwrap();
   let s = open(&f);
   let before = files(&f);
   let moves = [move_to("OTHERS", 20.0, 410.0), move_to("SPACE", 340.0, 410.0), move_to("FRENCH", 500.0, 410.0)];

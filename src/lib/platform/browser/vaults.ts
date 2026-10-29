@@ -1,7 +1,7 @@
 // Vaults in this browser, chosen by name. The list of them and this device's settings live in
 // localStorage, each vault in its own IndexedDB database. A vault is open in one tab at a time: a
 // second tab opening it is told so, rather than both writing past each other.
-import type { VaultEntry } from '#lib/api.js';
+import type { VaultEntry, VaultHome, Wheel } from '#lib/api.js';
 import { FORMAT, openDb, type VaultFile } from './db.ts';
 import { finished } from './idb.ts';
 import { loadLayout, opened, setOpen } from './session.ts';
@@ -67,14 +67,47 @@ function hold(id: string): Promise<(() => void) | null> {
 	});
 }
 
-type Device = { interfaceSize?: number };
+type Device = { interfaceSize?: number; wheel?: Wheel };
+
+/** Changes this device's settings and keeps them. */
+function change(edit: (d: Device) => void) {
+	const device = stored<Device>(DEVICE, {});
+	edit(device);
+	localStorage.setItem(DEVICE, JSON.stringify(device));
+}
 
 /** This device's interface size in percent, the same in every vault; null for the default. */
 export const interfaceSize = () => stored<Device>(DEVICE, {}).interfaceSize ?? null;
 
-export function setInterfaceSize(size: number | null) {
-	const device = stored<Device>(DEVICE, {});
-	if (size === null) delete device.interfaceSize;
-	else device.interfaceSize = size;
-	localStorage.setItem(DEVICE, JSON.stringify(device));
+export const setInterfaceSize = (size: number | null) =>
+	change((d) => {
+		if (size === null) delete d.interfaceSize;
+		else d.interfaceSize = size;
+	});
+
+/** What the mouse wheel does on this device's canvas: zoom unless it says otherwise. */
+export const wheel = () => stored<Device>(DEVICE, {}).wheel ?? 'zoom';
+
+export const setWheel = (wheel: Wheel) =>
+	change((d) => {
+		if (wheel === 'zoom') delete d.wheel;
+		else d.wheel = wheel;
+	});
+
+const KEPT_AS_FILES = 'Until a vault can be exported, the desktop app is where notes are kept as files.';
+
+/** Where the open vault lives: in this browser, which may clear it unless it agreed to keep it. */
+export async function home(): Promise<VaultHome> {
+	if (await navigator.storage?.persisted?.()) {
+		return {
+			place: 'This browser',
+			about: `The browser agreed to keep its data, so it is not cleared to free space. Clearing your browsing data still deletes it. ${KEPT_AS_FILES}`,
+			action: null
+		};
+	}
+	return {
+		place: 'This browser',
+		about: `The browser has not agreed to keep its data: it may clear it when the disk runs low, and Safari after seven days without a visit. Clearing your browsing data deletes it too. ${KEPT_AS_FILES}`,
+		action: { label: 'Ask again', run: async () => void (await navigator.storage?.persist?.()) }
+	};
 }

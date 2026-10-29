@@ -1,7 +1,7 @@
 use super::{files, open, put_zone, Fixture};
 use crate::batch::BatchCard;
 use crate::batch_edit::{End, Link, LinkPlan};
-use crate::items::{self, Arrow, Edge, Kind, Shape, Stroke};
+use crate::items::{self, Arrow, Edge, EdgeStyle, Kind, Shape, Stroke};
 use serde_json::json;
 
 /// A card at (x, y) in `zone`, showing a note titled `title`, or empty for None.
@@ -139,6 +139,21 @@ fn the_text_removes_restyles_and_creates_edges_and_adds_cards_in_one_step() {
   // One undo step puts every edge back; the new note stays, unplaced.
   s.apply(batch.undo).unwrap();
   assert_eq!(files(&f), before);
+}
+
+#[test]
+fn a_new_edge_takes_the_vaults_shape_and_the_texts_heads_and_line() {
+  let f = linked();
+  f.vault.set_edge_style(EdgeStyle { shape: Shape::Straight, arrow: Arrow::None, stroke: Stroke::Dotted }).unwrap();
+  let s = open(&f);
+  let mut links = as_written();
+  links.push(link(at("A"), at("D"), Arrow::To, Stroke::Solid));
+  let before = files(&f);
+  s.edit_batch(None, &scope(), &[], &links).unwrap();
+  let new: Vec<Edge> = files(&f).into_iter().filter(|(k, _)| k.starts_with("edges/") && !before.contains_key(k)).map(|(_, v)| serde_json::from_value(v).unwrap()).collect();
+  assert_eq!(new.len(), 1);
+  assert_eq!((new[0].shape, new[0].arrow, new[0].stroke), (Shape::Straight, Arrow::To, Stroke::Solid));
+  assert_eq!(read_edge(&f, "E1").shape, Shape::Angled, "an edge the text keeps keeps its shape");
 }
 
 #[test]

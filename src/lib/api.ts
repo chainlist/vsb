@@ -7,6 +7,19 @@ export * from '#platform';
 
 export type VaultEntry = { id: string; name: string; path: string };
 
+/** Where the open vault is kept, in its backend's words, as Settings > Vault shows it. */
+export type VaultHome = {
+	/** Its folder's path, or this browser. */
+	place: string;
+	/** What that means for its notes. */
+	about: string;
+	/** A button beside it, such as showing the folder; null for none. The tab asks again after it. */
+	action: { label: string; run: () => Promise<void> } | null;
+};
+
+/** What the mouse wheel does on the canvas, on this device: zoom, the default, or pan. */
+export type Wheel = 'zoom' | 'pan';
+
 /** A world rectangle. */
 export type Rect = { minX: number; minY: number; maxX: number; maxY: number };
 
@@ -53,6 +66,9 @@ export type Shape = 'curved' | 'straight' | 'angled';
 export type Arrow = 'to' | 'both' | 'none';
 /** How an edge's line is drawn: one solid line, dashes, dots, or two parallel lines. */
 export type Stroke = 'solid' | 'dashed' | 'dotted' | 'double';
+/** An edge's style. Every edge the app creates takes the vault's style for new edges, unless the
+ * builder's text says otherwise. */
+export type EdgeStyle = { shape: Shape; arrow: Arrow; stroke: Stroke };
 
 /** An edge, with the boxes of both its cards, `from` first, so it is drawn when they are off-screen. */
 export type EdgeView = {

@@ -7,6 +7,7 @@ import { apply, gone, read, state, type Edit } from './apply.ts';
 import { cover, rectAt } from './grid.ts';
 import { edgesAmong } from './lookups.ts';
 import { newNote } from './notes.ts';
+import { edgeStyle } from './settings.ts';
 import { newId } from './ulid.ts';
 import { holding } from './zones.ts';
 
@@ -81,9 +82,11 @@ export async function editBatch(e: Edit, zone: string | null, scope: string[], c
 		const edge = await read(e, 'edge', id);
 		states.push(state('edge', id, { ...edge, from: await card(l.from), to: await card(l.to), arrow: l.arrow, stroke: l.stroke }));
 	}
+	// The text always says a new edge's arrowheads and line, never its shape: that is the vault's.
+	const { shape } = await edgeStyle(e);
 	for (const i of plan.created) {
 		const l = links[i];
-		states.push(state('edge', newId(), { from: await card(l.from), to: await card(l.to), arrow: l.arrow, stroke: l.stroke }));
+		states.push(state('edge', newId(), { from: await card(l.from), to: await card(l.to), shape, arrow: l.arrow, stroke: l.stroke }));
 	}
 	return { cards: ids, undo: await apply(e, states) };
 }

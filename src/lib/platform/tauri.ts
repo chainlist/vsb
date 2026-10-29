@@ -6,6 +6,7 @@ import type {
 	BatchEdge,
 	BatchScope,
 	Created,
+	EdgeStyle,
 	Entry,
 	HAlign,
 	ItemState,
@@ -18,7 +19,9 @@ import type {
 	Arrow,
 	VAlign,
 	VaultEntry,
+	VaultHome,
 	Viewport,
+	Wheel,
 	ZoneNodes,
 	ZoneRow
 } from '#lib/api.js';
@@ -28,6 +31,12 @@ export const deviceInterfaceSize = () => invoke<number | null>('device_interface
 
 /** Keeps this device's interface size; null leaves it out, for the default. */
 export const setDeviceInterfaceSize = (size: number | null) => invoke<void>('set_device_interface_size', { size });
+
+/** What the mouse wheel does on this device's canvas, the same in every vault. */
+export const deviceWheel = () => invoke<Wheel>('device_wheel');
+
+/** Keeps what the wheel does on this device; zooming, the default, is left out. */
+export const setDeviceWheel = (wheel: Wheel) => invoke<void>('set_device_wheel', { wheel });
 
 export const listVaults = () => invoke<VaultEntry[]>('list_vaults');
 
@@ -54,6 +63,19 @@ export const vaultSnap = () => invoke<boolean>('vault_snap');
 
 /** Turns snapping to the grid on or off in the open vault's `vault.json`. */
 export const setVaultSnap = (snap: boolean) => invoke<void>('set_vault_snap', { snap });
+
+/** The style the open vault's `vault.json` gives every edge the app creates. */
+export const vaultEdgeStyle = () => invoke<EdgeStyle>('vault_edge_style');
+
+/** Sets the style for new edges in the open vault's `vault.json`, which leaves out what is at the default. */
+export const setVaultEdgeStyle = (style: EdgeStyle) => invoke<void>('set_vault_edge_style', { style });
+
+/** Where the open vault lives: its folder, which can be shown in Explorer or Finder. */
+export const vaultHome = async (): Promise<VaultHome> => ({
+	place: await invoke<string>('vault_folder'),
+	about: 'Its notes are plain Markdown files in its notes folder, yours to open, sync and back up.',
+	action: { label: 'Show in folder', run: () => invoke<void>('reveal_vault') }
+});
 
 /** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. Zoomed
  * out, given the size of a `cell` of the clusters' grid, nothing inside a zone comes back: only the

@@ -4,7 +4,7 @@
 
 use crate::error::{msg, Result};
 use crate::index::Rect;
-use crate::items::{Arrow, Card, Edge, HAlign, Kind, Shape, Stroke, VAlign};
+use crate::items::{Arrow, Card, Edge, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::session::Session;
 use crate::states::{Created, ItemState};
@@ -23,13 +23,13 @@ impl Session {
     self.read::<Card>(from)?;
     self.read::<Card>(to)?;
     let id = crate::new_id();
-    let undo = self.apply(vec![ItemState::of(&id, &new_edge(from, to))?])?;
+    let undo = self.apply(vec![ItemState::of(&id, &new_edge(from, to, self.vault.edge_style()?))?])?;
     Ok(Created { id, undo })
   }
 
   /// Inserts an empty card on an edge, on the world rectangle `at` in `zone` (None: the canvas).
   /// The edge is split around it, from its first card to the new one and on to its second: both
-  /// halves keep its style, and the first its label. The cards and zones given move to make room,
+  /// halves keep its style, not the style for new edges, and the first its label. The cards and zones given move to make room,
   /// as arranging moves them, and the zone grows where needed to hold them and the new card.
   pub fn insert_card(&self, edge: &str, zone: Option<&str>, at: Rect, cards: &[Move], zones: &[Move]) -> Result<Created> {
     let old: Edge = self.read(edge)?;
@@ -54,7 +54,7 @@ impl Session {
     let id = crate::new_id();
     let (place, card) = empty_card(&id, parent.zone, at);
     let mut states = self.placed(&[place], vec![card], &[])?;
-    states.push(ItemState::of(&crate::new_id(), &new_edge(from, &id))?);
+    states.push(ItemState::of(&crate::new_id(), &new_edge(from, &id, self.vault.edge_style()?))?);
     let undo = self.apply(states)?;
     Ok(Created { id, undo })
   }
@@ -97,9 +97,10 @@ impl Session {
   }
 }
 
-/// An edge from one card to another, with no label, in the new-edge style.
-fn new_edge(from: &str, to: &str) -> Edge {
-  Edge { from: from.to_string(), to: to.to_string(), label: None, shape: Shape::default(), arrow: Arrow::default(), stroke: Stroke::default() }
+/// An edge from one card to another, with no label, in the vault's style for new edges.
+fn new_edge(from: &str, to: &str, style: EdgeStyle) -> Edge {
+  let EdgeStyle { shape, arrow, stroke } = style;
+  Edge { from: from.to_string(), to: to.to_string(), label: None, shape, arrow, stroke }
 }
 
 /// An empty card on the world rectangle `at` in `zone`, and where it is placed.

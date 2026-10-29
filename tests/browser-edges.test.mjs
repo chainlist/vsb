@@ -26,6 +26,13 @@ test('creating an edge writes it, and undo removes it', async () => {
 	assert.equal((await api.queryViewport(WORLD, 0, null)).edges.length, 1);
 });
 
+test("a drawn edge takes the vault's style for new edges", async () => {
+	await twoCards();
+	await api.setVaultEdgeStyle({ shape: 'straight', arrow: 'both', stroke: 'solid' });
+	const { id } = await api.createEdge('A', 'B');
+	assert.deepEqual(await file('edge', id), { from: 'A', to: 'B', shape: 'straight', arrow: 'both' });
+});
+
 test('an edge joins two different existing cards once', async () => {
 	await twoCards();
 	await assert.rejects(api.createEdge('A', 'A'), (e) => typeof e === 'string', 'no loops, and errors are plain strings');
@@ -124,6 +131,8 @@ const edgeFiles = async () => Object.entries(await files()).filter(([k]) => k.st
 
 test('inserting a card splits the edge, moves the row and grows the zone in one step', async () => {
 	await row();
+	// The halves are the old edge cut in two: the style for new edges is not theirs.
+	await api.setVaultEdgeStyle({ shape: 'straight', arrow: 'both', stroke: 'dotted' });
 	const before = await files();
 	const moves = ['OTHERS', 'SPACE', 'FRENCH'].map((id, i) => ({ id, x: [20, 340, 500][i], y: 410 }));
 	const created = await api.insertCard('E', 'Z', { minX: 300, minY: 190, maxX: 540, maxY: 330 }, moves, []);
@@ -162,6 +171,14 @@ test("a child and its edge are one step in the parent's zone, grown to hold it",
 	assert.deepEqual(await edgeFiles(), [{ from: 'P', to: created.id }]);
 	await api.applyStates(created.undo);
 	assert.deepEqual(await files(), before);
+});
+
+test("a child's edge takes the vault's style for new edges", async () => {
+	await fresh();
+	await put(cardAt('P', null, 0, 60));
+	await api.setVaultEdgeStyle({ shape: 'angled', arrow: 'none', stroke: 'dotted' });
+	const { id } = await api.addChild('P', { minX: 400, minY: 60, maxX: 640, maxY: 200 });
+	assert.deepEqual(await edgeFiles(), [{ from: 'P', to: id, shape: 'angled', arrow: 'none', stroke: 'dotted' }]);
 });
 
 test('a child stays in its parent zone whatever lies under it, and needs its parent', async () => {

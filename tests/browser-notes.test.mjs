@@ -2,7 +2,7 @@
 // and what only the browser has: vaults by name, and one tab per vault.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { api, createVault, file, fresh, noteCard, put, WORLD, zoneAt } from './browser.mjs';
+import { api, createVault, file, fresh, noteCard, put, vaultFile, WORLD, zoneAt } from './browser.mjs';
 
 test('placing a card saves an empty card, in its zone with relative coordinates', async () => {
 	await fresh();
@@ -103,6 +103,56 @@ test("a vault's theme and snapping are its own, left out at their default", asyn
 	await api.setVaultTheme(null);
 	await api.setVaultSnap(true);
 	assert.deepEqual([await api.vaultTheme(), await api.vaultSnap()], [null, true]);
+});
+
+test("a vault's style for new edges keeps only what is not the default", async () => {
+	const a = await fresh();
+	const plain = { shape: 'curved', arrow: 'to', stroke: 'solid' };
+	assert.deepEqual(await api.vaultEdgeStyle(), plain);
+	await api.setVaultEdgeStyle({ shape: 'angled', arrow: 'to', stroke: 'dashed' });
+	assert.deepEqual((await vaultFile()).newEdges, { shape: 'angled', stroke: 'dashed' });
+	await fresh();
+	assert.deepEqual(await api.vaultEdgeStyle(), plain);
+	await api.openVault(a);
+	assert.deepEqual(await api.vaultEdgeStyle(), { shape: 'angled', arrow: 'to', stroke: 'dashed' });
+	await api.setVaultEdgeStyle(plain);
+	assert.equal('newEdges' in (await vaultFile()), false);
+});
+
+test("what the wheel does is the device's, zooming unless it says otherwise", async () => {
+	assert.equal(await api.deviceWheel(), 'zoom');
+	await api.setDeviceInterfaceSize(115);
+	await api.setDeviceWheel('pan');
+	await fresh();
+	assert.equal(await api.deviceWheel(), 'pan');
+	assert.deepEqual(JSON.parse(localStorage.getItem('vsb:device')), { interfaceSize: 115, wheel: 'pan' });
+	await api.setDeviceWheel('zoom');
+	await api.setDeviceInterfaceSize(null);
+	assert.deepEqual(JSON.parse(localStorage.getItem('vsb:device')), {});
+});
+
+test('a vault lives in this browser, which is asked again to keep it until it agrees', async () => {
+	await fresh();
+	let kept = false;
+	const asked = [];
+	Object.defineProperty(globalThis.navigator, 'storage', {
+		configurable: true,
+		value: { persisted: async () => kept, persist: async () => (asked.push(true), kept) }
+	});
+	try {
+		const home = await api.vaultHome();
+		assert.equal(home.place, 'This browser');
+		assert.match(home.about, /may clear it/);
+		assert.equal(home.action.label, 'Ask again');
+		await home.action.run();
+		assert.equal(asked.length, 1);
+		kept = true;
+		const again = await api.vaultHome();
+		assert.match(again.about, /agreed to keep/);
+		assert.equal(again.action, null);
+	} finally {
+		delete globalThis.navigator.storage;
+	}
 });
 
 test("the interface size is the device's, the same in every vault", async () => {

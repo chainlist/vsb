@@ -48,6 +48,9 @@ export async function files() {
 
 export const file = async (kind, id) => (await files())[`${kind}s/${id}`];
 
+/** The open vault's settings, as its `vault.json` would hold them. */
+export const vaultFile = () => request(opened().db.transaction('meta').objectStore('meta').get('vault'));
+
 /** The keys whose files differ between two snapshots. */
 export const changed = (before, after) =>
 	[...new Set([...Object.keys(before), ...Object.keys(after)])].filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k])).sort();

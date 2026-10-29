@@ -1,6 +1,6 @@
 use super::{files, move_to, open, put_card, put_zone, rtree, Fixture, WORLD};
 use crate::index::Rect;
-use crate::items::{self, Arrow, Edge, Kind, Shape, Stroke};
+use crate::items::{self, Arrow, Edge, EdgeStyle, Kind, Shape, Stroke};
 use crate::session::Session;
 use serde_json::Value;
 
@@ -41,6 +41,16 @@ fn creating_an_edge_writes_its_file_and_undo_removes_it() {
   s.apply(redo).unwrap();
   assert_eq!(edge(&f, &created.id).to, "B");
   assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.len(), 1);
+}
+
+#[test]
+fn a_drawn_edge_takes_the_vaults_style_for_new_edges() {
+  let f = two_cards();
+  f.vault.set_edge_style(EdgeStyle { shape: Shape::Straight, arrow: Arrow::Both, stroke: Stroke::Solid }).unwrap();
+  let s = open(&f);
+  let id = s.create_edge("A", "B").unwrap().id;
+  let raw: Value = serde_json::from_str(&f.read(&format!(".canvas/edges/{id}.json"))).unwrap();
+  assert_eq!(raw, serde_json::json!({ "from": "A", "to": "B", "shape": "straight", "arrow": "both" }));
 }
 
 #[test]

@@ -5,6 +5,7 @@ import type {
 	Arrow,
 	BatchCard,
 	BatchEdge,
+	EdgeStyle,
 	HAlign,
 	ItemState,
 	Link,
@@ -12,7 +13,8 @@ import type {
 	Rect,
 	Shape,
 	Stroke,
-	VAlign
+	VAlign,
+	Wheel
 } from '#lib/api.js';
 import type * as Desktop from '../tauri.ts';
 import { apply, type Edit } from './apply.ts';
@@ -34,6 +36,8 @@ const local = <T>(run: () => T) => command(async () => run());
 
 export const deviceInterfaceSize = () => local(vaults.interfaceSize);
 export const setDeviceInterfaceSize = (size: number | null) => local(() => vaults.setInterfaceSize(size));
+export const deviceWheel = () => local(vaults.wheel);
+export const setDeviceWheel = (wheel: Wheel) => local(() => vaults.setWheel(wheel));
 export const listVaults = () => local(vaults.listVaults);
 /** Asks for a vault's name, as the desktop asks for a folder. Null if the dialog was cancelled. */
 export const chooseVault = () =>
@@ -52,6 +56,9 @@ export const vaultTheme = () => reading(settings.theme);
 export const setVaultTheme = (theme: string | null) => writing((e) => settings.setTheme(e, theme));
 export const vaultSnap = () => reading(settings.snap);
 export const setVaultSnap = (snap: boolean) => writing((e) => settings.setSnap(e, snap));
+export const vaultEdgeStyle = () => reading(settings.edgeStyle);
+export const setVaultEdgeStyle = (style: EdgeStyle) => writing((e) => settings.setEdgeStyle(e, style));
+export const vaultHome = () => command(vaults.home);
 
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) => reading((e) => viewport(e, rect, minSize, cell));
 export const createCard = (x: number, y: number, w: number, h: number) => writing((e) => cards.createCard(e, x, y, w, h));

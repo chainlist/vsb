@@ -6,6 +6,7 @@ import { apply, edit, gone, read, state, type Edit } from './apply.ts';
 import { placed } from './cards.ts';
 import { edgeBetween } from './lookups.ts';
 import type { CardFile, EdgeFile } from './records.ts';
+import { edgeStyle } from './settings.ts';
 import { newId } from './ulid.ts';
 
 /** Connects two different cards. Two cards are connected at most once, either way round: when they
@@ -17,7 +18,7 @@ export async function createEdge(e: Edit, from: string, to: string): Promise<Cre
 	// An edge never points at a card that is not there.
 	await Promise.all([read(e, 'card', from), read(e, 'card', to)]);
 	const id = newId();
-	return { id, undo: await apply(e, [state('edge', id, { from, to })]) };
+	return { id, undo: await apply(e, [state('edge', id, { from, to, ...(await edgeStyle(e)) })]) };
 }
 
 /** An empty card on the world rectangle `at` in `zone`, and where it is placed. */
@@ -28,7 +29,7 @@ function emptyCard(id: string, zone: string | null, at: Rect): [Move, CardFile] 
 
 /** Inserts an empty card on an edge, on the world rectangle `at` in `zone` (null: the canvas). The
  * edge is split around it, from its first card to the new one and on to its second: both halves keep
- * its style, and the first its label. The cards and zones given move to make room, as arranging moves
+ * its style, not the style for new edges, and the first its label. The cards and zones given move to make room, as arranging moves
  * them, and the zone grows where needed to hold them and the new card. */
 export async function insertCard(e: Edit, edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[]): Promise<Created> {
 	const old = await read(e, 'edge', edge);
@@ -49,7 +50,7 @@ export async function addChild(e: Edit, from: string, at: Rect): Promise<Created
 	const id = newId();
 	const [move, card] = emptyCard(id, parent.zone, at);
 	const states = await placed(e, [move], [card], []);
-	states.push(state('edge', newId(), { from, to: id }));
+	states.push(state('edge', newId(), { from, to: id, ...(await edgeStyle(e)) }));
 	return { id, undo: await apply(e, states) };
 }
 

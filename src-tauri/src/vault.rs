@@ -2,6 +2,7 @@
 
 use crate::error::{msg, Result};
 use crate::fsx::atomic_write;
+use crate::items::{is_default, Arrow, EdgeStyle, Shape, Stroke};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -19,6 +20,20 @@ struct VaultFile {
   /// Whether moved and resized cards and zones land on the grid; left out while on, the default.
   #[serde(default = "on", skip_serializing_if = "is_on")]
   snap: bool,
+  /// The style every edge the app creates gets; left out at the default, each part as in an edge file.
+  #[serde(default, rename = "newEdges", skip_serializing_if = "is_default")]
+  new_edges: NewEdges,
+}
+
+/// The style for new edges, as `vault.json` writes it.
+#[derive(Serialize, Deserialize, Default, PartialEq)]
+struct NewEdges {
+  #[serde(default, skip_serializing_if = "is_default")]
+  shape: Shape,
+  #[serde(default, skip_serializing_if = "is_default")]
+  arrow: Arrow,
+  #[serde(default, skip_serializing_if = "is_default")]
+  stroke: Stroke,
 }
 
 fn on() -> bool {
@@ -59,7 +74,7 @@ impl Vault {
   pub fn open_or_init(root: &Path) -> Result<Vault> {
     let file = vault_file(root);
     if !file.exists() {
-      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, snap: true };
+      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, snap: true, new_edges: NewEdges::default() };
       atomic_write(&file, &serde_json::to_vec_pretty(&v)?)?;
     }
     fs::create_dir_all(root.join("notes"))?;
@@ -89,6 +104,20 @@ impl Vault {
   pub fn set_snap(&self, snap: bool) -> Result<()> {
     let mut v = read_vault_file(&self.root)?;
     v.snap = snap;
+    atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
+  }
+
+  /// The style `vault.json` gives every edge the app creates: the default unless it says otherwise.
+  pub fn edge_style(&self) -> Result<EdgeStyle> {
+    let NewEdges { shape, arrow, stroke } = read_vault_file(&self.root)?.new_edges;
+    Ok(EdgeStyle { shape, arrow, stroke })
+  }
+
+  /// Sets the style for new edges in `vault.json`, which leaves out what is at the default. Read
+  /// again first, as for the theme.
+  pub fn set_edge_style(&self, style: EdgeStyle) -> Result<()> {
+    let mut v = read_vault_file(&self.root)?;
+    v.new_edges = NewEdges { shape: style.shape, arrow: style.arrow, stroke: style.stroke };
     atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
   }
 

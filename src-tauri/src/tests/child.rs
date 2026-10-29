@@ -2,7 +2,7 @@
 
 use super::{card_file, files, open, put_card, put_zone, Fixture, WORLD};
 use crate::index::Rect;
-use crate::items::{self, Arrow, Edge, Kind, Shape, Stroke, Zone};
+use crate::items::{self, Arrow, Edge, EdgeStyle, Kind, Shape, Stroke, Zone};
 
 /// The one edge file there is.
 fn only_edge(f: &Fixture) -> Edge {
@@ -37,6 +37,18 @@ fn a_child_and_its_edge_are_one_step_in_the_parent_zone_grown_to_hold_it() {
 
   s.apply(created.undo).unwrap();
   assert_eq!(files(&f), before);
+}
+
+#[test]
+fn a_childs_edge_takes_the_vaults_style_for_new_edges() {
+  let f = Fixture::new();
+  put_card(&f, "P", None, 0.0, 60.0);
+  let style = EdgeStyle { shape: Shape::Angled, arrow: Arrow::None, stroke: Stroke::Dotted };
+  f.vault.set_edge_style(style).unwrap();
+  let s = open(&f);
+  s.add_child("P", Rect::of(400.0, 60.0, 240.0, 140.0)).unwrap();
+  let edge = only_edge(&f);
+  assert_eq!(EdgeStyle { shape: edge.shape, arrow: edge.arrow, stroke: edge.stroke }, style);
 }
 
 #[test]
