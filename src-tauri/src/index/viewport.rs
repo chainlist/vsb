@@ -1,4 +1,4 @@
-//! The viewport query: zones, cards and edges whose bounds meet a world rectangle.
+//! The viewport query: zones, cards, edges and drawings whose bounds meet a world rectangle.
 
 use super::bounds::ZONE_ABS;
 use super::views::{CardView, EdgeView, Frame, Viewport, ZoneView};
@@ -12,10 +12,10 @@ pub(super) const MEETS: &str = "b.max_x >= ?1 AND b.min_x <= ?3 AND b.max_y >= ?
 pub(super) const LARGE: &str = "(b.max_x - b.min_x >= ?5 OR b.max_y - b.min_y >= ?5)";
 
 impl Index {
-  /// Zones (parents first), cards and edges in `rect`, skipping those smaller than `min_size` world
-  /// units. Zoomed out, with the size of a `cell` of the clusters' grid (?6), nothing inside a zone
-  /// comes back on its own: only the outermost zones with a preview of what they hold, the loose cards
-  /// counted per cell and the edges bundled.
+  /// Zones (parents first), cards, edges and drawings in `rect`, skipping those smaller than `min_size`
+  /// world units. Zoomed out, with the size of a `cell` of the clusters' grid (?6), nothing inside a
+  /// zone comes back on its own: only the outermost zones with a preview of what they hold, the loose
+  /// cards counted per cell, the edges bundled and the loose drawings.
   pub fn viewport(&self, rect: Rect, min_size: f64, cell: Option<f64>) -> Result<Viewport> {
     let args = params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, min_size];
     let mut stmt = self.db.prepare(&format!(
@@ -40,7 +40,8 @@ impl Index {
       .collect::<rusqlite::Result<_>>()?;
     if let Some(cell) = cell {
       let (clusters, bundles, previews) = (self.clusters(rect, cell)?, self.bundles(rect, cell)?, self.previews(rect, min_size, &zones)?);
-      return Ok(Viewport { zones, cards: vec![], edges: vec![], clusters, bundles, previews });
+      let drawings = self.drawings(rect, min_size, true)?;
+      return Ok(Viewport { zones, cards: vec![], edges: vec![], drawings, clusters, bundles, previews });
     }
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
@@ -98,6 +99,7 @@ impl Index {
         })
       })?
       .collect::<rusqlite::Result<_>>()?;
-    Ok(Viewport { zones, cards, edges, clusters: vec![], bundles: vec![], previews: vec![] })
+    let drawings = self.drawings(rect, min_size, false)?;
+    Ok(Viewport { zones, cards, edges, drawings, clusters: vec![], bundles: vec![], previews: vec![] })
   }
 }

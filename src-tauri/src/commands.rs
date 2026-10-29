@@ -3,6 +3,7 @@
 use crate::batch::{Batch, BatchCard, BatchEdge};
 use crate::batch_edit::{Link, LinkPlan};
 use crate::device::{self, Wheel};
+use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
 use crate::items::{Arrow, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign};
@@ -280,8 +281,14 @@ pub async fn rename_zone(state: State<'_, AppState>, id: String, name: String) -
 }
 
 #[tauri::command]
-pub async fn color_items(state: State<'_, AppState>, cards: Vec<String>, zones: Vec<String>, color: Option<String>) -> Result<Vec<ItemState>> {
-  state.with(|s| s.color_items(&cards, &zones, color))
+pub async fn color_items(
+  state: State<'_, AppState>,
+  cards: Vec<String>,
+  zones: Vec<String>,
+  drawings: Vec<String>,
+  color: Option<String>,
+) -> Result<Vec<ItemState>> {
+  state.with(|s| s.color_items(&cards, &zones, &drawings, color))
 }
 
 #[tauri::command]
@@ -295,8 +302,16 @@ pub async fn create_edge(state: State<'_, AppState>, from: String, to: String) -
 }
 
 #[tauri::command]
-pub async fn insert_card(state: State<'_, AppState>, edge: String, zone: Option<String>, at: Rect, cards: Vec<Move>, zones: Vec<Move>) -> Result<Created> {
-  state.with(|s| s.insert_card(&edge, zone.as_deref(), at, &cards, &zones))
+pub async fn insert_card(
+  state: State<'_, AppState>,
+  edge: String,
+  zone: Option<String>,
+  at: Rect,
+  cards: Vec<Move>,
+  zones: Vec<Move>,
+  drawings: Vec<Move>,
+) -> Result<Created> {
+  state.with(|s| s.insert_card(&edge, zone.as_deref(), at, &cards, &zones, &drawings))
 }
 
 #[tauri::command]
@@ -327,6 +342,26 @@ pub async fn stroke_edges(state: State<'_, AppState>, ids: Vec<String>, stroke: 
 #[tauri::command]
 pub async fn delete_edges(state: State<'_, AppState>, ids: Vec<String>) -> Result<Vec<ItemState>> {
   state.with(|s| s.delete_edges(&ids))
+}
+
+#[tauri::command]
+pub async fn add_stroke(state: State<'_, AppState>, points: Vec<f64>) -> Result<Created> {
+  state.with(|s| s.add_stroke(&points))
+}
+
+#[tauri::command]
+pub async fn erase_strokes(state: State<'_, AppState>, erased: Vec<Erased>) -> Result<Vec<ItemState>> {
+  state.with(|s| s.erase_strokes(&erased))
+}
+
+#[tauri::command]
+pub async fn move_drawings(state: State<'_, AppState>, moves: Vec<Move>) -> Result<Vec<ItemState>> {
+  state.with(|s| s.move_drawings(&moves))
+}
+
+#[tauri::command]
+pub async fn delete_drawings(state: State<'_, AppState>, ids: Vec<String>) -> Result<Vec<ItemState>> {
+  state.with(|s| s.delete_drawings(&ids))
 }
 
 #[tauri::command]

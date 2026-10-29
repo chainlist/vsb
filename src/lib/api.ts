@@ -82,6 +82,13 @@ export type EdgeView = {
 	ends: [Frame, Frame];
 };
 
+/** Strokes of the pen grouped as one item, in absolute world coordinates: the box around its strokes'
+ * points, and each stroke as its points' x, y and pressure in turn, from the box's corner. */
+export type DrawingView = Frame & { id: string; zone: string | null; color: string | null; strokes: number[][] };
+
+/** Strokes taken out of a drawing, by their place in it. */
+export type Erased = { id: string; strokes: number[] };
+
 /** Zoomed out, the loose cards whose centers lie in one square of the grid: the box around them,
  * how many, and the square's column and row counted from the world origin. Never the cards. */
 export type Cluster = Frame & { cell: [number, number]; count: number };
@@ -93,24 +100,32 @@ export type BundleEnd = Frame & { zone: string | null };
 export type Bundle = { ends: [BundleEnd, BundleEnd]; count: number; arrow: Arrow };
 
 /** Zoomed out, what a collapsed zone holds at any depth, in its coordinates from its top-left corner:
- * its cards' boxes by color (null for the theme's plain stock), and its inner zones' boxes, top to
- * bottom then left to right. Only what meets the queried area and is large enough comes back. */
-export type Preview = { zone: string; cards: { color: string | null; boxes: Frame[] }[]; zones: Frame[] };
+ * its cards' boxes by color (null for the theme's plain stock) and its inner zones' boxes, top to
+ * bottom then left to right, and its drawings by color (null for the theme's ink), oldest first, each
+ * as its corner and its strokes. Only what meets the queried area and is large enough comes back. */
+export type Preview = {
+	zone: string;
+	cards: { color: string | null; boxes: Frame[] }[];
+	zones: Frame[];
+	inks: { color: string | null; drawings: { x: number; y: number; strokes: number[][] }[] }[];
+};
 
-/** Open, the zones, cards and edges; zoomed out, the outermost zones with a preview of what they
- * hold, the clusters and the bundles. */
+/** Open, the zones, cards, edges and drawings; zoomed out, the outermost zones with a preview of what
+ * they hold, the loose drawings, the clusters and the bundles. */
 export type Viewport = {
 	zones: ZoneView[];
 	cards: CardView[];
 	edges: EdgeView[];
+	/** Oldest first, so newer ones are drawn on top. */
+	drawings: DrawingView[];
 	clusters: Cluster[];
 	bundles: Bundle[];
 	previews: Preview[];
 };
 
-/** One zone, card or edge file: its JSON, or null for no file. Layout edits return the states
- * they replaced, and applying those reverses the edit. */
-export type ItemState = { kind: 'zone' | 'card' | 'edge'; id: string; value: unknown };
+/** One zone, card, edge or drawing file: its JSON, or null for no file. Layout edits return the
+ * states they replaced, and applying those reverses the edit. */
+export type ItemState = { kind: 'zone' | 'card' | 'edge' | 'drawing'; id: string; value: unknown };
 
 /** A new item's ID, with the states that undo its creation. */
 export type Created = { id: string; undo: ItemState[] };
@@ -142,7 +157,7 @@ export type Link = { from: LinkEnd; to: LinkEnd; arrow: Arrow; stroke: Stroke };
  * make new edges. */
 export type LinkPlan = { removed: string[]; restyled: [string, number][]; created: number[] };
 
-/** A card or zone dropped with its top-left corner at a world position. */
+/** A card, zone or drawing dropped with its top-left corner at a world position. */
 export type Move = { id: string; x: number; y: number };
 
 /** One line of the zone list: a zone, whether zones lie inside it, how many cards it holds at any
@@ -156,5 +171,10 @@ export type Entry =
 
 /** What arranging a zone lays out, or inserting a card in it moves: its own cards and its inner
  * zones (`zone` true), each with its box in the world, and the edges between them as indexes into
- * them. An edge to a card inside an inner zone joins that zone. */
-export type ZoneNodes = { nodes: (Frame & { id: string; zone: boolean })[]; edges: { from: number; to: number }[] };
+ * them. An edge to a card inside an inner zone joins that zone. Inserting a card also moves the
+ * drawings directly in it, which arranging leaves. */
+export type ZoneNodes = {
+	nodes: (Frame & { id: string; zone: boolean })[];
+	edges: { from: number; to: number }[];
+	drawings: (Frame & { id: string })[];
+};

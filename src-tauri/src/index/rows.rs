@@ -1,10 +1,10 @@
-//! Index rows for notes, zones, cards and edges. Upserts keep each row's `key`,
+//! Index rows for notes, zones, cards, edges and drawings. Upserts keep each row's `key`,
 //! which the R*Trees and the full-text table share.
 
 use super::{Index, Rect};
 use crate::error::Result;
 use crate::fsx::Stamp;
-use crate::items::{Card, Edge, Item, Kind, Zone};
+use crate::items::{Card, Drawing, Edge, Item, Kind, Zone};
 use rusqlite::{params, OptionalExtension};
 
 /// What the index keeps about one note file.
@@ -22,6 +22,7 @@ pub(super) fn tables(kind: Kind) -> (&'static str, &'static str) {
     Kind::Zone => ("zones", "zone_bounds"),
     Kind::Card => ("cards", "card_bounds"),
     Kind::Edge => ("edges", "edge_bounds"),
+    Kind::Drawing => ("drawings", "drawing_bounds"),
   }
 }
 
@@ -51,12 +52,13 @@ impl Index {
     Ok(self.db.query_row("SELECT path FROM notes WHERE id = ?1", [id], |r| r.get(0)).optional()?)
   }
 
-  /// A zone, card or edge as its row holds it: its file as the app last read or wrote it.
+  /// A zone, card, edge or drawing as its row holds it: its file as the app last read or wrote it.
   pub fn item<T: Item>(&self, id: &str) -> Result<Option<T>> {
     let fields = match T::KIND {
       Kind::Zone => "'name', name, 'parent', parent, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color",
       Kind::Card => "'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign, 'color', color",
       Kind::Edge => "'from', from_card, 'to', to_card, 'label', label, 'shape', shape, 'arrow', arrow, 'stroke', stroke",
+      Kind::Drawing => "'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color, 'strokes', json(strokes)",
     };
     let sql = format!("SELECT json_object({fields}) FROM {} WHERE id = ?1", tables(T::KIND).0);
     let json: Option<String> = self.db.query_row(&sql, [id], |r| r.get(0)).optional()?;
@@ -99,6 +101,16 @@ impl Index {
     Ok(())
   }
 
+  pub fn put_drawing(&self, id: &str, d: &Drawing, stamp: Stamp) -> Result<()> {
+    self.db.execute(
+      "INSERT INTO drawings (id, zone, x, y, w, h, color, strokes, mtime, size) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+       ON CONFLICT (id) DO UPDATE SET zone = excluded.zone, x = excluded.x, y = excluded.y, w = excluded.w, h = excluded.h,
+         color = excluded.color, strokes = excluded.strokes, mtime = excluded.mtime, size = excluded.size",
+      params![id, d.zone, d.x, d.y, d.w, d.h, d.color, serde_json::to_string(&d.strokes)?, stamp.mtime, stamp.size],
+    )?;
+    Ok(())
+  }
+
   /// IDs of the edges that start or end at any of these cards.
   pub fn edges_touching(&self, cards: &[String]) -> Result<Vec<String>> {
     let mut stmt = self.db.prepare("SELECT id FROM edges WHERE from_card = ?1 OR to_card = ?1")?;
@@ -120,17 +132,20 @@ impl Index {
     Ok(self.db.query_row(sql, [a, b], |r| r.get(0)).optional()?)
   }
 
-  /// The zones, then the cards, directly in `zone` (None: on the canvas). With `within`, only
-  /// those lying fully inside it, in that zone's coordinates.
+  /// The zones, then the cards, then the drawings, directly in `zone` (None: on the canvas). With
+  /// `within`, only those lying fully inside it, in that zone's coordinates.
   pub fn children(&self, zone: Option<&str>, within: Option<Rect>) -> Result<Vec<(Kind, String)>> {
     const FITS: &str = "(?2 IS NULL OR (x >= ?2 AND y >= ?3 AND x + w <= ?4 AND y + h <= ?5))";
     let mut stmt = self.db.prepare(&format!(
-      "SELECT 1, id FROM zones WHERE parent IS ?1 AND {FITS}
+      "SELECT 0, id FROM zones WHERE parent IS ?1 AND {FITS}
        UNION ALL
-       SELECT 0, id FROM cards WHERE zone IS ?1 AND {FITS}"
+       SELECT 1, id FROM cards WHERE zone IS ?1 AND {FITS}
+       UNION ALL
+       SELECT 2, id FROM drawings WHERE zone IS ?1 AND {FITS}"
     ))?;
     let args = params![zone, within.map(|r| r.min_x), within.map(|r| r.min_y), within.map(|r| r.max_x), within.map(|r| r.max_y)];
-    let rows = stmt.query_map(args, |r| Ok((if r.get(0)? { Kind::Zone } else { Kind::Card }, r.get(1)?)))?;
+    let kind = |k: i64| [Kind::Zone, Kind::Card, Kind::Drawing][k as usize];
+    let rows = stmt.query_map(args, |r| Ok((kind(r.get(0)?), r.get(1)?)))?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
   }
 

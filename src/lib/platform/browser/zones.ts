@@ -13,8 +13,8 @@ import { newId } from './ulid.ts';
 const MARGIN = 20;
 const NAME_ROOM = 60;
 
-/** Draws a zone on a world rectangle, inside the innermost zone that fully contains it. The cards
- * and zones at that level lying fully inside the new zone join it, staying in place. */
+/** Draws a zone on a world rectangle, inside the innermost zone that fully contains it. The cards,
+ * zones and drawings at that level lying fully inside the new zone join it, staying in place. */
 export async function createZone(e: Edit, x: number, y: number, w: number, h: number): Promise<Created> {
 	const at = e.layout.around(rectAt(x, y, w, h));
 	const zone: ZoneFile = { name: '', parent: at.zone, x: x - at.x, y: y - at.y, w, h };
@@ -72,18 +72,18 @@ export async function holding(e: Edit, id: string, span: Rect) {
 
 export const renameZone = (e: Edit, id: string, name: string) => edit(e, 'zone', [id], (zone) => (zone.name = name));
 
-/** Sets the color of cards and zones, as one edit; null for none, which leaves a card on the
- * theme's plain stock and a zone on its gray. */
-export async function colorItems(e: Edit, cards: string[], zones: string[], color: string | null) {
+/** Sets the color of cards, zones and drawings, as one edit; null for none, which leaves a card on
+ * the theme's plain stock, a zone on its gray and a drawing in its ink. */
+export async function colorItems(e: Edit, cards: string[], zones: string[], drawings: string[], color: string | null) {
 	const paint = (item: { color?: string }) => {
 		if (color === null) delete item.color;
 		else item.color = color;
 	};
-	return apply(e, [...(await edited(e, 'card', cards, paint)), ...(await edited(e, 'zone', zones, paint))]);
+	return apply(e, [...(await edited(e, 'card', cards, paint)), ...(await edited(e, 'zone', zones, paint)), ...(await edited(e, 'drawing', drawings, paint))]);
 }
 
-/** Deletes zones. Their cards and child zones move up to the nearest zone that stays, or the
- * canvas, without moving on screen. Nothing inside is deleted. */
+/** Deletes zones. Their cards, drawings and child zones move up to the nearest zone that stays, or
+ * the canvas, without moving on screen. Nothing inside is deleted. */
 export async function deleteZones(e: Edit, ids: string[]) {
 	const leaving = new Map(await Promise.all(ids.map(async (id) => [id, await read(e, 'zone', id)] as const)));
 	/** The deleted zones from `id` upwards, until a zone that stays. */
@@ -106,11 +106,16 @@ export async function deleteZones(e: Edit, ids: string[]) {
 	return apply(e, states);
 }
 
-/** A zone's or card's state once moved into zone `to` (null: the canvas) and shifted by (dx, dy). */
+/** A zone's, card's or drawing's state once moved into zone `to` (null: the canvas) and shifted by
+ * (dx, dy). */
 async function rehomed(e: Edit, kind: Kind, id: string, to: string | null, dx: number, dy: number) {
 	if (kind === 'zone') {
 		const z = await read(e, 'zone', id);
 		return state('zone', id, { ...z, parent: to, x: z.x + dx, y: z.y + dy });
+	}
+	if (kind === 'drawing') {
+		const d = await read(e, 'drawing', id);
+		return state('drawing', id, { ...d, zone: to, x: d.x + dx, y: d.y + dy });
 	}
 	const c = await read(e, 'card', id);
 	return state('card', id, { ...c, zone: to, x: c.x + dx, y: c.y + dy });

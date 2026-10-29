@@ -6,6 +6,7 @@ import type {
 	BatchCard,
 	BatchEdge,
 	EdgeStyle,
+	Erased,
 	HAlign,
 	ItemState,
 	Link,
@@ -20,6 +21,7 @@ import type * as Desktop from '../tauri.ts';
 import { apply, type Edit } from './apply.ts';
 import * as batch from './batch.ts';
 import * as cards from './cards.ts';
+import * as drawings from './drawings.ts';
 import * as edges from './edges.ts';
 import * as lists from './lists.ts';
 import * as notes from './notes.ts';
@@ -91,18 +93,23 @@ export const resizeZone = (id: string, x: number, y: number, w: number, h: numbe
 export const zoneContents = (id: string) => reading((e) => scope.zoneContents(e, id));
 export const canvasContents = () => reading(scope.canvasContents);
 export const renameZone = (id: string, name: string) => writing((e) => zones.renameZone(e, id, name));
-export const colorItems = (c: string[], z: string[], color: string | null) => writing((e) => zones.colorItems(e, c, z, color));
+export const colorItems = (c: string[], z: string[], d: string[], color: string | null) => writing((e) => zones.colorItems(e, c, z, d, color));
 export const deleteZones = (ids: string[]) => writing((e) => zones.deleteZones(e, ids));
 
 export const createEdge = (from: string, to: string) => writing((e) => edges.createEdge(e, from, to));
-export const insertCard = (edge: string, zone: string | null, at: Rect, c: Move[], z: Move[]) =>
-	writing((e) => edges.insertCard(e, edge, zone, at, c, z));
+export const insertCard = (edge: string, zone: string | null, at: Rect, c: Move[], z: Move[], d: Move[]) =>
+	writing((e) => edges.insertCard(e, edge, zone, at, c, z, d));
 export const addChild = (from: string, at: Rect) => writing((e) => edges.addChild(e, from, at));
 export const labelEdge = (id: string, label: string) => writing((e) => edges.labelEdge(e, id, label));
 export const shapeEdges = (ids: string[], shape: Shape) => writing((e) => edges.shapeEdges(e, ids, shape));
 export const arrowEdges = (ids: string[], arrow: Arrow) => writing((e) => edges.arrowEdges(e, ids, arrow));
 export const strokeEdges = (ids: string[], stroke: Stroke) => writing((e) => edges.strokeEdges(e, ids, stroke));
 export const deleteEdges = (ids: string[]) => writing((e) => edges.deleteEdges(e, ids));
+
+export const addStroke = (points: number[]) => writing((e) => drawings.addStroke(e, points));
+export const eraseStrokes = (erased: Erased[]) => writing((e) => drawings.eraseStrokes(e, erased));
+export const moveDrawings = (moves: Move[]) => writing((e) => drawings.moveDrawings(e, moves));
+export const deleteDrawings = (ids: string[]) => writing((e) => drawings.deleteDrawings(e, ids));
 
 export const applyStates = (states: ItemState[]) => writing((e) => apply(e, states));
 

@@ -1,13 +1,15 @@
-// Pointer gestures on cards, zones and edges: a press selects, a drag moves the selected cards and
-// zones, a handle on a side or corner resizes. Items change on screen as the pointer moves; the
+// Pointer gestures on cards, zones, edges and drawings: a press selects, a drag moves the selected
+// cards, zones and drawings, a handle on a side or corner resizes. Items change on screen as the pointer moves; the
 // files are written on release.
 import {
 	moveCards,
+	moveDrawings,
 	moveZones,
 	resizeCard,
 	resizeZone,
 	zoneContents,
 	type CardView,
+	type DrawingView,
 	type ItemState,
 	type Rect,
 	type ZoneView
@@ -33,7 +35,7 @@ export function newCardAt(p: { x: number; y: number }) {
 
 type Item = CardView | ZoneView;
 
-const drops = (moved: Item[]) => moved.map(({ id, x, y }) => ({ id, x, y }));
+const drops = (moved: (Item | DrawingView)[]) => moved.map(({ id, x, y }) => ({ id, x, y }));
 
 export function startMove(down: PointerEvent, item: { id: string }) {
 	if (down.button !== 0) return;
@@ -50,7 +52,8 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 	const carried = new Set(inside.map((i) => i.id));
 	const zones = selection.zones.filter((z) => !carried.has(z.id));
 	const cards = selection.cards.filter((c) => !carried.has(c.id));
-	const moving = [...zones, ...cards, ...inside].map((i) => ({ item: i, x: i.x, y: i.y }));
+	const drawings = selection.drawings.filter((d) => !carried.has(d.id));
+	const moving = [...zones, ...cards, ...drawings, ...inside].map((i) => ({ item: i, x: i.x, y: i.y }));
 	// The item pressed lands on the grid and the others keep their places around it. Pressing an
 	// edge moves its selection, led by the first item in it.
 	const lead = moving.find((m) => m.item.id === item.id) ?? moving[0];
@@ -71,8 +74,12 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 			if (dragged) {
 				// Back where it started, as a short drag can snap, nothing is written.
 				if (!lead || (lead.item.x === lead.x && lead.item.y === lead.y)) return;
-				// Zones land first, so cards dropped along with them find them where they now are.
-				history.edit(async () => [...(await moveZones(drops(zones))), ...(await moveCards(drops(cards)))]);
+				// Zones land first, so cards and drawings dropped along with them find them where they now are.
+				history.edit(async () => [
+					...(await moveZones(drops(zones))),
+					...(await moveCards(drops(cards))),
+					...(await moveDrawings(drops(drawings)))
+				]);
 			} else if (wasSelected && !down.shiftKey) {
 				// A plain click on one item of a larger selection keeps just that item.
 				selection.only(item.id);

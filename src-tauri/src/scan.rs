@@ -4,7 +4,7 @@
 use crate::error::Result;
 use crate::fsx::{self, atomic_write};
 use crate::index::{Index, NoteRow, Scope};
-use crate::items::{self, Card, Edge, Kind, Zone};
+use crate::items::{self, Card, Drawing, Edge, Kind, Zone};
 use crate::note::{self, NoteText};
 use crate::vault::Vault;
 use std::path::Path;
@@ -18,7 +18,7 @@ pub struct Stats {
 pub fn scan(vault: &Vault, index: &Index) -> Result<Stats> {
   index.batch(|| {
     let mut stats = Stats::default();
-    for kind in [Kind::Zone, Kind::Card, Kind::Edge] {
+    for kind in [Kind::Zone, Kind::Card, Kind::Edge, Kind::Drawing] {
       scan_items(vault, index, kind, &mut stats)?;
     }
     let layout_changed = stats != Stats::default();
@@ -42,6 +42,7 @@ fn scan_items(vault: &Vault, index: &Index, kind: Kind, stats: &mut Stats) -> Re
       Kind::Zone => items::read::<Zone>(&path).and_then(|z| index.put_zone(&id, &z, stamp)),
       Kind::Card => items::read::<Card>(&path).and_then(|c| index.put_card(&id, &c, stamp)),
       Kind::Edge => items::read::<Edge>(&path).and_then(|e| index.put_edge(&id, &e, stamp)),
+      Kind::Drawing => items::read::<Drawing>(&path).and_then(|d| index.put_drawing(&id, &d, stamp)),
     };
     // A broken file (half-synced, edited by hand) keeps its old row and is retried next time.
     match put {

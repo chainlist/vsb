@@ -4,19 +4,19 @@
 import type { ItemState } from '#lib/api.js';
 import { request } from './idb.ts';
 import type { Layout } from './layout.ts';
-import { fileOf, type CardFile, type EdgeFile, type File, type Kind, type ZoneFile } from './records.ts';
+import { fileOf, type CardFile, type DrawingFile, type EdgeFile, type File, type Kind, type ZoneFile } from './records.ts';
 import { settle, type Next } from './settle.ts';
 
 /** An open vault inside one transaction over every store. */
 export type Edit = { tx: IDBTransaction; layout: Layout };
 
-type Files = { zone: ZoneFile; card: CardFile; edge: EdgeFile };
+type Files = { zone: ZoneFile; card: CardFile; edge: EdgeFile; drawing: DrawingFile };
 
 /** Brings items to the given states and returns the states they had. An item both written and
  * deleted ends up deleted, as on the desktop, where writes run before deletions. */
 export async function apply(e: Edit, states: ItemState[]): Promise<ItemState[]> {
 	const before = await Promise.all(states.map(async ({ kind, id }) => ({ kind, id, value: (await held(e, kind, id)) ?? null })));
-	const next: Next = { zone: new Map(), card: new Map(), edge: new Map() };
+	const next: Next = { zone: new Map(), card: new Map(), edge: new Map(), drawing: new Map() };
 	for (const s of states) if (s.value !== null) (next[s.kind] as Map<string, File>).set(s.id, fileOf(s.kind, s.value));
 	for (const s of states) if (s.value === null) next[s.kind].set(s.id, null);
 	await settle(e.tx, e.layout, next);

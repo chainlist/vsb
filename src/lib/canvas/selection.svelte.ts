@@ -1,4 +1,4 @@
-// Selection and focus on the canvas: the selected cards, zones and edges, and the one item in edit
+// Selection and focus on the canvas: the selected cards, zones, edges and drawings, and the one item in edit
 // mode (a card's text, a zone's name or an edge's label).
 import type { EdgeView } from '#lib/api.js';
 import { items } from './items.svelte.js';
@@ -42,6 +42,11 @@ class Selection {
 	/** The selected edges among those on the canvas. */
 	get edges() {
 		return items.edges.filter((e) => this.has(e.id));
+	}
+
+	/** The selected drawings among those on the canvas. */
+	get drawings() {
+		return items.drawings.filter((d) => this.has(d.id));
 	}
 
 	has(id: string) {

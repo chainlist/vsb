@@ -148,7 +148,7 @@ fn a_card_and_a_zone_take_one_color_in_one_step_and_lose_it_again() {
   let rel = format!(".canvas/cards/{id}.json");
   assert!(raw(&f, &rel).get("color").is_none(), "no color, no field");
 
-  let undo = s.color_items(std::slice::from_ref(&id), &["Z".into()], Some("#f5d76e".into())).unwrap();
+  let undo = s.color_items(std::slice::from_ref(&id), &["Z".into()], &[], Some("#f5d76e".into())).unwrap();
   assert_eq!((raw(&f, &rel)["color"].as_str(), raw(&f, ".canvas/zones/Z.json")["color"].as_str()), (Some("#f5d76e"), Some("#f5d76e")));
   let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.cards[0].color.as_deref(), view.zones[0].color.as_deref()), (Some("#f5d76e"), Some("#f5d76e")));
@@ -157,8 +157,8 @@ fn a_card_and_a_zone_take_one_color_in_one_step_and_lose_it_again() {
   s.apply(undo).unwrap();
   assert!(raw(&f, &rel).get("color").is_none() && raw(&f, ".canvas/zones/Z.json").get("color").is_none());
   assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].color, None);
-  s.color_items(std::slice::from_ref(&id), &[], Some("#6fa8dc".into())).unwrap();
-  s.color_items(std::slice::from_ref(&id), &[], None).unwrap();
+  s.color_items(std::slice::from_ref(&id), &[], &[], Some("#6fa8dc".into())).unwrap();
+  s.color_items(std::slice::from_ref(&id), &[], &[], None).unwrap();
   assert!(raw(&f, &rel).get("color").is_none(), "no color leaves the field out again");
 }
 

@@ -5,7 +5,7 @@ import type { Edit } from './apply.ts';
 import { gridRanges } from './grid.ts';
 import { request } from './idb.ts';
 import { fits } from './layout.ts';
-import type { CardRecord, EdgeRecord, Kind } from './records.ts';
+import type { CardRecord, DrawingRecord, EdgeRecord, Kind } from './records.ts';
 
 /** Every record filed in the grid squares that may meet `r`, once each: an item spanning several of
  * them comes back from each. */
@@ -14,14 +14,23 @@ export async function inGrid<T extends { id: string }>(store: IDBObjectStore, r:
 	return [...new Map((found.flat() as T[]).map((item) => [item.id, item])).values()];
 }
 
-/** The zones, then the cards, directly in `zone` (null: on the canvas). With `within`, only those
- * lying fully inside it, in that zone's coordinates. */
+/** The zones, then the cards, then the drawings, directly in `zone` (null: on the canvas). With
+ * `within`, only those lying fully inside it, in that zone's coordinates. */
 export async function children(e: Edit, zone: string | null, within?: Rect): Promise<[Kind, string][]> {
-	const cards = e.tx.objectStore('cards');
+	const [cards, drawings] = await Promise.all([directly<CardRecord>(e, 'cards', zone, within), directly<DrawingRecord>(e, 'drawings', zone, within)]);
+	return [
+		...e.layout.children(zone, within).map((id): [Kind, string] => ['zone', id]),
+		...cards.map((c): [Kind, string] => ['card', c.id]),
+		...drawings.map((d): [Kind, string] => ['drawing', d.id])
+	];
+}
+
+/** The cards or drawings directly in `zone`, those lying fully inside `within` when it is given. */
+async function directly<T extends CardRecord | DrawingRecord>(e: Edit, kind: 'cards' | 'drawings', zone: string | null, within?: Rect) {
+	const store = e.tx.objectStore(kind);
 	// On the canvas the grid finds them: its coordinates are the world's.
-	const found = (zone === null && within ? await inGrid<CardRecord>(cards, within) : await request(cards.index('zk').getAll(zone ?? ''))) as CardRecord[];
-	const kept = found.filter((c) => c.zk === (zone ?? '') && (!within || fits(c.file, within)));
-	return [...e.layout.children(zone, within).map((id): [Kind, string] => ['zone', id]), ...kept.map((c): [Kind, string] => ['card', c.id])];
+	const found = (zone === null && within ? await inGrid<T>(store, within) : await request(store.index('zk').getAll(zone ?? ''))) as T[];
+	return found.filter((r) => r.zk === (zone ?? '') && (!within || fits(r.file, within)));
 }
 
 const at = (e: Edit, side: 'from' | 'to', card: string) => request(e.tx.objectStore('edges').index(side).getAll(card)) as Promise<EdgeRecord[]>;

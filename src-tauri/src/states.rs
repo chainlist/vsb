@@ -1,18 +1,18 @@
-//! Item states: what a zone, card or edge file holds, or that it is absent. Every layout edit
+//! Item states: what a zone, card, edge or drawing file holds, or that it is absent. Every layout edit
 //! hands target states to `apply`, which returns the states it replaced. Applying those reverses
 //! the edit, so undo and redo are the same call.
 
 use crate::error::Result;
 use crate::fsx::{self, Stamp};
 use crate::index::Scope;
-use crate::items::{self, Card, Edge, Item, Kind, Zone};
+use crate::items::{self, Card, Drawing, Edge, Item, Kind, Zone};
 use crate::session::Session;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::cmp::Reverse;
 use std::fs;
 
-/// One zone, card or edge file: its JSON content, or None when there is no file.
+/// One zone, card, edge or drawing file: its JSON content, or None when there is no file.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ItemState {
   pub kind: Kind,
@@ -37,11 +37,12 @@ pub struct Created {
   pub undo: Vec<ItemState>,
 }
 
-/// Write order: zones, cards, edges. Nothing may point at a file that is not there yet.
+/// Write order: zones, then cards and drawings, then edges. Nothing may point at a file that is not
+/// there yet.
 fn rank(kind: Kind) -> u8 {
   match kind {
     Kind::Zone => 0,
-    Kind::Card => 1,
+    Kind::Card | Kind::Drawing => 1,
     Kind::Edge => 2,
   }
 }
@@ -114,6 +115,11 @@ impl Session {
         let (edge, stamp) = self.write::<Edge>(id, value)?;
         self.index.put_edge(id, &edge, stamp)?;
         self.index.refresh_bounds(Scope::Card(&edge.from))
+      }
+      Kind::Drawing => {
+        let (drawing, stamp) = self.write::<Drawing>(id, value)?;
+        self.index.put_drawing(id, &drawing, stamp)?;
+        self.index.refresh_bounds(Scope::Drawing(id))
       }
     }
   }

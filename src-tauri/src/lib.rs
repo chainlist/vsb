@@ -2,6 +2,7 @@ mod batch;
 mod batch_edit;
 mod commands;
 mod device;
+mod drawings;
 mod edges;
 mod error;
 mod fsx;
@@ -19,7 +20,7 @@ mod zones;
 #[cfg(test)]
 mod tests;
 
-/// A new ULID: the ID of every vault, note, zone, card and edge.
+/// A new ULID: the ID of every vault, note, zone, card, edge and drawing.
 pub fn new_id() -> String {
   ulid::Ulid::generate().to_string()
 }
@@ -114,6 +115,10 @@ pub fn run() {
       commands::arrow_edges,
       commands::stroke_edges,
       commands::delete_edges,
+      commands::add_stroke,
+      commands::erase_strokes,
+      commands::move_drawings,
+      commands::delete_drawings,
       commands::apply_states,
       commands::read_note,
       commands::create_note_for_card,

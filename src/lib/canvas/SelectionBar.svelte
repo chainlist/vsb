@@ -21,13 +21,14 @@
 
 	const cards = $derived(selection.cards);
 	const zones = $derived(selection.zones);
+	const drawings = $derived(selection.drawings);
 	const zone = $derived(zones.length === 1 && selection.ids.length === 1);
 	// An edge counts by its middle, where its label is (its ends lie on its cards).
 	const mids = $derived(selection.edges.map((e) => items.routeOf(e).mid));
 	// In screen space, so the bar keeps its size at any zoom: above the top-left corner of the
 	// selection, or centered over the middle when only edges are selected.
 	const at = $derived.by(() => {
-		const boxes = [...cards, ...zones];
+		const boxes = [...cards, ...zones, ...drawings];
 		const points = [...boxes, ...mids];
 		if (!points.length) return null;
 		const xs = points.map((p) => p.x);
@@ -35,7 +36,7 @@
 		if (boxes.length) return { ...camera.toScreen(Math.min(...xs), top), centered: false };
 		return { ...camera.toScreen((Math.min(...xs) + Math.max(...xs)) / 2, top - LABEL_HALF), centered: true };
 	});
-	const color = $derived(shared([...cards, ...zones].map((i) => i.color)));
+	const color = $derived(shared([...cards, ...zones, ...drawings].map((i) => i.color)));
 	const edgeStyle = $derived.by(() => {
 		const edges = selection.edges;
 		return {
@@ -66,7 +67,7 @@
 			{#if cards.length}
 				<AlignGrid {cards} />
 			{/if}
-			{#if cards.length || zones.length}
+			{#if cards.length || zones.length || drawings.length}
 				<StyleSelect label="Color" options={colors} current={color} pick={colorSelected} look={swatch} />
 			{/if}
 			{#if mids.length}

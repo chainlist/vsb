@@ -34,13 +34,13 @@ export const edgeOf = (id, from, to, extra = {}) => ({ kind: 'edge', id, value: 
 /** Writes items as given, as a test on the desktop writes their files. */
 export const put = (...states) => api.applyStates(states);
 
-/** What every zone, card and edge holds, by kind and ID: the files the desktop would have. */
+/** What every zone, card, edge and drawing holds, by kind and ID: the files the desktop would have. */
 export async function files() {
 	const { db, layout } = opened();
-	const tx = db.transaction(['cards', 'edges'], 'readonly');
+	const tx = db.transaction(['cards', 'edges', 'drawings'], 'readonly');
 	const out = {};
 	for (const [id, zone] of layout.zones) out[`zones/${id}`] = zone.file;
-	for (const kind of ['cards', 'edges']) {
+	for (const kind of ['cards', 'edges', 'drawings']) {
 		for (const r of await request(tx.objectStore(kind).getAll())) out[`${kind}/${r.id}`] = r.file;
 	}
 	return Object.fromEntries(Object.entries(out).sort(([a], [b]) => (a < b ? -1 : 1)));

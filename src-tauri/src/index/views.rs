@@ -1,5 +1,5 @@
-//! What the viewport query returns: zones, cards and edges, or zoomed out clusters and bundles,
-//! in absolute coordinates.
+//! What the viewport query returns: zones, cards, edges and drawings, or zoomed out clusters and
+//! bundles, in absolute coordinates.
 
 use serde::Serialize;
 
@@ -58,6 +58,19 @@ pub struct EdgeView {
   pub ends: [Frame; 2],
 }
 
+/// A drawing, in absolute coordinates, with its strokes as its file has them: from its corner.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct DrawingView {
+  pub id: String,
+  pub zone: Option<String>,
+  pub x: f64,
+  pub y: f64,
+  pub w: f64,
+  pub h: f64,
+  pub color: Option<String>,
+  pub strokes: Vec<Vec<f64>>,
+}
+
 /// Zoomed out, the loose cards whose centers lie in one square of the grid: how many, never which.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct ClusterView {
@@ -97,22 +110,40 @@ pub struct Tint {
   pub boxes: Vec<Frame>,
 }
 
+/// A drawing in a collapsed zone's preview: its corner in the zone's coordinates, and its strokes.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Sketch {
+  pub x: f64,
+  pub y: f64,
+  pub strokes: Vec<Vec<f64>>,
+}
+
+/// The drawings of a collapsed zone in one color: None for the theme's ink.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Ink {
+  pub color: Option<String>,
+  pub drawings: Vec<Sketch>,
+}
+
 /// Zoomed out, what a collapsed zone holds at any depth, in its coordinates from its top-left corner:
-/// its cards' boxes by color, and its inner zones' boxes. No text, nothing to point at.
+/// its cards' boxes by color, its inner zones' boxes and its drawings by color. No text, nothing to
+/// point at.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct PreviewView {
   pub zone: String,
   pub cards: Vec<Tint>,
   pub zones: Vec<Frame>,
+  pub inks: Vec<Ink>,
 }
 
-/// Open, the zones, cards and edges; zoomed out, the outermost zones with what they hold, the
-/// clusters and the bundles.
+/// Open, the zones, cards, edges and drawings; zoomed out, the outermost zones with what they hold,
+/// the loose drawings, the clusters and the bundles.
 #[derive(Serialize, Debug)]
 pub struct Viewport {
   pub zones: Vec<ZoneView>,
   pub cards: Vec<CardView>,
   pub edges: Vec<EdgeView>,
+  pub drawings: Vec<DrawingView>,
   pub clusters: Vec<ClusterView>,
   pub bundles: Vec<BundleView>,
   pub previews: Vec<PreviewView>,

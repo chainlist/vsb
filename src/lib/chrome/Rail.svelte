@@ -2,9 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import Eraser from '@lucide/svelte/icons/eraser';
+	import PenLine from '@lucide/svelte/icons/pen-line';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import Workflow from '@lucide/svelte/icons/workflow';
 	import { batchDialog, BUILDER_KEYS } from '#lib/canvas/batchDialog.svelte.js';
+	import { DRAWING_KEYS, ink } from '#lib/canvas/pen.svelte.js';
 	import { bindKeys, keyName, type KeyHelp } from '#lib/keys.js';
 	import { PANEL_KEYS, PANELS } from '#lib/panel/panels.js';
 	import { zoneList } from '#lib/panel/zoneList.svelte.js';
@@ -31,7 +34,8 @@
 	);
 </script>
 
-<!-- Down the left edge: the zone list, the panels and the builder, by their icons alone. -->
+<!-- Down the left edge: the zone list, the panels, the builder, the pen and the eraser, by their icons
+     alone. -->
 <nav class="rail index-card chrome" aria-label="Tools" data-beside-zones>
 	<!-- Not a route like the panels: the zone list stays open beside them. -->
 	<Tip label="Zones" keys={keys(PANEL_KEYS.zones)}>
@@ -61,6 +65,20 @@
 		{#snippet children(props)}
 			<button {...props} onclick={() => batchDialog.open()}>
 				<Workflow size={ICON} />
+			</button>
+		{/snippet}
+	</Tip>
+	<Tip label="Pen" keys={keys(DRAWING_KEYS.pen)}>
+		{#snippet children(props)}
+			<button {...props} aria-pressed={ink.tool === 'pen'} onclick={() => ink.toggle('pen')}>
+				<PenLine size={ICON} />
+			</button>
+		{/snippet}
+	</Tip>
+	<Tip label="Eraser" keys={keys(DRAWING_KEYS.eraser)}>
+		{#snippet children(props)}
+			<button {...props} aria-pressed={ink.tool === 'eraser'} onclick={() => ink.toggle('eraser')}>
+				<Eraser size={ICON} />
 			</button>
 		{/snippet}
 	</Tip>

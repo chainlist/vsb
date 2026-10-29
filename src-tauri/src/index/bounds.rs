@@ -16,8 +16,9 @@ pub(super) const ZONE_ABS: &str = "
     WHERE zabs.depth < 64
   )";
 
-/// What a refresh covers, from the parameters ?1 (a card) and ?2 (a zone), both NULL for all.
-/// `inside`: zone ?2 and every zone within it. `moved`: card ?1, or the cards in `inside`.
+/// What a refresh covers, from the parameters ?1 (a card or a drawing) and ?2 (a zone), both NULL for
+/// all. `inside`: zone ?2 and every zone within it. `moved`: card ?1, or the cards in `inside`;
+/// `drawn`: drawing ?1, or the drawings in `inside`.
 const SCOPE: &str = "
   inside (id) AS (
     SELECT id FROM zones WHERE id = ?2 OR coalesce(?1, ?2) IS NULL
@@ -26,6 +27,11 @@ const SCOPE: &str = "
   ),
   moved (id) AS (
     SELECT id FROM cards WHERE id = ?1 OR zone IN (SELECT id FROM inside) OR coalesce(?1, ?2) IS NULL
+  ),
+  drawn (key, ax, ay, w, h) AS (
+    SELECT d.key, coalesce(zabs.ax, 0) + d.x, coalesce(zabs.ay, 0) + d.y, max(d.w, 0), max(d.h, 0)
+    FROM drawings d LEFT JOIN zabs ON zabs.id = d.zone
+    WHERE d.id = ?1 OR d.zone IN (SELECT id FROM inside) OR coalesce(?1, ?2) IS NULL
   )";
 
 /// `cabs`: absolute boxes of the moved cards and of their edge neighbours.
@@ -44,6 +50,8 @@ pub enum Scope<'a> {
   All,
   /// One card and its edges.
   Card(&'a str),
+  /// One drawing.
+  Drawing(&'a str),
   /// A zone, every zone and card inside it at any depth, and the edges of those cards.
   Zone(&'a str),
 }
@@ -52,7 +60,7 @@ impl<'a> Scope<'a> {
   fn params(self) -> (Option<&'a str>, Option<&'a str>) {
     match self {
       Scope::All => (None, None),
-      Scope::Card(id) => (Some(id), None),
+      Scope::Card(id) | Scope::Drawing(id) => (Some(id), None),
       Scope::Zone(id) => (None, Some(id)),
     }
   }
@@ -61,7 +69,7 @@ impl<'a> Scope<'a> {
 impl Index {
   pub fn refresh_bounds(&self, scope: Scope) -> Result<()> {
     if let Scope::All = scope {
-      self.db.execute_batch("DELETE FROM zone_bounds; DELETE FROM card_bounds; DELETE FROM edge_bounds;")?;
+      self.db.execute_batch("DELETE FROM zone_bounds; DELETE FROM card_bounds; DELETE FROM edge_bounds; DELETE FROM drawing_bounds;")?;
     }
     let (card, zone) = scope.params();
     self.db.execute(
@@ -91,23 +99,29 @@ impl Index {
       ),
       (card, zone),
     )?;
+    self.db.execute(
+      &format!("WITH RECURSIVE {ZONE_ABS}, {SCOPE} INSERT OR REPLACE INTO drawing_bounds SELECT key, ax, ax + w, ay, ay + h FROM drawn"),
+      (card, zone),
+    )?;
     Ok(())
   }
 
-  /// The world area covered by everything inside a zone, at any depth. None when it is empty.
+  /// The world area covered by everything inside a zone, at any depth, drawings included. None when
+  /// it is empty.
   pub fn zone_contents(&self, id: &str) -> Result<Option<Rect>> {
     self.contents(Scope::Zone(id))
   }
 
-  /// The world area covered by every zone and card. None for an empty canvas.
+  /// The world area covered by every zone, card and drawing. None for an empty canvas.
   pub fn canvas_contents(&self) -> Result<Option<Rect>> {
     self.contents(Scope::All)
   }
 
-  /// A card's or a zone's own box in the world. None when it is not indexed.
+  /// A card's, a zone's or a drawing's own box in the world. None when it is not indexed.
   pub fn item_box(&self, kind: Kind, id: &str) -> Result<Option<Rect>> {
     match kind {
       Kind::Card => self.contents(Scope::Card(id)),
+      Kind::Drawing => self.contents(Scope::Drawing(id)),
       Kind::Zone => {
         let sql = format!("WITH RECURSIVE {ZONE_ABS} SELECT ax, ay, w, h FROM zabs JOIN zones USING (id) WHERE id = ?1");
         Ok(self.db.query_row(&sql, [id], |r| Ok(Rect::of(r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))).optional()?)
@@ -116,7 +130,8 @@ impl Index {
     }
   }
 
-  /// What a scope's zones (other than a scoped zone itself) and cards cover, from the exact coordinates.
+  /// What a scope's zones (other than a scoped zone itself), cards and drawings cover, from the exact
+  /// coordinates.
   fn contents(&self, scope: Scope) -> Result<Option<Rect>> {
     let sql = format!(
       "WITH RECURSIVE {ZONE_ABS}, {SCOPE}, {CARD_ABS},
@@ -125,6 +140,8 @@ impl Index {
          FROM zabs JOIN zones z ON z.id = zabs.id WHERE z.id IN inside AND z.id IS NOT ?2
          UNION ALL
          SELECT ax, ay, ax + w, ay + h FROM cabs WHERE id IN moved
+         UNION ALL
+         SELECT ax, ay, ax + w, ay + h FROM drawn
        )
        SELECT min(x1), min(y1), max(x2), max(y2) FROM boxes"
     );

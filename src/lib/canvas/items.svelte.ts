@@ -1,10 +1,12 @@
-// What the canvas holds: only the zones, cards and edges, or zoomed out the zones with a preview of
-// what they hold, the clusters and bundles, returned by the last viewport query.
+// What the canvas holds: only the zones, cards, edges and drawings, or zoomed out the zones with a
+// preview of what they hold, the loose drawings, the clusters and bundles, returned by the last
+// viewport query.
 import {
 	queryViewport,
 	type Bundle,
 	type CardView,
 	type Cluster,
+	type DrawingView,
 	type EdgeView,
 	type Frame,
 	type Preview,
@@ -52,6 +54,8 @@ class Items {
 	zones = $state<ZoneView[]>([]);
 	cards = $state<CardView[]>([]);
 	edges = $state<EdgeView[]>([]);
+	/** Oldest first, so newer ones are drawn on top. Zoomed out, only the loose ones. */
+	drawings = $state<DrawingView[]>([]);
 	/** Zoomed out, the loose cards counted per cell, and the edges drawn as one line per pair of ends. */
 	clusters = $state<Cluster[]>([]);
 	bundles = $state<Bundle[]>([]);
@@ -74,6 +78,7 @@ class Items {
 		this.zones = [];
 		this.cards = [];
 		this.edges = [];
+		this.drawings = [];
 		this.clusters = [];
 		this.bundles = [];
 		this.previews = [];
@@ -119,14 +124,15 @@ class Items {
 		return route(this.#byId.get(edge.from) ?? edge.ends[0], this.#byId.get(edge.to) ?? edge.ends[1], edge, 1, others);
 	}
 
-	/** The zones and cards on the canvas lying inside these zones, at any depth. */
+	/** The zones, cards and drawings on the canvas lying inside these zones, at any depth. */
 	inside(zoneIds: string[]) {
 		const zones = new Set(zoneIds);
 		// Zones come parents first, so one pass reaches every depth.
 		for (const z of this.zones) if (z.parent && zones.has(z.parent)) zones.add(z.id);
 		return [
 			...this.zones.filter((z) => z.parent && zones.has(z.parent)),
-			...this.cards.filter((c) => c.zone && zones.has(c.zone))
+			...this.cards.filter((c) => c.zone && zones.has(c.zone)),
+			...this.drawings.filter((d) => d.zone && zones.has(d.zone))
 		];
 	}
 
@@ -158,6 +164,7 @@ class Items {
 		this.zones = found.zones;
 		this.cards = found.cards;
 		this.edges = found.edges;
+		this.drawings = found.drawings;
 		this.clusters = found.clusters;
 		this.bundles = found.bundles;
 		this.previews = found.previews;

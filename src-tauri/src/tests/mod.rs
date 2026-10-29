@@ -4,6 +4,7 @@ mod batch_edit;
 mod check;
 mod child;
 mod clusters;
+mod drawings;
 mod edges;
 mod index;
 mod insert;
@@ -122,7 +123,7 @@ pub fn rtree(s: &Session, table: &str, id: &str) -> (f64, f64, f64, f64) {
 /// The JSON in every file in `.canvas`, by path.
 pub fn files(f: &Fixture) -> BTreeMap<String, Value> {
   let mut out = BTreeMap::new();
-  for kind in ["zones", "cards", "edges"] {
+  for kind in ["zones", "cards", "edges", "drawings"] {
     let Ok(dir) = fs::read_dir(f.dir.path().join(".canvas").join(kind)) else { continue };
     for entry in dir {
       let path = entry.unwrap().path();

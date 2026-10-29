@@ -4,6 +4,7 @@
 	import { camera } from './camera.svelte.js';
 	import { startMove } from './gestures.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
+	import { lines, PEN } from './ink.js';
 	import { asMarker, MARKER, zoneMarkers } from './marker.js';
 	import { selection } from './selection.svelte.js';
 	import InlineField from './InlineField.svelte';
@@ -61,13 +62,16 @@
 	ondblclick={zoomIn}
 >
 	{#if preview}
-		<!-- One path per color, and one for the inner zones' frames, in the zone's coordinates: it moves
-		     with the zone, and leaves the body's gestures to the zone. -->
+		<!-- One path per color, one for the inner zones' frames and one per color of ink, in the zone's
+		     coordinates: it moves with the zone, and leaves the body's gestures to the zone. -->
 		<svg class="preview" width={zone.w} height={zone.h} aria-hidden="true">
 			{#each preview.cards as { color, boxes } (color)}
 				<path class:tinted={color !== null} style:--tint={color} d={outline(boxes)} />
 			{/each}
 			<path class="inner" d={outline(preview.zones)} />
+			{#each preview.inks as { color, drawings } (color)}
+				<path class="ink" class:tinted={color !== null} style:--tint={color} style:--pen-width="{PEN}px" d={lines(drawings)} />
+			{/each}
 		</svg>
 	{/if}
 	<div class="title" bind:offsetWidth={width}>
@@ -114,6 +118,19 @@
 		fill: none;
 		stroke: var(--frame);
 		stroke-width: var(--frame-width);
+	}
+
+	/* Drawings as their strokes' middle lines at the pen's width, inked as on the canvas. */
+	.preview .ink {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: var(--pen-width);
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.preview .ink.tinted {
+		stroke: color-mix(in srgb, var(--tint) 70%, var(--ink));
 	}
 
 	/* Zoomed out, the zone is only its frame and its name, which keep their size on screen. */

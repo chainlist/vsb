@@ -1,5 +1,5 @@
-// What can be done to cards, zones and edges, shared by the keyboard, the selection bar and the
-// items themselves.
+// What can be done to cards, zones, edges and drawings, shared by the keyboard, the selection bar and
+// the items themselves.
 import {
 	alignCards,
 	arrowEdges,
@@ -7,6 +7,7 @@ import {
 	clearCard,
 	colorItems,
 	deleteCards,
+	deleteDrawings,
 	deleteEdges,
 	deleteZones,
 	itemBox,
@@ -52,12 +53,14 @@ export function deleteSelected() {
 	const edges = selection.edges.map((e) => e.id);
 	const cards = selection.cards.map((c) => c.id);
 	const zones = selection.zones.map((z) => z.id);
+	const drawings = selection.drawings.map((d) => d.id);
 	selection.clear();
-	// Edges first, so a deleted card doesn't list them again with its own edges. Cards next, so a
-	// deleted zone moves up only what is left inside it.
+	// Edges first, so a deleted card doesn't list them again with its own edges. Cards and drawings
+	// next, so a deleted zone moves up only what is left inside it.
 	return history.edit(async () => [
 		...(await deleteEdges(edges)),
 		...(await deleteCards(cards)),
+		...(await deleteDrawings(drawings)),
 		...(await deleteZones(zones))
 	]);
 }
@@ -67,11 +70,12 @@ export function alignSelected(halign: HAlign, valign: VAlign) {
 	return history.edit(() => alignCards(ids, halign, valign));
 }
 
-/** Sets the color of the selected cards and zones together; null for none. */
+/** Sets the color of the selected cards, zones and drawings together; null for none. */
 export function colorSelected(color: string | null) {
 	const cards = selection.cards.map((c) => c.id);
 	const zones = selection.zones.map((z) => z.id);
-	return history.edit(() => colorItems(cards, zones, color));
+	const drawings = selection.drawings.map((d) => d.id);
+	return history.edit(() => colorItems(cards, zones, drawings, color));
 }
 
 export function shapeSelected(shape: Shape) {

@@ -44,10 +44,22 @@ CREATE TABLE edges (
 CREATE INDEX edges_from ON edges(from_card);
 CREATE INDEX edges_to ON edges(to_card);
 
+CREATE TABLE drawings (
+  key       INTEGER PRIMARY KEY,      -- shared with drawing_bounds
+  id        TEXT UNIQUE NOT NULL,
+  zone      TEXT,                     -- NULL = canvas
+  x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
+  color     TEXT,                     -- NULL = the theme's ink
+  strokes   TEXT NOT NULL,            -- JSON, as in the file
+  mtime     INTEGER, size INTEGER
+);
+CREATE INDEX drawings_zone ON drawings(zone);
+
 -- absolute world coordinates
 CREATE VIRTUAL TABLE zone_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 CREATE VIRTUAL TABLE card_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 CREATE VIRTUAL TABLE edge_bounds USING rtree(key, min_x, max_x, min_y, max_y);
+CREATE VIRTUAL TABLE drawing_bounds USING rtree(key, min_x, max_x, min_y, max_y);
 
 CREATE VIRTUAL TABLE notes_fts USING fts5(title, body);   -- rowid = notes.key
 CREATE VIRTUAL TABLE zones_fts USING fts5(name);          -- rowid = zones.key

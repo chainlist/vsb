@@ -1,10 +1,10 @@
-// One IndexedDB database per vault: the vault itself (its settings, notes, zones, cards and edges)
+// One IndexedDB database per vault: the vault itself (its settings, notes, zones, cards, edges and drawings)
 // and what the desktop's index derives from it, kept up to date on every write.
 import type { EdgeStyle } from '#lib/api.js';
 import { request } from './idb.ts';
 import type { CardRecord, ZoneRecord } from './records.ts';
 
-export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'clusters', 'bundles'];
+export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'drawings', 'clusters', 'bundles'];
 
 /** The vault's settings, as the desktop's `vault.json`: settings at their default are left out, and
  * so is each part of the style for new edges, as in an edge file. */
@@ -14,11 +14,13 @@ export type VaultFile = { format: number; id: string; theme?: string; snap?: boo
 export const FORMAT = 1;
 
 export function openDb(vault: string) {
-	const open = indexedDB.open(`vsb-${vault}`, 2);
+	const open = indexedDB.open(`vsb-${vault}`, 3);
 	open.onupgradeneeded = ({ oldVersion }) => {
 		if (oldVersion === 0) create(open.result);
 		// Version 2: a zone keeps the cards it holds, where version 1 kept how many and their box.
-		else if (oldVersion === 1) void holding(open.transaction!);
+		if (oldVersion === 1) void holding(open.transaction!);
+		// Version 3: drawings.
+		if (oldVersion > 0 && oldVersion < 3) drawings(open.result);
 	};
 	return request(open);
 }
@@ -42,8 +44,15 @@ function create(db: IDBDatabase) {
 	edges.createIndex('from', 'file.from');
 	edges.createIndex('to', 'file.to');
 	edges.createIndex('bk', 'bk', { multiEntry: true });
+	drawings(db);
 	db.createObjectStore('clusters', { keyPath: ['cell', 'cx', 'cy'] });
 	db.createObjectStore('bundles', { keyPath: ['cell', 'a', 'b'] });
+}
+
+function drawings(db: IDBDatabase) {
+	const store = db.createObjectStore('drawings', { keyPath: 'id' });
+	store.createIndex('g', 'g', { multiEntry: true });
+	store.createIndex('zk', 'zk');
 }
 
 /** Gives each zone of a version 1 vault the cards it holds. */

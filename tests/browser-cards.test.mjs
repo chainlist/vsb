@@ -101,14 +101,14 @@ test('deleting both ends of an edge and undoing restores all three', async () =>
 test('a card and a zone take one color in one step and lose it again', async () => {
 	await withZone();
 	const id = await api.createCard(0, 0, 200, 100);
-	const undo = await api.colorItems([id], ['Z'], '#f5d76e');
+	const undo = await api.colorItems([id], ['Z'], [], '#f5d76e');
 	assert.deepEqual([(await file('card', id)).color, (await file('zone', 'Z')).color], ['#f5d76e', '#f5d76e']);
 	const view = await api.queryViewport(WORLD, 0, null);
 	assert.deepEqual([view.cards[0].color, view.zones[0].color], ['#f5d76e', '#f5d76e']);
 	await api.applyStates(undo);
 	assert.ok(!('color' in (await file('card', id))) && !('color' in (await file('zone', 'Z'))));
-	await api.colorItems([id], [], '#6fa8dc');
-	await api.colorItems([id], [], null);
+	await api.colorItems([id], [], [], '#6fa8dc');
+	await api.colorItems([id], [], [], null);
 	assert.ok(!('color' in (await file('card', id))), 'no color leaves the field out again');
 });
 

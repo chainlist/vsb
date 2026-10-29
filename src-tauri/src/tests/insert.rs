@@ -35,7 +35,7 @@ fn inserting_a_card_splits_the_edge_moves_the_row_and_grows_the_zone_in_one_step
   let s = open(&f);
   let before = files(&f);
   let moves = [move_to("OTHERS", 20.0, 410.0), move_to("SPACE", 340.0, 410.0), move_to("FRENCH", 500.0, 410.0)];
-  let created = s.insert_card("E", Some("Z"), Rect::of(300.0, 190.0, 240.0, 140.0), &moves, &[]).unwrap();
+  let created = s.insert_card("E", Some("Z"), Rect::of(300.0, 190.0, 240.0, 140.0), &moves, &[], &[]).unwrap();
   let new = created.id.as_str();
 
   let card = card_file(&f, new);
@@ -65,7 +65,7 @@ fn a_card_inserted_on_the_canvas_joins_no_zone() {
   put_card(&f, "B", None, 0.0, 400.0);
   f.write(".canvas/edges/E.json", r#"{ "from": "A", "to": "B" }"#);
   let s = open(&f);
-  let id = s.insert_card("E", None, Rect::of(0.0, 150.0, 100.0, 50.0), &[], &[]).unwrap().id;
+  let id = s.insert_card("E", None, Rect::of(0.0, 150.0, 100.0, 50.0), &[], &[], &[]).unwrap().id;
   let card = card_file(&f, &id);
   assert_eq!((card.zone, card.x, card.y), (None, 0.0, 150.0));
   assert!(edges(&f).contains_key(&("A".into(), id.clone())) && edges(&f).contains_key(&(id, "B".into())));

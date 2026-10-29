@@ -8,6 +8,7 @@ import type {
 	Created,
 	EdgeStyle,
 	Entry,
+	Erased,
 	HAlign,
 	ItemState,
 	Link,
@@ -179,9 +180,9 @@ export const canvasContents = () => invoke<Rect | null>('canvas_contents');
 
 export const renameZone = (id: string, name: string) => invoke<ItemState[]>('rename_zone', { id, name });
 
-/** Sets the color of cards and zones, as one edit; null for none. */
-export const colorItems = (cards: string[], zones: string[], color: string | null) =>
-	invoke<ItemState[]>('color_items', { cards, zones, color });
+/** Sets the color of cards, zones and drawings, as one edit; null for none. */
+export const colorItems = (cards: string[], zones: string[], drawings: string[], color: string | null) =>
+	invoke<ItemState[]>('color_items', { cards, zones, drawings, color });
 
 /** Deletes zones. What was inside moves up to the nearest zone left, without moving on screen. */
 export const deleteZones = (ids: string[]) => invoke<ItemState[]>('delete_zones', { ids });
@@ -191,10 +192,10 @@ export const deleteZones = (ids: string[]) => invoke<ItemState[]>('delete_zones'
 export const createEdge = (from: string, to: string) => invoke<Created>('create_edge', { from, to });
 
 /** Inserts an empty card on an edge, on the world rectangle `at` in `zone` (null: the canvas): the
- * edge is split around it, both halves keeping its style and the first its label, and the cards
- * and zones given move to make room, the zone growing where needed. */
-export const insertCard = (edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[]) =>
-	invoke<Created>('insert_card', { edge, zone, at, cards, zones });
+ * edge is split around it, both halves keeping its style and the first its label, and the cards,
+ * zones and drawings given move to make room, the zone growing where needed. */
+export const insertCard = (edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[], drawings: Move[]) =>
+	invoke<Created>('insert_card', { edge, zone, at, cards, zones, drawings });
 
 /** Adds an empty card on the world rectangle `at`, in the zone of the card `from` whatever lies under
  * it, with a new edge from that card to it. The zone grows where needed to hold it. */
@@ -210,6 +211,19 @@ export const arrowEdges = (ids: string[], arrow: Arrow) => invoke<ItemState[]>('
 export const strokeEdges = (ids: string[], stroke: Stroke) => invoke<ItemState[]>('stroke_edges', { ids, stroke });
 
 export const deleteEdges =(ids: string[]) => invoke<ItemState[]>('delete_edges', { ids });
+
+/** Adds a stroke of the pen, its points as world x, y and pressure in turn: to the drawing whose box it
+ * starts near, or as a new drawing, in the zone under its start. */
+export const addStroke = (points: number[]) => invoke<Created>('add_stroke', { points });
+
+/** Takes strokes out of drawings, as one edit: a drawing's box shrinks to the strokes left, and a
+ * drawing left with none is deleted. */
+export const eraseStrokes = (erased: Erased[]) => invoke<ItemState[]>('erase_strokes', { erased });
+
+/** Drops drawings with their top-left corners at world positions; each joins the zone under its center. */
+export const moveDrawings = (moves: Move[]) => invoke<ItemState[]>('move_drawings', { moves });
+
+export const deleteDrawings = (ids: string[]) => invoke<ItemState[]>('delete_drawings', { ids });
 
 /** Brings items to the given states and returns the states they had. */
 export const applyStates = (states: ItemState[]) => invoke<ItemState[]>('apply_states', { states });

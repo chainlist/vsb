@@ -20,7 +20,7 @@ export async function arrangeSelected() {
 	return lay({ nodes: cards.map((c) => ({ ...c, zone: false })), edges });
 }
 
-function lay({ nodes, edges }: ZoneNodes) {
+function lay({ nodes, edges }: Omit<ZoneNodes, 'drawings'>) {
 	if (nodes.length < 2) return;
 	const span = cover(nodes);
 	const middle = { x: (span.minX + span.maxX) / 2, y: (span.minY + span.maxY) / 2 };

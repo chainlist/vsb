@@ -3,13 +3,13 @@
 
 use crate::error::Result;
 use crate::index::Rect;
-use crate::items::{Card, HAlign, Kind, VAlign, Zone};
+use crate::items::{Card, Drawing, HAlign, Kind, VAlign, Zone};
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
-/// A card or zone dropped with its top-left corner at a world position.
+/// A card, zone or drawing dropped with its top-left corner at a world position.
 #[derive(Deserialize, Clone, Debug)]
 pub struct Move {
   pub id: String,
@@ -18,9 +18,9 @@ pub struct Move {
 }
 
 impl Session {
-  /// Where a card on this world rectangle lands: the innermost zone under its center, with that
-  /// zone's absolute origin. The canvas is (None, 0, 0).
-  fn landing(&self, x: f64, y: f64, w: f64, h: f64) -> Result<(Option<String>, f64, f64)> {
+  /// Where a card or a drawing on this world rectangle lands: the innermost zone under its center,
+  /// with that zone's absolute origin. The canvas is (None, 0, 0).
+  pub(crate) fn landing(&self, x: f64, y: f64, w: f64, h: f64) -> Result<(Option<String>, f64, f64)> {
     self.index.zone_around(Rect::of(x + w / 2.0, y + h / 2.0, 0.0, 0.0), &[])
   }
 
@@ -66,15 +66,17 @@ impl Session {
   /// selected cards, or a zone's contents, does this.
   pub fn arrange(&self, cards: &[Move], zones: &[Move]) -> Result<Vec<ItemState>> {
     let card_items = cards.iter().map(|m| self.read::<Card>(&m.id)).collect::<Result<Vec<_>>>()?;
-    self.apply(self.placed(cards, card_items, zones)?)
+    self.apply(self.placed(cards, card_items, zones, &[])?)
   }
 
-  /// The states that put cards, given whole with their zone (new ones too), and zones at world
-  /// positions, as `arrange` does.
-  pub(crate) fn placed(&self, cards: &[Move], mut card_items: Vec<Card>, zones: &[Move]) -> Result<Vec<ItemState>> {
+  /// The states that put cards, given whole with their zone (new ones too), zones and drawings at
+  /// world positions, as `arrange` does.
+  pub(crate) fn placed(&self, cards: &[Move], mut card_items: Vec<Card>, zones: &[Move], drawings: &[Move]) -> Result<Vec<ItemState>> {
     let mut zone_items = zones.iter().map(|m| self.read::<Zone>(&m.id)).collect::<Result<Vec<_>>>()?;
+    let mut drawing_items = drawings.iter().map(|m| self.read::<Drawing>(&m.id)).collect::<Result<Vec<_>>>()?;
     let boxes = cards.iter().zip(&card_items).map(|(m, c)| (&c.zone, Rect::of(m.x, m.y, c.w, c.h)));
     let boxes = boxes.chain(zones.iter().zip(&zone_items).map(|(m, z)| (&z.parent, Rect::of(m.x, m.y, z.w, z.h))));
+    let boxes = boxes.chain(drawings.iter().zip(&drawing_items).map(|(m, d)| (&d.zone, Rect::of(m.x, m.y, d.w, d.h))));
     let mut spans: BTreeMap<String, Rect> = BTreeMap::new();
     for (inside, r) in boxes {
       if let Some(zone) = inside {
@@ -88,8 +90,15 @@ impl Session {
       states.extend(grown);
     }
     // A zone grown leftward shifts its contents back; those arranged get their own place instead.
-    let moved = |kind, id: &str| (if kind == Kind::Card { cards } else { zones }).iter().any(|m| m.id == id);
-    states.retain(|s| s.kind == Kind::Edge || !moved(s.kind, &s.id));
+    states.retain(|s| {
+      let placing = match s.kind {
+        Kind::Card => cards,
+        Kind::Zone => zones,
+        Kind::Drawing => drawings,
+        Kind::Edge => &[],
+      };
+      !placing.iter().any(|m| m.id == s.id)
+    });
     let origin = |inside: &Option<String>| inside.as_ref().map_or((0.0, 0.0), |z| origins[z]);
     for (m, zone) in zones.iter().zip(&mut zone_items) {
       let (ox, oy) = origin(&zone.parent);
@@ -100,6 +109,11 @@ impl Session {
       let (ox, oy) = origin(&card.zone);
       (card.x, card.y) = (m.x - ox, m.y - oy);
       states.push(ItemState::of(&m.id, card)?);
+    }
+    for (m, drawing) in drawings.iter().zip(&mut drawing_items) {
+      let (ox, oy) = origin(&drawing.zone);
+      (drawing.x, drawing.y) = (m.x - ox, m.y - oy);
+      states.push(ItemState::of(&m.id, drawing)?);
     }
     Ok(states)
   }

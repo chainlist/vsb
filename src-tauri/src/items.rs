@@ -1,4 +1,4 @@
-//! Zones, cards and edges: one JSON file per item in `.canvas/`.
+//! Zones, cards, edges and drawings: one JSON file per item in `.canvas/`.
 
 use crate::error::Result;
 use crate::fsx::atomic_write;
@@ -14,6 +14,7 @@ pub enum Kind {
   Zone,
   Card,
   Edge,
+  Drawing,
 }
 
 impl Kind {
@@ -22,6 +23,7 @@ impl Kind {
       Kind::Zone => "zones",
       Kind::Card => "cards",
       Kind::Edge => "edges",
+      Kind::Drawing => "drawings",
     }
   }
 }
@@ -183,8 +185,28 @@ pub struct Edge {
   pub stroke: Stroke,
 }
 
+/// Strokes of the pen grouped as one item. `x` and `y` are relative to its zone (or the canvas), as a
+/// card's; `w` and `h` the box around its strokes' points. Each stroke is its points as x, y and
+/// pressure in turn, from the drawing's corner.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Drawing {
+  pub zone: Option<String>,
+  pub x: f64,
+  pub y: f64,
+  pub w: f64,
+  pub h: f64,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub color: Option<String>,
+  pub strokes: Vec<Vec<f64>>,
+}
+
 pub trait Item: Serialize + DeserializeOwned {
   const KIND: Kind;
+
+  /// The file's text: pretty JSON.
+  fn json(&self) -> Result<Vec<u8>> {
+    Ok(serde_json::to_vec_pretty(self)?)
+  }
 }
 
 impl Item for Zone {
@@ -197,6 +219,21 @@ impl Item for Card {
 
 impl Item for Edge {
   const KIND: Kind = Kind::Edge;
+}
+
+impl Item for Drawing {
+  const KIND: Kind = Kind::Drawing;
+
+  /// Pretty JSON as every item's, but each stroke on one line: a drawing holds hundreds of numbers.
+  fn json(&self) -> Result<Vec<u8>> {
+    let head = serde_json::to_string_pretty(&Drawing { zone: self.zone.clone(), color: self.color.clone(), strokes: Vec::new(), ..*self })?;
+    if self.strokes.is_empty() {
+      return Ok(head.into_bytes());
+    }
+    let lines = self.strokes.iter().map(serde_json::to_string).collect::<serde_json::Result<Vec<_>>>()?;
+    let head = head.strip_suffix("[]\n}").unwrap_or(&head);
+    Ok(format!("{head}[\n    {}\n  ]\n}}", lines.join(",\n    ")).into_bytes())
+  }
 }
 
 pub fn dir(vault: &Vault, kind: Kind) -> PathBuf {
@@ -214,6 +251,6 @@ pub fn read<T: Item>(path: &Path) -> Result<T> {
 /// Writes the item's file and returns its path.
 pub fn write<T: Item>(vault: &Vault, id: &str, item: &T) -> Result<PathBuf> {
   let path = path(vault, T::KIND, id);
-  atomic_write(&path, &serde_json::to_vec_pretty(item)?)?;
+  atomic_write(&path, &item.json()?)?;
   Ok(path)
 }

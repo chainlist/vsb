@@ -29,9 +29,9 @@ impl Session {
 
   /// Inserts an empty card on an edge, on the world rectangle `at` in `zone` (None: the canvas).
   /// The edge is split around it, from its first card to the new one and on to its second: both
-  /// halves keep its style, not the style for new edges, and the first its label. The cards and zones given move to make room,
+  /// halves keep its style, not the style for new edges, and the first its label. The cards, zones and drawings given move to make room,
   /// as arranging moves them, and the zone grows where needed to hold them and the new card.
-  pub fn insert_card(&self, edge: &str, zone: Option<&str>, at: Rect, cards: &[Move], zones: &[Move]) -> Result<Created> {
+  pub fn insert_card(&self, edge: &str, zone: Option<&str>, at: Rect, cards: &[Move], zones: &[Move], drawings: &[Move]) -> Result<Created> {
     let old: Edge = self.read(edge)?;
     let id = crate::new_id();
     let mut moves = cards.to_vec();
@@ -39,7 +39,7 @@ impl Session {
     let (place, card) = empty_card(&id, zone.map(str::to_string), at);
     moves.push(place);
     items.push(card);
-    let mut states = self.placed(&moves, items, zones)?;
+    let mut states = self.placed(&moves, items, zones, drawings)?;
     let first = Edge { to: id.clone(), ..old.clone() };
     let second = Edge { from: id.clone(), label: None, ..old };
     states.extend([ItemState::of(&crate::new_id(), &first)?, ItemState::of(&crate::new_id(), &second)?, ItemState::gone(Kind::Edge, edge)]);
@@ -53,7 +53,7 @@ impl Session {
     let parent: Card = self.read(from)?;
     let id = crate::new_id();
     let (place, card) = empty_card(&id, parent.zone, at);
-    let mut states = self.placed(&[place], vec![card], &[])?;
+    let mut states = self.placed(&[place], vec![card], &[], &[])?;
     states.push(ItemState::of(&crate::new_id(), &new_edge(from, &id, self.vault.edge_style()?))?);
     let undo = self.apply(states)?;
     Ok(Created { id, undo })

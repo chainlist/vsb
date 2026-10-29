@@ -1,5 +1,5 @@
 //! What arranging a zone lays out: its own cards, and its inner zones, each as one block with
-//! everything in it.
+//! everything in it. Inserting a card on an edge moves its drawings too, which arranging leaves.
 
 use super::bounds::ZONE_ABS;
 use super::Index;
@@ -25,16 +25,27 @@ pub struct NodeEdge {
   pub to: usize,
 }
 
+/// A drawing directly in the zone, with its box in the world.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct DrawingBox {
+  pub id: String,
+  pub x: f64,
+  pub y: f64,
+  pub w: f64,
+  pub h: f64,
+}
+
 #[derive(Serialize, Debug, PartialEq)]
 pub struct ZoneNodes {
   pub nodes: Vec<Node>,
   pub edges: Vec<NodeEdge>,
+  pub drawings: Vec<DrawingBox>,
 }
 
 impl Index {
-  /// The cards and the zones directly in a zone (None: on the canvas), and the edges between them.
-  /// An edge to a card in an inner zone, at any depth, joins that zone; edges within one node are
-  /// left out.
+  /// The cards and the zones directly in a zone (None: on the canvas), the edges between them, and
+  /// the drawings directly in it. An edge to a card in an inner zone, at any depth, joins that zone;
+  /// edges within one node are left out.
   pub fn zone_nodes(&self, id: Option<&str>) -> Result<ZoneNodes> {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
@@ -68,6 +79,13 @@ impl Index {
       let (from, to) = pair?;
       edges.push(NodeEdge { from: at[from.as_str()], to: at[to.as_str()] });
     }
-    Ok(ZoneNodes { nodes, edges })
+    let mut stmt = self.db.prepare(&format!(
+      "WITH RECURSIVE {ZONE_ABS}
+       SELECT d.id, coalesce(zabs.ax, 0) + d.x, coalesce(zabs.ay, 0) + d.y, d.w, d.h
+       FROM drawings d LEFT JOIN zabs ON zabs.id = d.zone WHERE d.zone IS ?1 ORDER BY d.id"
+    ))?;
+    let rows = stmt.query_map([id], |r| Ok(DrawingBox { id: r.get(0)?, x: r.get(1)?, y: r.get(2)?, w: r.get(3)?, h: r.get(4)? }))?;
+    let drawings = rows.collect::<rusqlite::Result<_>>()?;
+    Ok(ZoneNodes { nodes, edges, drawings })
   }
 }

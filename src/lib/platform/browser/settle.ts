@@ -1,18 +1,23 @@
-// What follows from items changing, as the desktop's index derives it on every write: where cards
-// and edges sit in the world and on the grid, what cards show of their notes, the clusters and
+// What follows from items changing, as the desktop's index derives it on every write: where cards,
+// edges and drawings sit in the world and on the grid, what cards show of their notes, the clusters and
 // bundles of the zoomed-out map, what each zone holds, and how many cards show each note.
 import type { Frame } from '#lib/api.js';
 import { boxOf, gridKeys } from './grid.ts';
 import { request } from './idb.ts';
 import type { Layout } from './layout.ts';
-import type { CardFile, CardRecord, EdgeFile, EdgeRecord, NoteRecord, ZoneFile } from './records.ts';
+import type { CardFile, CardRecord, DrawingFile, DrawingRecord, EdgeFile, EdgeRecord, NoteRecord, ZoneFile } from './records.ts';
 import { bounds, bundled, end, flush, rawBox, Tally } from './tally.ts';
 
 /** Cell sizes the zoomed-out map is kept for: those the canvas asks for, from 40% zoom down to 5%. */
 export const CELLS = [512, 1024, 2048, 4096];
 
 /** The file each item is to hold, null for none. */
-export type Next = { zone: Map<string, ZoneFile | null>; card: Map<string, CardFile | null>; edge: Map<string, EdgeFile | null> };
+export type Next = {
+	zone: Map<string, ZoneFile | null>;
+	card: Map<string, CardFile | null>;
+	edge: Map<string, EdgeFile | null>;
+	drawing: Map<string, DrawingFile | null>;
+};
 
 export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 	const cards = tx.objectStore('cards');
@@ -42,6 +47,7 @@ export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 	for (const keys of await Promise.all(moved.map((z) => request(cards.index('zk').getAllKeys(z))))) {
 		for (const id of keys) cardIds.add(id as string);
 	}
+	await drawn(tx, layout, next.drawing, moved);
 	const ids = [...cardIds];
 	const olds = await all<CardRecord>(cards, ids);
 	const files = ids.map((id, i) => (next.card.has(id) ? next.card.get(id)! : (olds[i]?.file ?? null)));
@@ -98,6 +104,28 @@ export async function settle(tx: IDBTransaction, layout: Layout, next: Next) {
 		else store.delete(id);
 	}
 	await flush(tx, tallies);
+}
+
+/** The drawings written, and every drawing in a zone that moved. Nothing is counted for them. */
+async function drawn(tx: IDBTransaction, layout: Layout, next: Map<string, DrawingFile | null>, moved: string[]) {
+	const store = tx.objectStore('drawings');
+	const ids = new Set(next.keys());
+	for (const keys of await Promise.all(moved.map((z) => request(store.index('zk').getAllKeys(z))))) {
+		for (const id of keys) ids.add(id as string);
+	}
+	const olds = await all<DrawingRecord>(store, [...ids]);
+	[...ids].forEach((id, i) => {
+		const file = next.has(id) ? next.get(id)! : (olds[i]?.file ?? null);
+		if (file) store.put(drawingRecord(layout, id, file));
+		else if (olds[i]) store.delete(id);
+	});
+}
+
+/** What the index keeps of a drawing. In a missing zone it sits on the canvas, as a card does. */
+function drawingRecord(layout: Layout, id: string, file: DrawingFile): DrawingRecord {
+	const place = file.zone === null ? undefined : layout.places.get(file.zone);
+	const [ax, ay] = [(place?.x ?? 0) + file.x, (place?.y ?? 0) + file.y];
+	return { id, file, zk: file.zone ?? '', ax, ay, root: place?.root ?? '', g: gridKeys(boxOf({ x: ax, y: ay, w: file.w, h: file.h })) };
 }
 
 const samePlace = (a: { x: number; y: number; root: string } | undefined, b: typeof a) =>

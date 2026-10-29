@@ -4,6 +4,7 @@ mod batch_scope;
 mod bounds;
 mod bundles;
 mod clusters;
+mod drawings;
 mod notes;
 mod previews;
 mod rows;
@@ -52,7 +53,7 @@ impl Rect {
 }
 
 /// Bump on any schema change: a mismatch drops the index and rebuilds it.
-pub(crate) const VERSION: i32 = 5;
+pub(crate) const VERSION: i32 = 6;
 const SCHEMA: &str = include_str!("schema.sql");
 
 pub struct Index {

@@ -135,7 +135,7 @@ test('inserting a card splits the edge, moves the row and grows the zone in one 
 	await api.setVaultEdgeStyle({ shape: 'straight', arrow: 'both', stroke: 'dotted' });
 	const before = await files();
 	const moves = ['OTHERS', 'SPACE', 'FRENCH'].map((id, i) => ({ id, x: [20, 340, 500][i], y: 410 }));
-	const created = await api.insertCard('E', 'Z', { minX: 300, minY: 190, maxX: 540, maxY: 330 }, moves, []);
+	const created = await api.insertCard('E', 'Z', { minX: 300, minY: 190, maxX: 540, maxY: 330 }, moves, [], []);
 	const n = created.id;
 	assert.deepEqual(await file('card', n), { note: null, zone: 'Z', x: 300, y: 190, w: 240, h: 140 });
 	assert.deepEqual([(await file('card', 'SPACE')).y, (await file('card', 'NAME')).y], [410, 60]);
@@ -152,7 +152,7 @@ test('inserting a card splits the edge, moves the row and grows the zone in one 
 test('a card inserted on the canvas joins no zone', async () => {
 	await fresh();
 	await put(cardAt('A', null, 0, 0), cardAt('B', null, 0, 400), edgeOf('E', 'A', 'B'));
-	const { id } = await api.insertCard('E', null, { minX: 0, minY: 150, maxX: 100, maxY: 200 }, [], []);
+	const { id } = await api.insertCard('E', null, { minX: 0, minY: 150, maxX: 100, maxY: 200 }, [], [], []);
 	const card = await file('card', id);
 	assert.deepEqual([card.zone, card.x, card.y], [null, 0, 150]);
 	assert.deepEqual((await edgeFiles()).map((e) => [e.from, e.to]).sort(), [['A', id], [id, 'B']].sort());

@@ -1,11 +1,11 @@
-// What the browser keeps of each item. The `file` of a zone, card or edge is what the desktop writes
+// What the browser keeps of each item. The `file` of a zone, card, edge or drawing is what the desktop writes
 // to its JSON file, defaults left out, so item states, undo and a later export are the same on both
 // platforms. The rest is derived on every write, as the desktop's index derives it.
 import type { Arrow, Frame, HAlign, Shape, Stroke, VAlign } from '#lib/api.js';
 import type { Box } from './grid.ts';
 import type { Words } from './words.ts';
 
-export type Kind = 'zone' | 'card' | 'edge';
+export type Kind = 'zone' | 'card' | 'edge' | 'drawing';
 
 export type ZoneFile = { name: string; parent: string | null; x: number; y: number; w: number; h: number; color?: string };
 
@@ -23,7 +23,11 @@ export type CardFile = {
 
 export type EdgeFile = { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke };
 
-export type File = ZoneFile | CardFile | EdgeFile;
+/** Strokes of the pen grouped as one item: its corner in its zone, the box around its strokes'
+ * points, and each stroke as its points' x, y and pressure in turn, from the corner. */
+export type DrawingFile = { zone: string | null; x: number; y: number; w: number; h: number; color?: string; strokes: number[][] };
+
+export type File = ZoneFile | CardFile | EdgeFile | DrawingFile;
 
 /** A card a zone holds directly: its box in the zone's coordinates, as its file has it, and its color. */
 export type Held = [x: number, y: number, w: number, h: number, color: string | null];
@@ -59,6 +63,10 @@ export type EdgeRecord = {
 	g?: number[][];
 	bk?: (number | string)[][];
 };
+
+/** A drawing, with its absolute corner, its outermost zone ('' when loose) and the grid squares it is
+ * filed under. `zk` is its zone as written, '' for the canvas. It is never counted in clusters. */
+export type DrawingRecord = { id: string; file: DrawingFile; zk: string; ax: number; ay: number; root: string; g: number[][] };
 
 /** A note: its text, where it would live as a file, and the words the word index holds it under.
  * `loose` is set while no card shows it, as the Unplaced tray's order: most recently changed first. */
@@ -114,6 +122,12 @@ export function fileOf(kind: Kind, value: unknown): File {
 		});
 	}
 	const at = { x: number(v.x, 'x'), y: number(v.y, 'y'), w: number(v.w, 'w'), h: number(v.h, 'h') };
+	if (kind === 'drawing') {
+		const strokes = v.strokes;
+		const numbers = (s: unknown) => Array.isArray(s) && s.every((n) => typeof n === 'number');
+		if (!Array.isArray(strokes) || !strokes.every(numbers)) throw new Error('invalid field `strokes`');
+		return kept({ zone: maybe(v.zone), ...at, color: maybe(v.color) ?? undefined, strokes: strokes as number[][] });
+	}
 	if (kind === 'zone') return kept({ name: maybe(v.name) ?? '', parent: maybe(v.parent), ...at, color: maybe(v.color) ?? undefined });
 	return kept({
 		note: maybe(v.note),

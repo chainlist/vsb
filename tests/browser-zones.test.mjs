@@ -131,10 +131,10 @@ test('renaming and recoloring a zone', async () => {
 	await fresh();
 	await put(zoneAt('Z', null, 0, 0, 400, 400));
 	const undo = await api.renameZone('Z', 'Pricing');
-	await api.colorItems([], ['Z'], '#f5d76e');
+	await api.colorItems([], ['Z'], [], '#f5d76e');
 	const [zone] = (await api.queryViewport(WORLD, 0, null)).zones;
 	assert.deepEqual([zone.name, zone.color], ['Pricing', '#f5d76e']);
-	await api.colorItems([], ['Z'], null);
+	await api.colorItems([], ['Z'], [], null);
 	assert.ok(!('color' in (await file('zone', 'Z'))), 'the default color is left out');
 	await api.applyStates(undo);
 	assert.equal((await file('zone', 'Z')).name, 'Z');

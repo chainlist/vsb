@@ -1,30 +1,37 @@
-// The viewport query: zones, cards and edges meeting a world rectangle, through the grid. Zoomed out,
-// the outermost zones with a preview of what they hold, the loose cards' clusters and the bundles,
-// read from what the zones keep and the counts and boxes kept per cell on every write, never from
-// the cards themselves.
-import type { Bundle, BundleEnd, CardView, Cluster, EdgeView, Rect, Viewport, ZoneView } from '#lib/api.js';
+// The viewport query: zones, cards, edges and drawings meeting a world rectangle, through the grid.
+// Zoomed out, the outermost zones with a preview of what they hold, the loose drawings, the loose
+// cards' clusters and the bundles, read from what the zones keep and the counts and boxes kept per
+// cell on every write, never from the cards themselves.
+import type { Bundle, BundleEnd, CardView, Cluster, DrawingView, EdgeView, Rect, Viewport, ZoneView } from '#lib/api.js';
 import type { Edit } from './apply.ts';
 import { type Box, boxOf, frameOf, large, meets } from './grid.ts';
 import { request } from './idb.ts';
 import { inGrid } from './lookups.ts';
 import { previews } from './previews.ts';
-import type { BundleRecord, CardRecord, ClusterRecord, EdgeRecord } from './records.ts';
+import type { BundleRecord, CardRecord, ClusterRecord, DrawingRecord, EdgeRecord } from './records.ts';
 import { CELLS } from './settle.ts';
 import { bounds } from './tally.ts';
 
 export async function viewport(e: Edit, rect: Rect, minSize: number, cell: number | null): Promise<Viewport> {
 	const zones = zonesIn(e, rect, minSize, cell);
+	const shown = (b: Box) => meets(b, rect) && large(b, minSize);
+	// Oldest first, so newer ones are drawn on top.
+	const drawings = (await inGrid<DrawingRecord>(e.tx.objectStore('drawings'), rect))
+		.filter((d) => shown(boxOf({ x: d.ax, y: d.ay, w: d.file.w, h: d.file.h })))
+		.sort((a, b) => (a.id < b.id ? -1 : 1));
 	if (cell !== null) {
 		if (!CELLS.includes(cell)) throw new Error(`the zoomed-out map is kept for cells of ${CELLS.join(', ')}, not ${cell}`);
 		const clusters = await clustersIn(e, rect, cell);
 		const bundles = await bundlesIn(e, rect, cell, clusters);
-		return { zones, cards: [], edges: [], clusters, bundles, previews: previews(e.layout, rect, minSize, zones) };
+		// A zone's drawings are in its preview; loose ones are drawn as themselves.
+		const inZones = drawings.filter((d) => d.root !== '');
+		const loose = drawings.filter((d) => d.root === '').map(drawingView);
+		return { zones, cards: [], edges: [], drawings: loose, clusters, bundles, previews: previews(e.layout, rect, minSize, zones, inZones) };
 	}
 	const [cards, edges] = await Promise.all([
 		inGrid<CardRecord>(e.tx.objectStore('cards'), rect),
 		inGrid<EdgeRecord>(e.tx.objectStore('edges'), rect)
 	]);
-	const shown = (b: Box) => meets(b, rect) && large(b, minSize);
 	return {
 		zones,
 		cards: cards
@@ -32,6 +39,7 @@ export async function viewport(e: Edit, rect: Rect, minSize: number, cell: numbe
 			.sort((a, b) => (a.id < b.id ? -1 : 1))
 			.map(cardView),
 		edges: edges.filter((edge) => edge.ends && shown(bounds(edge.ends))).map(edgeView),
+		drawings: drawings.map(drawingView),
 		clusters: [],
 		bundles: [],
 		previews: []
@@ -65,6 +73,17 @@ const cardView = ({ id, file, ax, ay, title, excerpt, resolved }: CardRecord): C
 	title,
 	excerpt,
 	resolved
+});
+
+const drawingView = ({ id, file, ax, ay }: DrawingRecord): DrawingView => ({
+	id,
+	zone: file.zone,
+	x: ax,
+	y: ay,
+	w: file.w,
+	h: file.h,
+	color: file.color ?? null,
+	strokes: file.strokes
 });
 
 const edgeView = ({ id, file, ends }: EdgeRecord): EdgeView => ({

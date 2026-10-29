@@ -29,14 +29,14 @@ function emptyCard(id: string, zone: string | null, at: Rect): [Move, CardFile] 
 
 /** Inserts an empty card on an edge, on the world rectangle `at` in `zone` (null: the canvas). The
  * edge is split around it, from its first card to the new one and on to its second: both halves keep
- * its style, not the style for new edges, and the first its label. The cards and zones given move to make room, as arranging moves
+ * its style, not the style for new edges, and the first its label. The cards, zones and drawings given move to make room, as arranging moves
  * them, and the zone grows where needed to hold them and the new card. */
-export async function insertCard(e: Edit, edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[]): Promise<Created> {
+export async function insertCard(e: Edit, edge: string, zone: string | null, at: Rect, cards: Move[], zones: Move[], drawings: Move[]): Promise<Created> {
 	const old = await read(e, 'edge', edge);
 	const id = newId();
 	const files = await Promise.all(cards.map((m) => read(e, 'card', m.id)));
 	const [move, card] = emptyCard(id, zone, at);
-	const states = await placed(e, [...cards, move], [...files, card], zones);
+	const states = await placed(e, [...cards, move], [...files, card], zones, drawings);
 	const second: EdgeFile = { ...old, from: id };
 	delete second.label;
 	states.push(state('edge', newId(), { ...old, to: id }), state('edge', newId(), second), gone('edge', edge));
@@ -49,7 +49,7 @@ export async function addChild(e: Edit, from: string, at: Rect): Promise<Created
 	const parent = await read(e, 'card', from);
 	const id = newId();
 	const [move, card] = emptyCard(id, parent.zone, at);
-	const states = await placed(e, [move], [card], []);
+	const states = await placed(e, [move], [card], [], []);
 	states.push(state('edge', newId(), { from, to: id, ...(await edgeStyle(e)) }));
 	return { id, undo: await apply(e, states) };
 }

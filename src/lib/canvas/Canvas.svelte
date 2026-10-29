@@ -8,8 +8,10 @@
 	import { GRIP, newCardAt } from './gestures.js';
 	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
+	import { outline } from './ink.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
 	import { newEdges } from './newEdges.svelte.js';
+	import { ink, startInk } from './pen.svelte.js';
 	import { route } from './route.js';
 	import { selection } from './selection.svelte.js';
 	import { shortcuts } from './shortcuts.js';
@@ -18,6 +20,7 @@
 	import Bundle from './Bundle.svelte';
 	import Card from './Card.svelte';
 	import Cluster from './Cluster.svelte';
+	import Drawing from './Drawing.svelte';
 	import EdgeLine from './EdgeLine.svelte';
 	import Edge from './Edge.svelte';
 	import EdgeInsert from './EdgeInsert.svelte';
@@ -104,8 +107,17 @@
 	}
 
 	function hover(p: { x: number; y: number }) {
-		// Within half a handle of an item, the pointer is on its handle.
-		hovered = items.itemAt(camera.toWorld(p.x, p.y), GRIP / 2 / camera.zoom)?.id ?? null;
+		// Within half a handle of an item, the pointer is on its handle. With the pen or the eraser in
+		// hand, nothing is resized.
+		hovered = ink.tool ? null : (items.itemAt(camera.toWorld(p.x, p.y), GRIP / 2 / camera.zoom)?.id ?? null);
+	}
+
+	// With the pen or the eraser in hand, a left drag draws or erases, whatever lies under it; the middle
+	// button goes on to the canvas, which pans.
+	function inking(e: PointerEvent) {
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		startInk(e, el);
 	}
 
 	function leave(e: PointerEvent) {
@@ -162,6 +174,19 @@
 		{#each items.cards as card (card.id)}
 			<Card {card} />
 		{/each}
+		{#each items.drawings as drawing (drawing.id)}
+			<Drawing {drawing} />
+		{/each}
+		{#if ink.live || ink.pending.length}
+			<svg class="ink" aria-hidden="true">
+				{#each ink.pending as stroke (stroke)}
+					<path d={outline(stroke)} />
+				{/each}
+				{#if ink.live}
+					<path d={outline(ink.live, 0, 0, false)} />
+				{/if}
+			</svg>
+		{/if}
 		{#each items.clusters as cluster (cluster.cell.join())}
 			<Cluster {cluster} />
 		{/each}
@@ -176,6 +201,12 @@
 		{/if}
 		<ResizeHandles {hovered} />
 	</div>
+	{#if ink.tool}
+		<!-- Over everything on the canvas, under the chrome: presses draw or erase, and a double-click
+		     places nothing. -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="hand {ink.tool}" onpointerdown={inking} ondblclick={(e) => e.stopPropagation()}></div>
+	{/if}
 	<SelectionBar />
 	<EdgeInsert />
 	<WayPicker />
@@ -206,6 +237,33 @@
 
 	.collapsed {
 		--px: calc(1px * var(--scale));
+	}
+
+	/* The stroke being drawn, in world coordinates. */
+	.ink {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: visible;
+		pointer-events: none;
+		fill: var(--ink);
+	}
+
+	.hand {
+		position: absolute;
+		inset: 0;
+	}
+
+	.pen {
+		cursor: crosshair;
+	}
+
+	/* A ring the eraser's size (ERASER, 8 pixels), dark on a light halo so it shows on any paper. */
+	.eraser {
+		cursor:
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%23222' stroke-width='1.25'/%3E%3C/svg%3E")
+				10 10,
+			crosshair;
 	}
 
 	.draft {

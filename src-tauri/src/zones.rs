@@ -3,7 +3,7 @@
 
 use crate::error::{msg, Result};
 use crate::index::Rect;
-use crate::items::{Card, Kind, Zone};
+use crate::items::{Card, Drawing, Kind, Zone};
 use crate::layout::Move;
 use crate::session::Session;
 use crate::states::{Created, ItemState};
@@ -17,7 +17,7 @@ const NAME_ROOM: f64 = 60.0;
 
 impl Session {
   /// Draws a zone on a world rectangle, inside the innermost zone that fully contains it. The
-  /// cards and zones at that level lying fully inside the new zone join it, staying in place.
+  /// cards, zones and drawings at that level lying fully inside the new zone join it, staying in place.
   pub fn create_zone(&self, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
     let (parent, ox, oy) = self.index.zone_around(Rect::of(x, y, w, h), &[])?;
     let zone = Zone { name: String::new(), parent, x: x - ox, y: y - oy, w, h, color: None };
@@ -88,11 +88,12 @@ impl Session {
     })
   }
 
-  /// Sets the color of cards and zones, as one edit; None for none, which leaves a card on the
-  /// theme's plain stock and a zone on its gray.
-  pub fn color_items(&self, cards: &[String], zones: &[String], color: Option<String>) -> Result<Vec<ItemState>> {
+  /// Sets the color of cards, zones and drawings, as one edit; None for none, which leaves a card on
+  /// the theme's plain stock, a zone on its gray and a drawing in its ink.
+  pub fn color_items(&self, cards: &[String], zones: &[String], drawings: &[String], color: Option<String>) -> Result<Vec<ItemState>> {
     let cards: Vec<&str> = cards.iter().map(String::as_str).collect();
     let zones: Vec<&str> = zones.iter().map(String::as_str).collect();
+    let drawings: Vec<&str> = drawings.iter().map(String::as_str).collect();
     let mut states = self.edited::<Card>(&cards, |_, card| {
       card.color = color.clone();
       Ok(())
@@ -101,11 +102,15 @@ impl Session {
       zone.color = color.clone();
       Ok(())
     })?);
+    states.extend(self.edited::<Drawing>(&drawings, |_, drawing| {
+      drawing.color = color.clone();
+      Ok(())
+    })?);
     self.apply(states)
   }
 
-  /// Deletes zones. Their cards and child zones move up to the nearest zone that stays, or the
-  /// canvas, without moving on screen. Nothing inside is deleted.
+  /// Deletes zones. Their cards, drawings and child zones move up to the nearest zone that stays, or
+  /// the canvas, without moving on screen. Nothing inside is deleted.
   pub fn delete_zones(&self, ids: &[String]) -> Result<Vec<ItemState>> {
     let gone = ids.iter().map(|id| Ok((id.as_str(), self.read::<Zone>(id)?))).collect::<Result<HashMap<_, _>>>()?;
     // The deleted zones from `id` upwards, until a zone that stays.
@@ -129,7 +134,8 @@ impl Session {
     self.apply(states)
   }
 
-  /// A zone's or card's state once moved into zone `to` (None: the canvas) and shifted by (dx, dy).
+  /// A zone's, card's or drawing's state once moved into zone `to` (None: the canvas) and shifted by
+  /// (dx, dy).
   fn rehomed(&self, kind: Kind, id: &str, to: Option<&str>, dx: f64, dy: f64) -> Result<ItemState> {
     let to = to.map(String::from);
     match kind {
@@ -142,6 +148,11 @@ impl Session {
         let mut c: Card = self.read(id)?;
         (c.zone, c.x, c.y) = (to, c.x + dx, c.y + dy);
         ItemState::of(id, &c)
+      }
+      Kind::Drawing => {
+        let mut d: Drawing = self.read(id)?;
+        (d.zone, d.x, d.y) = (to, d.x + dx, d.y + dy);
+        ItemState::of(id, &d)
       }
       Kind::Edge => unreachable!("edges sit in no zone"),
     }

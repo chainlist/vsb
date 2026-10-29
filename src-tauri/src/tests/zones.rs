@@ -220,10 +220,10 @@ fn renaming_and_recoloring_a_zone_write_its_file() {
   put_zone(&f, "Z", None, 0.0, 0.0, 400.0, 400.0);
   let s = open(&f);
   let undo = s.rename_zone("Z", "Pricing").unwrap();
-  s.color_items(&[], &["Z".into()], Some("#f5d76e".into())).unwrap();
+  s.color_items(&[], &["Z".into()], &[], Some("#f5d76e".into())).unwrap();
   let view = s.index.viewport(WORLD, 0.0, None).unwrap();
   assert_eq!((view.zones[0].name.as_str(), view.zones[0].color.as_deref()), ("Pricing", Some("#f5d76e")));
-  s.color_items(&[], &["Z".into()], None).unwrap();
+  s.color_items(&[], &["Z".into()], &[], None).unwrap();
   assert!(!f.read(".canvas/zones/Z.json").contains("color"), "the default color is left out");
   s.apply(undo).unwrap();
   assert_eq!(zone(&f, "Z").name, "Z");

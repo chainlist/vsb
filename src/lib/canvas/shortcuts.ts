@@ -3,6 +3,7 @@ import type { Binding, KeyHelp } from '#lib/keys.js';
 import { deleteSelected, editSelected, fitAll, stopEditing } from './actions.js';
 import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 import { history } from './history.js';
+import { DRAWING_KEYS, ink } from './pen.svelte.js';
 import { selection } from './selection.svelte.js';
 import { addChildTo } from './tab.svelte.js';
 
@@ -30,6 +31,7 @@ const lone = () => (selection.ids.length === 1 && !selection.editing ? selection
 
 export const shortcuts: Binding[] = [
 	{ ...EDITING_KEYS.stop, inText: true, when: () => selection.editing !== null, run: stopEditing },
+	{ ...DRAWING_KEYS.down, when: () => ink.tool !== null, run: () => (ink.tool = null) },
 	{ ...CANVAS_KEYS.clear, when: selected, run: () => selection.clear() },
 	{ ...CANVAS_KEYS.edit, when: () => selection.ids.length === 1, run: editSelected },
 	{ ...CANVAS_KEYS.remove, when: selected, run: deleteSelected },
@@ -38,5 +40,7 @@ export const shortcuts: Binding[] = [
 	{ ...BUILDER_KEYS.open, run: () => batchDialog.open() },
 	{ ...CANVAS_KEYS.undo, run: () => history.undo() },
 	{ ...CANVAS_KEYS.redo, run: () => history.redo() },
-	{ ...CANVAS_KEYS.fit, run: fitAll }
+	{ ...CANVAS_KEYS.fit, run: fitAll },
+	{ ...DRAWING_KEYS.pen, run: () => ink.toggle('pen') },
+	{ ...DRAWING_KEYS.eraser, run: () => ink.toggle('eraser') }
 ];
