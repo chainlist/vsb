@@ -48,7 +48,9 @@ export const keyName = (key: string) =>
 		.join('+');
 
 function combo(e: KeyboardEvent) {
-	const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+	// A digit is read from the key's place, not what it types: on AZERTY the 1 key types & unshifted.
+	const digit = /^Digit(\d)$/.exec(e.code)?.[1];
+	const key = digit ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key);
 	const mods = [isMod(e) ? 'Mod' : '', e.altKey ? 'Alt' : '', e.shiftKey ? 'Shift' : ''];
 	return [...mods, key].filter(Boolean).join('+');
 }

@@ -1,6 +1,6 @@
 // Canvas keyboard shortcuts, bound through the shared key layer while the canvas is mounted.
 import type { Binding, KeyHelp } from '#lib/keys.js';
-import { deleteSelected, editSelected, stopEditing } from './actions.js';
+import { deleteSelected, editSelected, fitAll, stopEditing } from './actions.js';
 import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 import { history } from './history.js';
 import { selection } from './selection.svelte.js';
@@ -13,7 +13,8 @@ export const CANVAS_KEYS = {
 	remove: { keys: ['Delete', 'Backspace'], label: 'Delete the selection' },
 	child: { keys: ['Tab'], label: 'Add a linked card after the selected card' },
 	undo: { keys: ['Mod+z'], label: 'Undo' },
-	redo: { keys: ['Mod+Shift+z', 'Mod+y'], label: 'Redo' }
+	redo: { keys: ['Mod+Shift+z', 'Mod+y'], label: 'Redo' },
+	fit: { keys: ['Mod+1'], label: 'Fit everything on the canvas' }
 } satisfies Record<string, KeyHelp>;
 
 /** While a card, an edge's label or a zone's name is edited. */
@@ -36,5 +37,6 @@ export const shortcuts: Binding[] = [
 	{ ...CANVAS_KEYS.child, when: () => !!lone(), run: () => addChildTo(lone()!) },
 	{ ...BUILDER_KEYS.open, run: () => batchDialog.open() },
 	{ ...CANVAS_KEYS.undo, run: () => history.undo() },
-	{ ...CANVAS_KEYS.redo, run: () => history.redo() }
+	{ ...CANVAS_KEYS.redo, run: () => history.redo() },
+	{ ...CANVAS_KEYS.fit, run: fitAll }
 ];

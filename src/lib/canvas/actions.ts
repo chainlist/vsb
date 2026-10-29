@@ -3,6 +3,7 @@
 import {
 	alignCards,
 	arrowEdges,
+	canvasContents,
 	clearCard,
 	colorItems,
 	deleteCards,
@@ -108,6 +109,12 @@ export async function show(kind: 'card' | 'zone', id: string) {
 	if (!box) return;
 	camera.glide(box, OPEN_ZOOM);
 	selection.only(id);
+}
+
+/** Frames everything on the canvas, as opening the vault does, gliding there. */
+export async function fitAll() {
+	const contents = await canvasContents();
+	if (contents) camera.glide(contents);
 }
 
 /** Places a card for a note, centered on a world point, and selects it. A note that already has

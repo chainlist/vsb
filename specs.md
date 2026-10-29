@@ -97,7 +97,7 @@ src/routes/
 - **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone and edge edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's and where Settings > Vault says the vault lives, come from the backend too, so no page knows which platform it runs on.
 - **Shared state** lives in `.svelte.ts` modules using runes, not passed down through many component levels.
 - **One system per cross-cutting behavior**, never a copy per component or route:
-  - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open. Each part keeps its keys, with what each does, in a table its bindings take them from; Settings > Keyboard lists those tables, so the list is what is bound.
+  - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open. Each part keeps its keys, with what each does, in a table its bindings take them from; Settings > Keyboard lists those tables, so the list is what is bound. A digit is read from the key's place, not what it types, so Mod+1 is the same key on AZERTY, where that key types & unshifted.
   - selection and focus
   - world-to-screen conversion: one module owns the pan and zoom transform
   - undo
@@ -320,7 +320,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B). The Zones button shows when the [zone list](#zone-list) is open, and a panel's button when its route is. The panels stay routes, reached through links.
 - **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
-  - Fit frames everything on the canvas, as opening the vault does, gliding there. An empty canvas stays as it is.
+  - Fit frames everything on the canvas, as opening the vault does, gliding there; Mod+1 does the same. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
 - **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards and zones, the edges' style, Arrange, Builder and Delete.
   - The color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
