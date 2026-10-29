@@ -90,7 +90,24 @@ pub struct BundleView {
   pub arrow: String,
 }
 
-/// Open, the zones, cards and edges; zoomed out, the outermost zones, the clusters and the bundles.
+/// The boxes of a collapsed zone's cards of one color: None for the theme's plain stock.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct Tint {
+  pub color: Option<String>,
+  pub boxes: Vec<Frame>,
+}
+
+/// Zoomed out, what a collapsed zone holds at any depth, in its coordinates from its top-left corner:
+/// its cards' boxes by color, and its inner zones' boxes. No text, nothing to point at.
+#[derive(Serialize, Debug, PartialEq)]
+pub struct PreviewView {
+  pub zone: String,
+  pub cards: Vec<Tint>,
+  pub zones: Vec<Frame>,
+}
+
+/// Open, the zones, cards and edges; zoomed out, the outermost zones with what they hold, the
+/// clusters and the bundles.
 #[derive(Serialize, Debug)]
 pub struct Viewport {
   pub zones: Vec<ZoneView>,
@@ -98,4 +115,5 @@ pub struct Viewport {
   pub edges: Vec<EdgeView>,
   pub clusters: Vec<ClusterView>,
   pub bundles: Vec<BundleView>,
+  pub previews: Vec<PreviewView>,
 }

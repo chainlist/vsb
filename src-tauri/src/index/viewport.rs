@@ -9,12 +9,13 @@ use rusqlite::params;
 /// R*Tree filter: bounds `b` meet the rectangle ?1..?4.
 pub(super) const MEETS: &str = "b.max_x >= ?1 AND b.min_x <= ?3 AND b.max_y >= ?2 AND b.min_y <= ?4";
 /// R*Tree filter: bounds `b` are at least ?5 wide or tall.
-const LARGE: &str = "(b.max_x - b.min_x >= ?5 OR b.max_y - b.min_y >= ?5)";
+pub(super) const LARGE: &str = "(b.max_x - b.min_x >= ?5 OR b.max_y - b.min_y >= ?5)";
 
 impl Index {
   /// Zones (parents first), cards and edges in `rect`, skipping those smaller than `min_size` world
   /// units. Zoomed out, with the size of a `cell` of the clusters' grid (?6), nothing inside a zone
-  /// comes back: only the outermost zones, the loose cards counted per cell and the edges bundled.
+  /// comes back on its own: only the outermost zones with a preview of what they hold, the loose cards
+  /// counted per cell and the edges bundled.
   pub fn viewport(&self, rect: Rect, min_size: f64, cell: Option<f64>) -> Result<Viewport> {
     let args = params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, min_size];
     let mut stmt = self.db.prepare(&format!(
@@ -23,7 +24,7 @@ impl Index {
        FROM zone_bounds b JOIN zones z ON z.key = b.key JOIN zabs ON zabs.id = z.id
        WHERE {MEETS} AND {LARGE} AND (?6 IS NULL OR zabs.depth = 0) ORDER BY zabs.depth"
     ))?;
-    let zones = stmt
+    let zones: Vec<ZoneView> = stmt
       .query_map(params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, min_size, cell], |r| {
         Ok(ZoneView {
           id: r.get(0)?,
@@ -38,8 +39,8 @@ impl Index {
       })?
       .collect::<rusqlite::Result<_>>()?;
     if let Some(cell) = cell {
-      let (clusters, bundles) = (self.clusters(rect, cell)?, self.bundles(rect, cell)?);
-      return Ok(Viewport { zones, cards: vec![], edges: vec![], clusters, bundles });
+      let (clusters, bundles, previews) = (self.clusters(rect, cell)?, self.bundles(rect, cell)?, self.previews(rect, min_size, &zones)?);
+      return Ok(Viewport { zones, cards: vec![], edges: vec![], clusters, bundles, previews });
     }
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
@@ -97,6 +98,6 @@ impl Index {
         })
       })?
       .collect::<rusqlite::Result<_>>()?;
-    Ok(Viewport { zones, cards, edges, clusters: vec![], bundles: vec![] })
+    Ok(Viewport { zones, cards, edges, clusters: vec![], bundles: vec![], previews: vec![] })
   }
 }

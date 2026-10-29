@@ -5,6 +5,7 @@ mod bounds;
 mod bundles;
 mod clusters;
 mod notes;
+mod previews;
 mod rows;
 mod stamps;
 mod ui_state;

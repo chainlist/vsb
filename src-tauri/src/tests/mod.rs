@@ -9,6 +9,7 @@ mod index;
 mod insert;
 mod layout;
 mod note;
+mod previews;
 mod scan;
 mod scan_notes;
 mod search;
