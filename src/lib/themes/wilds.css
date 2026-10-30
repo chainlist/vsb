@@ -1,0 +1,41 @@
+@import '@fontsource-variable/fraunces/opsz.css';
+@import '@fontsource-variable/fraunces/opsz-italic.css';
+@import '@fontsource-variable/space-grotesk/wght.css';
+
+/* Outer Wilds: the ship log's rumor mode, cards linked across deep space. Indigo sky with stars at
+   the crossings, cards a shade lighter, warm cream ink, a Nomai-blue rule under each title and
+   campfire orange for the accent. Fraunces, a warm old-style serif, for notes; Space Grotesk for
+   controls. */
+[data-theme='wilds'] {
+	--scheme: dark;
+	--paper: #11122a;
+	--grid-line-major: #222449;
+	--grid-line-minor: #181a39;
+	--grid-node: #5a5c8f;
+	--grid-dot-major: #5a5c8f;
+	--grid-dot-minor: #26284f;
+	--border: #2e3058;
+	--ink: #efe6d2;
+	--ink-soft: #a6a2bf;
+	--pen: #f0913a;
+	--on-pen: #1a1222;
+	--rule: #5664b8;
+	--card: #1b1d3b;
+	--danger: #ff8f7a;
+	--danger-paper: #2e1a26;
+	/* A log entry hung in the dark, edged in starlight. */
+	--lift: 0 0 0 1px rgb(239 230 210 / 0.09), 0 12px 28px -14px rgb(0 0 0 / 0.85);
+	--scrim: rgb(5 5 16 / 0.6);
+	--font-note: 'Fraunces Variable', Georgia, serif;
+	--font-ui: 'Space Grotesk Variable', system-ui, sans-serif;
+	--font-adjust: none;
+	--zone-default: #7f81ad;
+	/* Highlighters need more color to show on dark paper. */
+	--zone-wash: 26%;
+	--card-wash: 28%;
+	--zone-stretch: normal;
+	--radius-mark: 2px;
+	--radius-control: 4px;
+	--radius-card: 4px;
+	--radius-zone: 10px;
+}

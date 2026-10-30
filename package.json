@@ -41,10 +41,12 @@
 	"dependencies": {
 		"@dagrejs/dagre": "^3.1.1",
 		"@fontsource-variable/alegreya": "^5.3.0",
+		"@fontsource-variable/fraunces": "^5.3.0",
 		"@fontsource-variable/ibm-plex-sans": "^5.3.0",
 		"@fontsource-variable/instrument-sans": "^5.3.0",
 		"@fontsource-variable/literata": "^5.3.0",
 		"@fontsource-variable/saira": "^5.3.0",
+		"@fontsource-variable/space-grotesk": "^5.3.0",
 		"@fontsource/alegreya-sans": "^5.3.0",
 		"@lucide/svelte": "^1.62.0",
 		"@tauri-apps/api": "^2.12.4",

@@ -172,6 +172,9 @@ importers:
       '@fontsource-variable/alegreya':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource-variable/fraunces':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource-variable/ibm-plex-sans':
         specifier: ^5.3.0
         version: 5.3.0
@@ -182,6 +185,9 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource-variable/saira':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/space-grotesk':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/alegreya-sans':
@@ -272,6 +278,9 @@ packages:
   '@fontsource-variable/alegreya@5.3.0':
     resolution: {integrity: sha512-K+DFrm7tnqsG6di2w3eW/o4Ic6XNFLtZCKcPldeHEnE9f8uWy4llIp1CqQAu+ByI9MFfs1C7eLv4Rv84yEIerw==}
 
+  '@fontsource-variable/fraunces@5.3.0':
+    resolution: {integrity: sha512-9BYGySn4AHEJdgp9Z28tQ3X+laJMEOITXkQarZXeloWQZDq5oOvXJ3kDA8c7MGIfpogIaZfjrQBqmda8POOCKA==}
+
   '@fontsource-variable/ibm-plex-sans@5.3.0':
     resolution: {integrity: sha512-agG8tXFEo0hD9+J7npa4vbbWult52eMLVaQ6WQRlhs/iCAojrMAoejru85W9HTVXHfyUj96KM7gp/KGAS87XaQ==}
 
@@ -283,6 +292,9 @@ packages:
 
   '@fontsource-variable/saira@5.3.0':
     resolution: {integrity: sha512-C1rm7n1OuEx4Se/SAB/5EeUuCviGFFnYTr5vxuQQm2YIOfgbQWx/P6qqhdXlVCBRm/1UzNWCtDK5jNbVmO6W2w==}
+
+  '@fontsource-variable/space-grotesk@5.3.0':
+    resolution: {integrity: sha512-2IxmvfB08i9vnGB3Ym/AXvhRE+8XOjWMXIyDum03c+tPwH0FUoMNQfGpU8NXPxjbws0Vvss3AH0Zqt4oJBBAdw==}
 
   '@fontsource/alegreya-sans@5.3.0':
     resolution: {integrity: sha512-Uf0RbuwzhSS3NQrBFcRzEUm7TxDQW3qdAbQ6JIOhsIW6V+YN2dqlR99lhfEE38R3GHgMCMJBzqSp7aJxhNXSOw==}
@@ -1123,6 +1135,8 @@ snapshots:
 
   '@fontsource-variable/alegreya@5.3.0': {}
 
+  '@fontsource-variable/fraunces@5.3.0': {}
+
   '@fontsource-variable/ibm-plex-sans@5.3.0': {}
 
   '@fontsource-variable/instrument-sans@5.3.0': {}
@@ -1130,6 +1144,8 @@ snapshots:
   '@fontsource-variable/literata@5.3.0': {}
 
   '@fontsource-variable/saira@5.3.0': {}
+
+  '@fontsource-variable/space-grotesk@5.3.0': {}
 
   '@fontsource/alegreya-sans@5.3.0': {}
 

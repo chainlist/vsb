@@ -12,6 +12,7 @@
 @import './lib/themes/pad.css';
 @import './lib/themes/orbit.css';
 @import './lib/themes/cairn.css';
+@import './lib/themes/wilds.css';
 
 /* shadcn-svelte's colors, radii and shadows are the theme's tokens, so its components follow the
    vault's theme like everything else. */
