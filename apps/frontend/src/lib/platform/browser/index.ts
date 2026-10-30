@@ -17,7 +17,8 @@ import type {
 	Shape,
 	Stroke,
 	VAlign,
-	Wheel
+	Wheel,
+	WindowControls
 } from '#lib/api.js';
 import type * as Desktop from '../tauri.ts';
 import { apply, type Edit } from './apply.ts';
@@ -59,6 +60,8 @@ export const vaultPicker = {
 	lede: 'Name a vault. Your notes stay in this browser.',
 	action: 'Open a vault'
 };
+/** None: the browser's window has its own. */
+export const windowControls: WindowControls | null = null;
 export const openVault = (id: string) => command(() => vaults.openVault(id));
 export const vaultTheme = () => reading(settings.theme);
 export const setVaultTheme = (theme: string | null) => writing((e) => settings.setTheme(e, theme));

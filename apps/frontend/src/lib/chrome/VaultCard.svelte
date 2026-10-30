@@ -45,10 +45,12 @@
 </DropdownMenu.Root>
 
 <style>
+	/* Over the band along the window's top that moves the window, which it reaches into. */
 	.vault {
 		position: fixed;
 		top: var(--inset);
 		left: var(--inset);
+		z-index: 1;
 		display: flex;
 		align-items: center;
 		gap: 10px;

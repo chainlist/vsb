@@ -17,6 +17,16 @@ export type VaultHome = {
 	action: { label: string; run: () => Promise<void> } | null;
 };
 
+/** The window's own buttons, for a backend whose window has no title bar. */
+export type WindowControls = {
+	minimize: () => Promise<void>;
+	toggleMaximize: () => Promise<void>;
+	close: () => Promise<void>;
+	isMaximized: () => Promise<boolean>;
+	/** Runs `run` whenever the window's size changes; resolves to what stops it. */
+	onResized: (run: () => void) => Promise<() => void>;
+};
+
 /** What the mouse wheel does on the canvas, on this device: zoom, the default, or pan. */
 export type Wheel = 'zoom' | 'pan';
 

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import { setLucideProps } from '@lucide/svelte/context';
+	import { windowControls } from '#lib/api.js';
 	import favicon from '#lib/assets/favicon.svg';
 	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import FailureNotice from '#lib/chrome/FailureNotice.svelte';
+	import WindowControls from '#lib/chrome/WindowControls.svelte';
 	import * as Tooltip from '#lib/components/ui/tooltip/index.js';
 	import { failure } from '#lib/failure.svelte.js';
 	import { interfaceSize } from '#lib/interfaceSize.svelte.js';
@@ -69,5 +71,8 @@
 	<ErrorBoundary what="This screen" center>
 		{@render children()}
 	</ErrorBoundary>
+	{#if windowControls}
+		<WindowControls controls={windowControls} />
+	{/if}
 	<FailureNotice />
 </Tooltip.Provider>

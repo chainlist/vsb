@@ -46,7 +46,9 @@
 		escapeKeydownBehavior="ignore"
 		onOpenAutoFocus={(e) => e.preventDefault()}
 	>
-		<Sheet.Header class="border-b">
+		<!-- Its empty space moves the window, as the band along the window's top does, which the sheet
+		     covers. -->
+		<Sheet.Header class="border-b" data-tauri-drag-region>
 			<Sheet.Title class="icon-label"><panel.icon /> {panel.name}</Sheet.Title>
 		</Sheet.Header>
 		<ErrorBoundary what="This panel">
@@ -54,3 +56,11 @@
 		</ErrorBoundary>
 	</Sheet.Content>
 </Sheet.Root>
+
+<style>
+	/* The sheet's close button, left of the window's buttons over its top-right corner. The sheet is
+	   drawn at the interface size; they are not. */
+	:global([data-slot='sheet-content'] > [data-dialog-close]) {
+		inset-inline-end: calc(1rem + var(--window-buttons) / var(--ui-scale, 1));
+	}
+</style>

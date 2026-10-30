@@ -67,7 +67,7 @@
 		class="anchor"
 		class:centered={at.centered}
 		style:left="{Math.max(8, at.x)}px"
-		style:top="{Math.max(52, at.y - 10)}px"
+		style:top="max(calc(52px + var(--window-band)), {at.y - 10}px)"
 		onpointerdown={(e) => e.stopPropagation()}
 		ondblclick={(e) => e.stopPropagation()}
 	>

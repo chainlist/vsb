@@ -270,13 +270,17 @@ a {
 
 /* Where the canvas chrome sits: its distance from the window's edges; the gap between its cards;
    the top of the rail and the zone list, under the 44px vault card; the rail's width; and the width
-   of the panel's sheet docked on the right, which the zoom controls stay clear of. */
+   of the panel's sheet docked on the right, which the zoom controls stay clear of. Where the app
+   draws the window's own buttons and the band that moves it (#lib/chrome/WindowControls): the
+   buttons' width, in the top-right corner, and the band's height, along the top. */
 :root {
 	--inset: 16px;
 	--gap: 12px;
 	--under-vault: calc(var(--inset) + 44px + var(--gap));
 	--rail: 52px;
 	--panel: min(75%, 24rem);
+	--window-buttons: 0px;
+	--window-band: 0px;
 }
 
 /* A control's shortcut after its name, in a tooltip or a menu. */

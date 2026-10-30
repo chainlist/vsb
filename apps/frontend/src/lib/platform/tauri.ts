@@ -1,5 +1,6 @@
 // The desktop's backend: one typed function per Tauri command. The only module that calls `invoke`.
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import type {
 	Batch,
 	BatchCard,
@@ -26,6 +27,7 @@ import type {
 	VaultHome,
 	Viewport,
 	Wheel,
+	WindowControls,
 	ZoneNodes,
 	ZoneRow
 } from '#lib/api.js';
@@ -57,6 +59,15 @@ export const chooseVault = () => invoke<VaultEntry | null>('choose_vault');
 export const vaultPicker = {
 	lede: 'Pick any folder. Your notes stay in it as plain Markdown files.',
 	action: 'Open a folder'
+};
+
+/** The window's buttons, which the app draws itself: the desktop's window has no title bar. */
+export const windowControls: WindowControls | null = {
+	minimize: () => getCurrentWindow().minimize(),
+	toggleMaximize: () => getCurrentWindow().toggleMaximize(),
+	close: () => getCurrentWindow().close(),
+	isMaximized: () => getCurrentWindow().isMaximized(),
+	onResized: (run) => getCurrentWindow().onResized(run)
 };
 
 /** Opens the vault and brings its index up to date. */
