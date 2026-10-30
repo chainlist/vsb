@@ -49,10 +49,27 @@ The frontend never reads files or SQLite directly. It calls typed Tauri commands
 - **Everything platform-specific goes through it.** Nothing else imports `@tauri-apps`, and nothing else touches IndexedDB or localStorage. A feature that needs the platform adds a function to the layer, implemented by both backends.
 - It keeps the types and one function per command. The functions come from `#platform`, a `package.json` import resolved when the app is built: `platform/tauri.ts` by default (the desktop: each function calls its Tauri command), or `platform/browser/` under the `web` condition, which the web build's Vite config adds. Each build bundles one backend only: the web build holds no Tauri code, the desktop build no browser backend.
 - Both backends have the same functions with the same signatures, checked when the code is type-checked, and the same behavior, checked by tests: the browser backend's mirror the Rust tests' cases.
-- The layer costs nothing at run time: `api.ts` re-exports the backend's functions, so a call goes straight to them. Measured on the desktop, calls through the layer and straight to the Tauri module time the same, within 0.2 ms (`bench/`).
+- The layer costs nothing at run time: `api.ts` re-exports the backend's functions, so a call goes straight to them. Measured on the desktop, calls through the layer and straight to the Tauri module time the same, within 0.2 ms (`tools/bench/`).
 - Errors come back from both as plain strings, as Tauri's do.
 
 ## Code organization
+
+### Repository
+
+A pnpm workspace with each app in a folder of its own. The root holds the scripts that run them and the Tauri CLI, which builds the desktop app from two of them.
+
+```
+apps/
+  desktop/      # the Tauri app: the Rust backend, tauri.conf.json, icons
+  frontend/     # the SvelteKit app, built twice: vite.config.ts (desktop), vite.web.config.ts (web)
+  site/         # the presentation site
+tools/
+  bench/        # timings of both platforms over CDP
+```
+
+- **The frontend is one package with two builds,** not two apps: both have every route and component, and only `#platform` differs. Its Node tests are in `apps/frontend/tests`.
+- **The root's scripts run the packages' own** through `pnpm --filter`, so `pnpm tauri dev`, `pnpm check`, `pnpm test`, `pnpm dev:web`, `pnpm dev:site` and `pnpm build:pages` work from the root. Tauri runs there too: it finds `apps/desktop`, and runs the root's `pnpm dev` or `pnpm build` before it.
+- **Rust's checks run in `apps/desktop`** (`cargo test`).
 
 ### General
 
@@ -71,7 +88,7 @@ The frontend never reads files or SQLite directly. It calls typed Tauri commands
 - Interaction inside the canvas (selection, drag, edit mode) is component state, not routes.
 
 ```
-src/routes/
+apps/frontend/src/routes/
   +layout.svelte              # app shell
   +layout.ts                  # SPA mode: SSR off
   +page.svelte                # /: vault picker (choose a vault, recent vaults)
@@ -718,19 +735,19 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 ### The web build
 
 - `pnpm build:web` writes the static site to `build/pages/web`, for `/vsb/web`. Every route is served by the app's one page, also written as the Pages site's `404.html`, which GitHub Pages serves for any path it does not know, so a link to a vault opens it. A path outside `/vsb/web/` goes to the presentation site's home before the app starts: the app would send the browser there itself, and get `404.html` again, forever. The app's folder is `app`, not `_app`, which Jekyll would leave out. `pnpm dev:web` serves it on port 5175.
-- Its configuration is `vite.web.config.ts`: the desktop's `vite.config.ts` does not change.
+- Its configuration is `vite.web.config.ts` in `apps/frontend`: the desktop's `vite.config.ts` beside it does not change.
 - `.github/workflows/pages.yml` publishes it with the presentation site: on every push to `main`, or when run by hand, it installs from the lockfile, runs `pnpm build:pages` and deploys `build/pages` to GitHub Pages. The repository's Pages source is GitHub Actions.
 
 ## Presentation site
 
-The Pages site's front: what the app is, with screenshots, and where to get it. A SvelteKit app of its own in `site/`, prerendered with `@sveltejs/adapter-static` to `build/pages`, at `/vsb`; `pnpm build:pages` builds it, then the web build into `build/pages/web`. `pnpm dev:site` serves it on port 5176, and `pnpm check` checks it after the app.
+The Pages site's front: what the app is, with screenshots, and where to get it. A SvelteKit app of its own in `apps/site/`, prerendered with `@sveltejs/adapter-static` to `build/pages`, at `/vsb`; `pnpm build:pages` builds it, then the web build into `build/pages/web`. `pnpm dev:site` serves it on port 5176, and `pnpm check` checks it after the app.
 
 - **Its own package** in the pnpm workspace, with its own `vite.config.ts`, `tsconfig.json` and `#lib`. SvelteKit writes an app's route types into its package's `node_modules/$app`: in the app's package, the site's routes would replace the app's every time it builds or runs.
 - **Two pages,** prerendered, each in a folder of its own (`trailingSlash: 'always'`): the home page and `download/`. The layout holds the header and footer. Links to the web app are `rel="external"`: another site, which the browser loads, not the site's router.
-- **It follows the app** through `site/src/lib/app.ts`: its name from `productName` in `tauri.conf.json` (renaming the app renames the site), the highlighters from the app's color list, the theme names from its theme list.
+- **It follows the app** through `apps/site/src/lib/app.ts`: its name from `productName` in `tauri.conf.json` (renaming the app renames the site), the highlighters from the app's color list, the theme names from its theme list.
 - **It wears Studio:** the layout imports the app's `studio.css`, so the site has the theme's tokens and its Instrument Sans: the dotted paper, white cards, graphite ink and petrol accent. Each part of the home page is a `Zone`, drawn with the app's own formulas: a highlighter's wash over the paper, the frame in the color inked, the name on it; the parts are joined by edges.
 - **The download page asks GitHub for the latest release** and lists its installers under Windows, macOS and Linux by their file names, with a button for the visitor's own system first. Signatures and updater files are left out. With no release it says so; when GitHub does not answer it links to the releases page. The browser version and building from source are offered either way.
-- **The screenshots** are of the web build, in `site/src/lib/shots`, taken by `site/shoot.mjs`: with `pnpm dev:web` running and Chrome started on a debug port, it builds a demo vault through `#lib/api` (a thesis, with a reading list, a lab notebook, teaching and meetings around it) and shoots the canvas, the builder, the pen, the panels, the zoomed-out map and each theme. Run it again when the app's look changes.
+- **The screenshots** are of the web build, in `apps/site/src/lib/shots`, taken by `apps/site/shoot.mjs`: with `pnpm dev:web` running and Chrome started on a debug port, it builds a demo vault through `#lib/api` (a thesis, with a reading list, a lab notebook, teaching and meetings around it) and shoots the canvas, the builder, the pen, the panels, the zoomed-out map and each theme. Run it again when the app's look changes.
 
 ## V3: shared note references
 
