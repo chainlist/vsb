@@ -1,2 +1,5 @@
+packages:
+  - site
+
 minimumReleaseAgeExclude:
   - '@lucide/svelte@1.62.0'

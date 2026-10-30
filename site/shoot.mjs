@@ -1,5 +1,5 @@
-// Takes the site's screenshots: builds a demo vault in the web build through `#lib/api`, as the
-// app would, then frames and shoots the canvas over the Chrome DevTools Protocol, into site/shots.
+// Takes the site's screenshots, into src/lib/shots: builds a demo vault in the web build through
+// `#lib/api`, as the app would, then frames and shoots the canvas over the Chrome DevTools Protocol.
 // With `pnpm dev:web` running, and Chrome started on a profile of its own (in a short folder:
 // Chrome fails to open IndexedDB under a long path), as the bench does:
 //
@@ -13,7 +13,7 @@ const { values: args } = parseArgs({
 	options: { port: { type: 'string' }, app: { type: 'string', default: 'http://localhost:5175/vsb/web/' } }
 });
 const base = new URL(args.app).pathname;
-const out = new URL('./shots/', import.meta.url);
+const out = new URL('./src/lib/shots/', import.meta.url);
 /** The thesis's three zones, in world units: what most shots frame. */
 const THESIS = { minX: 0, minY: 0, maxX: 1500, maxY: 660 };
 

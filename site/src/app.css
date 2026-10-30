@@ -1,0 +1,147 @@
+/* The site wears the app's Studio theme (its tokens come from the app's studio.css): the dotted
+   paper, white cards with a hairline edge, graphite ink and the petrol accent. What follows is only
+   what a page needs beyond the canvas's tokens. */
+:root {
+	--pen-deep: color-mix(in srgb, var(--pen) 85%, var(--ink));
+	--lift-high: 0 0 0 1px rgb(27 33 38 / 0.08), 0 2px 4px rgb(27 33 38 / 0.06), 0 30px 60px -30px rgb(27 33 38 / 0.45);
+	--mono: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+	--gutter: clamp(16px, 4vw, 40px);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	color: var(--ink);
+	font: 400 1.0625rem/1.6 var(--font-ui);
+	color-scheme: var(--scheme);
+	background-color: var(--paper);
+	/* The paper: a faint dot at every small square's corner, a stronger one every fifth. */
+	background-image:
+		radial-gradient(circle at 1px 1px, var(--grid-dot-major) 1.3px, transparent 1.8px),
+		radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--grid-dot-minor) 70%, var(--paper)) 1px, transparent 1.4px);
+	background-size: 120px 120px, 24px 24px;
+	background-position: -1px -1px;
+}
+
+/* Hidden wins over every display below. */
+[hidden] {
+	display: none !important;
+}
+
+img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+a {
+	color: var(--pen);
+	text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+	outline: 2px solid var(--pen);
+	outline-offset: 3px;
+	border-radius: 2px;
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	text-wrap: balance;
+}
+
+p {
+	margin: 0;
+}
+
+code,
+pre {
+	font-family: var(--mono);
+	font-size: 0.9em;
+	/* Arrows stay as typed, as in the app's builder: no ligature turns -> into one. */
+	font-variant-ligatures: none;
+}
+
+kbd {
+	padding: 1px 6px;
+	border: 1px solid var(--border);
+	border-bottom-width: 2px;
+	border-radius: var(--radius-mark);
+	background: var(--paper);
+	color: var(--ink);
+	font: 500 0.85em var(--font-ui);
+	white-space: nowrap;
+}
+
+.wrap {
+	width: min(100% - 2 * var(--gutter), 1200px);
+	margin-inline: auto;
+}
+
+/* Buttons, as the app's: petrol for the one thing to do, a white card for the other. */
+.button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 44px;
+	padding: 0 20px;
+	border-radius: var(--radius-control);
+	background: var(--card);
+	box-shadow: var(--lift);
+	color: var(--ink);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.button:hover {
+	background: color-mix(in srgb, var(--paper) 40%, var(--card));
+}
+
+.button.primary {
+	background: var(--pen);
+	box-shadow: none;
+	color: var(--on-pen);
+}
+
+.button.primary:hover {
+	background: var(--pen-deep);
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+/* A page's headline: set narrow and tight, as the app sets zone names. */
+.headline {
+	font-weight: 640;
+	font-stretch: 78%;
+	line-height: 0.98;
+	letter-spacing: -0.015em;
+}
+
+.lede {
+	max-width: 58ch;
+	color: var(--ink-soft);
+	font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+	line-height: 1.55;
+}
+
+.pair {
+	display: grid;
+	gap: 18px;
+}
+
+@media (min-width: 760px) {
+	.pair {
+		grid-template-columns: 1fr 1fr;
+	}
+}
