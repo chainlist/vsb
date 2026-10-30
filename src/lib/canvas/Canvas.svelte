@@ -3,6 +3,7 @@
 	import { bindKeys, isMod } from '#lib/keys.js';
 	import { batchDialog } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
+	import { listenForPaste } from './clipboard.js';
 	import { draft, startDraw } from './draw.svelte.js';
 	import { track } from './drag.js';
 	import { GRIP, newCardAt } from './gestures.js';
@@ -60,6 +61,7 @@
 	});
 	$effect(() => items.update());
 	$effect(() => bindKeys(shortcuts));
+	$effect(listenForPaste);
 	$effect(() => zoomOn(el, hover));
 
 	// The paper moves with the world. Its minor lines fade out as squares shrink, then the grid
@@ -103,7 +105,7 @@
 	// While a button is down the item keeps its handles, so they stay with it as it moves or resizes.
 	function move(e: PointerEvent) {
 		const p = local(e);
-		batchDialog.pointer = p;
+		camera.pointer = p;
 		if (!e.buttons) hover(p);
 	}
 
@@ -122,7 +124,7 @@
 	}
 
 	function leave(e: PointerEvent) {
-		batchDialog.pointer = null;
+		camera.pointer = null;
 		if (!e.buttons) hovered = null;
 	}
 

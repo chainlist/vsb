@@ -5,6 +5,7 @@ import type {
 	Arrow,
 	BatchCard,
 	BatchEdge,
+	Clip,
 	EdgeStyle,
 	Erased,
 	HAlign,
@@ -22,6 +23,7 @@ import type * as Desktop from '../tauri.ts';
 import { apply, type Edit } from './apply.ts';
 import * as batch from './batch.ts';
 import * as cards from './cards.ts';
+import * as clip from './clip.ts';
 import * as drawings from './drawings.ts';
 import * as edges from './edges.ts';
 import * as lists from './lists.ts';
@@ -71,6 +73,8 @@ export const queryViewport = (rect: Rect, minSize: number, cell: number | null) 
 export const createCard = (x: number, y: number, w: number, h: number) => writing((e) => cards.createCard(e, x, y, w, h));
 export const placeNote = (path: string, x: number, y: number, w: number, h: number) => writing((e) => cards.placeNote(e, path, x, y, w, h));
 export const createBatch = (x: number, y: number, c: BatchCard[], l: BatchEdge[]) => writing((e) => batch.createBatch(e, x, y, c, l));
+export const copyItems = (c: string[], z: string[], d: string[]) => reading((e) => clip.copyItems(e, c, z, d));
+export const pasteItems = (from: Clip, x: number, y: number) => writing((e) => clip.pasteItems(e, from, x, y));
 export const batchScope = (zone: string | null, ids: string[]) => reading((e) => scope.batchScope(e, zone, ids));
 export const planLinks = (ids: string[], links: Link[]) => reading((e) => batch.planLinks(e, ids, links));
 export const editBatch = (zone: string | null, ids: string[], c: BatchCard[], links: Link[]) =>

@@ -1,5 +1,6 @@
 mod batch;
 mod batch_edit;
+mod clip;
 mod commands;
 mod device;
 mod drawings;
@@ -86,6 +87,8 @@ pub fn run() {
       commands::create_card,
       commands::place_note,
       commands::create_batch,
+      commands::copy_items,
+      commands::paste_items,
       commands::item_box,
       commands::unplaced_notes,
       commands::search,

@@ -20,6 +20,7 @@ import {
 	type Arrow,
 	type CardView,
 	type EdgeView,
+	type Frame,
 	type HAlign,
 	type Shape,
 	type Stroke,
@@ -29,7 +30,7 @@ import {
 import { camera } from './camera.svelte.js';
 import { newCardAt } from './gestures.js';
 import { history } from './history.js';
-import { items, OPEN_ZOOM } from './items.svelte.js';
+import { cover, inside, items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
@@ -128,6 +129,18 @@ export function label(id: string, text: string) {
 /** Turns an unresolved card into an empty one. */
 export function clear(card: CardView) {
 	return history.edit(() => clearCard(card.id));
+}
+
+/** What selects new items landing on these boxes, then frames them when zoomed out, where they would
+ * be hidden in a collapsed zone or a cluster, or when they land partly off-screen. Asked before the
+ * edit, which can move the camera. */
+export function landing(boxes: Frame[]) {
+	const span = cover(boxes);
+	const framed = items.collapsed || !inside(span, camera.visible);
+	return (ids: string[]) => {
+		selection.ids = ids;
+		if (framed) camera.glide(span, OPEN_ZOOM);
+	};
 }
 
 /** Glides to frame a card or a zone, zoomed in at least until zones open, and selects it. */

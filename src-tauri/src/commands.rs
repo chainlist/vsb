@@ -2,6 +2,7 @@
 
 use crate::batch::{Batch, BatchCard, BatchEdge};
 use crate::batch_edit::{Link, LinkPlan};
+use crate::clip::{Clip, Pasted};
 use crate::device::{self, Pen, Wheel};
 use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
@@ -174,6 +175,16 @@ pub async fn place_note(state: State<'_, AppState>, path: String, x: f64, y: f64
 #[tauri::command]
 pub async fn create_batch(state: State<'_, AppState>, x: f64, y: f64, cards: Vec<BatchCard>, edges: Vec<BatchEdge>) -> Result<Batch> {
   state.with(|s| s.create_batch(x, y, &cards, &edges))
+}
+
+#[tauri::command]
+pub async fn copy_items(state: State<'_, AppState>, cards: Vec<String>, zones: Vec<String>, drawings: Vec<String>) -> Result<Clip> {
+  state.with(|s| s.copy_items(&cards, &zones, &drawings))
+}
+
+#[tauri::command]
+pub async fn paste_items(state: State<'_, AppState>, clip: Clip, x: f64, y: f64) -> Result<Pasted> {
+  state.with(|s| s.paste_items(&clip, x, y))
 }
 
 #[tauri::command]

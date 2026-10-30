@@ -9,6 +9,9 @@ export type Binding = {
 	when?: () => boolean;
 	/** Also runs while typing in a text field, or in a part that takes its own keys (data-own-keys). */
 	inText?: boolean;
+	/** Leaves the key to the browser too, so its own command follows: Mod+V's paste event, which
+	 * alone can read the clipboard without asking. */
+	native?: boolean;
 };
 
 /** A key as Settings > Keyboard lists it, with what it does. Bindings take their keys from these, so
@@ -57,7 +60,7 @@ function combo(e: KeyboardEvent) {
 
 /** Whether keys go to a text field, or to a part marked data-own-keys, such as the zone list once the
  * keyboard is in it: the canvas's keys are off there, as while typing. */
-function typing(target: EventTarget | null) {
+export function typing(target: EventTarget | null) {
 	return (
 		target instanceof HTMLElement &&
 		(target.isContentEditable || target.matches('input, textarea, select') || target.closest('[data-own-keys]') !== null)
@@ -79,7 +82,7 @@ function onKeydown(e: KeyboardEvent) {
 			(b) => b.keys.includes(pressed) && (!inText || b.inText) && (b.when?.() ?? true)
 		);
 		if (binding) {
-			e.preventDefault();
+			if (!binding.native) e.preventDefault();
 			binding.run();
 			return;
 		}

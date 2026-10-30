@@ -156,6 +156,20 @@ export type BatchEdge = { from: number; to: number; arrow: Arrow; stroke: Stroke
 /** The new cards' IDs, in the order they were given, with the states that undo the batch. */
 export type Batch = { cards: string[]; undo: ItemState[] };
 
+/** What copying gathers, for the clipboard: the box around it in the world it was copied from, and
+ * its items by the IDs they were copied from, their corners from the box's corner. An item's zone (a
+ * zone's `parent`) is the copied zone around it, or null. Zones come parents first. A card brings
+ * its note's text, null for none. */
+export type Clip = Frame & {
+	zones: (Frame & { id: string; parent: string | null; name: string; color?: string })[];
+	cards: (Frame & { id: string; zone: string | null; halign?: HAlign; valign?: VAlign; color?: string; text: string | null })[];
+	drawings: (Frame & { id: string; zone: string | null; strokes: PenStroke[] })[];
+	edges: { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke }[];
+};
+
+/** The new items pasted on their own, not inside a pasted zone, with the states that undo the paste. */
+export type Pasted = { ids: string[]; undo: ItemState[] };
+
 /** What the batch builder opens with: cards by their titles, top to bottom, the edges between them,
  * and the zone new cards join (null for the canvas). */
 export type BatchScope = {

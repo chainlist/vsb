@@ -45,6 +45,9 @@ async function freePath(e: Edit, dir: string, stem: string, self: string | null)
 
 export const readNote = async (e: Edit, id: string) => (await note(e, id)).body;
 
+/** A note's body, or null when the note is missing. */
+export const bodyOf = async (e: Edit, id: string) => ((await request(notes(e).get(id))) as NoteRecord | undefined)?.body ?? null;
+
 /** Writes a new note named after its title and returns its ID. */
 export async function newNote(e: Edit, body: string) {
 	const id = newId();

@@ -5,6 +5,7 @@ import type {
 	BatchCard,
 	BatchEdge,
 	BatchScope,
+	Clip,
 	Created,
 	EdgeStyle,
 	Entry,
@@ -14,6 +15,7 @@ import type {
 	Link,
 	LinkPlan,
 	Move,
+	Pasted,
 	Pen,
 	Rect,
 	Shape,
@@ -112,6 +114,15 @@ export const placeNote = (path: string, x: number, y: number, w: number, h: numb
  * join the innermost zone under world point (x, y), which grows to hold them. */
 export const createBatch = (x: number, y: number, cards: BatchCard[], edges: BatchEdge[]) =>
 	invoke<Batch>('create_batch', { x, y, cards, edges });
+
+/** The cards, zones and drawings named, everything inside those zones and the edges between the
+ * cards, gathered for the clipboard. */
+export const copyItems = (cards: string[], zones: string[], drawings: string[]) => invoke<Clip>('copy_items', { cards, zones, drawings });
+
+/** Writes a clip as new items, its corner at world point (x, y), with a new note for each card with
+ * text. What was copied on its own joins the innermost zone under the middle of what is pasted, other
+ * than the zones copied, which grows to hold it. */
+export const pasteItems = (clip: Clip, x: number, y: number) => invoke<Pasted>('paste_items', { clip, x, y });
 
 /** The cards inside `zone` at any depth, or else the cards `cards`, as the batch builder opens with them. */
 export const batchScope = (zone: string | null, cards: string[]) => invoke<BatchScope>('batch_scope', { zone, cards });

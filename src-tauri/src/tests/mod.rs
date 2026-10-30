@@ -3,6 +3,7 @@ mod batch;
 mod batch_edit;
 mod check;
 mod child;
+mod clip;
 mod clusters;
 mod drawings;
 mod edges;

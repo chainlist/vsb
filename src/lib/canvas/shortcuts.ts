@@ -2,6 +2,7 @@
 import type { Binding, KeyHelp } from '#lib/keys.js';
 import { deleteSelected, editSelected, fitAll, stopEditing } from './actions.js';
 import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
+import { armPaste, copyable, copySelected, duplicateSelected } from './clipboard.js';
 import { history } from './history.js';
 import { DRAWING_KEYS, ink } from './pen.svelte.js';
 import { selection } from './selection.svelte.js';
@@ -13,6 +14,9 @@ export const CANVAS_KEYS = {
 	edit: { keys: ['Enter'], label: "Edit the selected card, edge's label or zone's name" },
 	remove: { keys: ['Delete', 'Backspace'], label: 'Delete the selection' },
 	child: { keys: ['Tab'], label: 'Add a linked card after the selected card' },
+	copy: { keys: ['Mod+c'], label: 'Copy the selection, with what its zones hold' },
+	paste: { keys: ['Mod+v'], label: 'Paste under the pointer: copied items, or text as a card' },
+	duplicate: { keys: ['Mod+d'], label: 'Duplicate the selection' },
 	undo: { keys: ['Mod+z'], label: 'Undo' },
 	redo: { keys: ['Mod+Shift+z', 'Mod+y'], label: 'Redo' },
 	fit: { keys: ['Mod+1'], label: 'Fit everything on the canvas' }
@@ -37,6 +41,9 @@ export const shortcuts: Binding[] = [
 	{ ...CANVAS_KEYS.remove, when: selected, run: deleteSelected },
 	{ ...EDITING_KEYS.child, inText: true, when: () => !!edited(), run: () => addChildTo(edited()!) },
 	{ ...CANVAS_KEYS.child, when: () => !!lone(), run: () => addChildTo(lone()!) },
+	{ ...CANVAS_KEYS.copy, when: copyable, run: copySelected },
+	{ ...CANVAS_KEYS.paste, native: true, run: armPaste },
+	{ ...CANVAS_KEYS.duplicate, when: copyable, run: duplicateSelected },
 	{ ...BUILDER_KEYS.open, run: () => batchDialog.open() },
 	{ ...CANVAS_KEYS.undo, run: () => history.undo() },
 	{ ...CANVAS_KEYS.redo, run: () => history.redo() },

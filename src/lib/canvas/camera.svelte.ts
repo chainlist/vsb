@@ -24,6 +24,8 @@ class Camera {
 	/** Canvas size in screen pixels. */
 	width = $state(0);
 	height = $state(0);
+	/** The pointer over the canvas, in screen coordinates; null when it is elsewhere. */
+	pointer: { x: number; y: number } | null = null;
 	/** The animation frame of the glide under way, or 0. */
 	#gliding = 0;
 
@@ -40,6 +42,13 @@ class Camera {
 
 	toScreen(wx: number, wy: number) {
 		return { x: (wx - this.x) * this.zoom, y: (wy - this.y) * this.zoom };
+	}
+
+	/** Where something made from the keyboard lands: the world point under the pointer, or the
+	 * middle of the canvas when the pointer is elsewhere. */
+	pointed() {
+		const p = this.pointer ?? { x: this.width / 2, y: this.height / 2 };
+		return this.toWorld(p.x, p.y);
 	}
 
 	panBy(dx: number, dy: number) {

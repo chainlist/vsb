@@ -19,8 +19,6 @@ export const BUILDER_KEYS = {
 class BatchDialog {
 	/** World point the cards land on, while the dialog is open; null while it is closed. */
 	at = $state<Point | null>(null);
-	/** The pointer over the canvas, in screen coordinates; null when it is elsewhere. */
-	pointer: Point | null = null;
 	/** Opened on cards of the canvas: them, their edges and the text; null for new cards only. */
 	edit = $state<Edit | null>(null);
 	/** Which way the edges run in a batch's layout: kept for the batches after one, and for
@@ -30,8 +28,7 @@ class BatchDialog {
 	/** Opens on the selected zone's cards, at any depth, or on the selected cards; on new cards only
 	 * when neither is selected. */
 	async open() {
-		const p = this.pointer ?? { x: camera.width / 2, y: camera.height / 2 };
-		const at = camera.toWorld(p.x, p.y);
+		const at = camera.pointed();
 		const [zone] = selection.zones;
 		if (zone && selection.ids.length === 1) {
 			this.edit = opening(await batchScope(zone.id, []), { x: zone.x + zone.w / 2, y: zone.y + zone.h / 2 });
