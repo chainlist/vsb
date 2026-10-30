@@ -723,12 +723,14 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 ## Presentation site
 
-The Pages site's front: what the app is, with screenshots, and where to get it. Static HTML in `site/`, built by Vite with `vite.site.config.ts` to `build/pages`, at `/vsb`; `pnpm build:pages` builds it, then the web build into `build/pages/web`. `pnpm dev:site` serves it on port 5176.
+The Pages site's front: what the app is, with screenshots, and where to get it. A SvelteKit app of its own in `site/`, prerendered with `@sveltejs/adapter-static` to `build/pages`, at `/vsb`; `pnpm build:pages` builds it, then the web build into `build/pages/web`. `pnpm dev:site` serves it on port 5176, and `pnpm check` checks it after the app.
 
-- **Two pages:** the home page (`site/index.html`) and the download page (`site/download/`). They share their header and footer through an include the config resolves, and write the app's name as `%name%`, which the config takes from `productName` in `tauri.conf.json`: renaming the app renames the site.
-- **It wears Studio:** the dotted paper, white cards, graphite ink and petrol accent, in Instrument Sans, bundled as the app bundles it. Each part of the home page is drawn as a zone in one of the highlighters, its name on the frame, the parts joined by edges.
+- **Its own package** in the pnpm workspace, with its own `vite.config.ts`, `tsconfig.json` and `#lib`. SvelteKit writes an app's route types into its package's `node_modules/$app`: in the app's package, the site's routes would replace the app's every time it builds or runs.
+- **Two pages,** prerendered, each in a folder of its own (`trailingSlash: 'always'`): the home page and `download/`. The layout holds the header and footer. Links to the web app are `rel="external"`: another site, which the browser loads, not the site's router.
+- **It follows the app** through `site/src/lib/app.ts`: its name from `productName` in `tauri.conf.json` (renaming the app renames the site), the highlighters from the app's color list, the theme names from its theme list.
+- **It wears Studio:** the layout imports the app's `studio.css`, so the site has the theme's tokens and its Instrument Sans: the dotted paper, white cards, graphite ink and petrol accent. Each part of the home page is a `Zone`, drawn with the app's own formulas: a highlighter's wash over the paper, the frame in the color inked, the name on it; the parts are joined by edges.
 - **The download page asks GitHub for the latest release** and lists its installers under Windows, macOS and Linux by their file names, with a button for the visitor's own system first. Signatures and updater files are left out. With no release it says so; when GitHub does not answer it links to the releases page. The browser version and building from source are offered either way.
-- **The screenshots** are of the web build, in `site/shots`, taken by `site/shoot.mjs`: with `pnpm dev:web` running and Chrome started on a debug port, it builds a demo vault through `#lib/api` (a thesis, with a reading list, a lab notebook, teaching and meetings around it) and shoots the canvas, the builder, the pen, the panels, the zoomed-out map and each theme. Run it again when the app's look changes.
+- **The screenshots** are of the web build, in `site/src/lib/shots`, taken by `site/shoot.mjs`: with `pnpm dev:web` running and Chrome started on a debug port, it builds a demo vault through `#lib/api` (a thesis, with a reading list, a lab notebook, teaching and meetings around it) and shoots the canvas, the builder, the pen, the panels, the zoomed-out map and each theme. Run it again when the app's look changes.
 
 ## V3: shared note references
 
