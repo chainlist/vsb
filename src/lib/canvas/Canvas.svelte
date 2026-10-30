@@ -2,6 +2,7 @@
 	import { createCard, type Rect } from '#lib/api.js';
 	import { bindKeys, isMod } from '#lib/keys.js';
 	import { batchDialog } from './batchDialog.svelte.js';
+	import { selecting, startBox } from './boxSelect.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { listenForPaste } from './clipboard.js';
 	import { draft, startDraw } from './draw.svelte.js';
@@ -79,16 +80,18 @@
 		return pointIn(el, e);
 	}
 
-	// Dragging the paper pans, Mod+dragging draws an edge from a card or a zone on the paper; a plain
-	// click on the paper clears the selection. The middle button pans wherever it is pressed: cards,
-	// zones and edges leave it to the canvas, and it never selects anything.
+	// Dragging the paper pans, Mod+dragging draws an edge from a card or a zone on the paper, and
+	// Shift+dragging draws a box selecting what lies inside it; a plain click on the paper clears the
+	// selection. The middle button pans wherever it is pressed: cards, zones and edges leave it to the
+	// canvas, and it never selects anything.
 	function down(e: PointerEvent) {
 		views = [views[1], camera.transform];
 		const middle = e.button === 1;
 		if (e.button !== 0 && !middle) return;
-		if (isMod(e) && !middle) {
+		if ((isMod(e) || e.shiftKey) && !middle) {
 			const p = local(e);
-			return startDraw(e, camera.toWorld(p.x, p.y));
+			const at = camera.toWorld(p.x, p.y);
+			return isMod(e) ? startDraw(e, at) : startBox(e, at);
 		}
 		let last = { dx: 0, dy: 0 };
 		track(e, {
@@ -205,6 +208,15 @@
 				style:height="{draft.box.h}px"
 			></div>
 		{/if}
+		{#if selecting.box}
+			<div
+				class="box"
+				style:left="{selecting.box.x}px"
+				style:top="{selecting.box.y}px"
+				style:width="{selecting.box.w}px"
+				style:height="{selecting.box.h}px"
+			></div>
+		{/if}
 		<ResizeHandles {hovered} />
 	</div>
 	{#if ink.on}
@@ -281,5 +293,14 @@
 		border: 1.5px dashed var(--pen);
 		border-radius: var(--radius-zone);
 		background: color-mix(in srgb, var(--pen) 6%, transparent);
+	}
+
+	/* A box selecting what lies inside it: a hairline on screen at any zoom, over a faint wash. */
+	.box {
+		position: absolute;
+		box-sizing: border-box;
+		border: calc(1px * var(--scale)) solid var(--pen);
+		background: color-mix(in srgb, var(--pen) 8%, transparent);
+		pointer-events: none;
 	}
 </style>

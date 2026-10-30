@@ -2,6 +2,7 @@
 import type { Binding, KeyHelp } from '#lib/keys.js';
 import { deleteSelected, editSelected, fitAll, stopEditing } from './actions.js';
 import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
+import { selectAll } from './boxSelect.svelte.js';
 import { armPaste, copyable, copySelected, duplicateSelected } from './clipboard.js';
 import { history } from './history.js';
 import { DRAWING_KEYS, ink } from './pen.svelte.js';
@@ -11,6 +12,7 @@ import { addChildTo } from './tab.svelte.js';
 /** The canvas's keys, as Settings list them. */
 export const CANVAS_KEYS = {
 	clear: { keys: ['Escape'], label: 'Clear the selection' },
+	all: { keys: ['Mod+a'], label: 'Select everything on screen' },
 	edit: { keys: ['Enter'], label: "Edit the selected card, edge's label or zone's name" },
 	remove: { keys: ['Delete', 'Backspace'], label: 'Delete the selection' },
 	child: { keys: ['Tab'], label: 'Add a linked card after the selected card' },
@@ -37,6 +39,7 @@ export const shortcuts: Binding[] = [
 	{ ...EDITING_KEYS.stop, inText: true, when: () => selection.editing !== null, run: stopEditing },
 	{ ...DRAWING_KEYS.off, when: () => ink.on, run: () => (ink.on = false) },
 	{ ...CANVAS_KEYS.clear, when: selected, run: () => selection.clear() },
+	{ ...CANVAS_KEYS.all, run: selectAll },
 	{ ...CANVAS_KEYS.edit, when: () => selection.ids.length === 1, run: editSelected },
 	{ ...CANVAS_KEYS.remove, when: selected, run: deleteSelected },
 	{ ...EDITING_KEYS.child, inText: true, when: () => !!edited(), run: () => addChildTo(edited()!) },

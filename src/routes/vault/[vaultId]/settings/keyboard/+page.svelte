@@ -36,6 +36,7 @@
 				{ keys: ['Ctrl+wheel', 'pinch'], label: 'Zoom around the pointer' },
 				{ keys: ['double-click'], label: "Place a card on the paper, or edit a card, an edge's label or a zone's name" },
 				{ keys: ['Shift+click'], label: 'Add to the selection, or take out of it' },
+				{ keys: ['Shift+drag'], label: 'On the paper, draw a box: what lies fully inside it joins the selection' },
 				{ keys: ['Mod+drag'], label: 'Draw an edge from a card, or a zone on the paper' },
 				{ keys: ['Alt'], label: 'While dragging, move or resize freely, off the grid' }
 			]

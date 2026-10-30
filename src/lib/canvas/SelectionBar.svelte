@@ -8,6 +8,7 @@
 	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, strokeSelected, zoneSelected } from './actions.js';
 	import { arrangeSelected } from './arrange.js';
 	import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
+	import { selecting } from './boxSelect.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { COLORS, shared } from './colors.js';
 	import { items } from './items.svelte.js';
@@ -57,8 +58,9 @@
 	<span class="swatch" class:none={value === null} style:--swatch={value ?? 'var(--card)'}></span>
 {/snippet}
 
-<!-- Not while the card is edited, or while Tab's picker asks where its new card goes. -->
-{#if at && !selection.editing && !picker.card}
+<!-- Not while the card is edited, while Tab's picker asks where its new card goes, or while a box
+     is selecting. -->
+{#if at && !selection.editing && !picker.card && !selecting.box}
 	<!-- The anchor holds the bar's place on screen; the bar inside it is drawn at the interface size. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
