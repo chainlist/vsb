@@ -649,18 +649,19 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
   - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, drawing, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Shift+drag, Mod+drag and Alt while dragging.
   - **Vault:** the vault's name and where it lives, in its backend's words. On the desktop, its folder's path and Show in folder, which opens the folder around it in Explorer or Finder with the vault selected (the opener plugin's Rust function, called by a command of the app's own; the plugin is not registered, so its commands stay out of the page's reach). In the browser, that it is kept in this browser and whether the browser agreed to keep it (see [Persistence](#persistence)).
-- **Four themes:** Studio, the default, Engineering pad, and two dark ones, Orbit and Cairn.
+- **Five themes:** Studio, the default, Engineering pad, and three dark ones, Orbit, Cairn and Outer Wilds.
   - Studio: a cool gray canvas dotted at the grid crossings, white cards with a hairline edge, graphite text and a petrol accent. Instrument Sans for notes and controls; zone names are set narrower.
   - Engineering pad: sage graph paper, index cards with a red rule under the title, fountain-pen blue. Literata for notes, IBM Plex Sans for controls.
   - Orbit (futuristic): a deep navy canvas with faint major lines and brighter nodes where they cross, cards edged in light, an ice-blue accent. Saira for notes and controls; zone names are set narrower.
   - Cairn (eerie, Celtic): a peat-moss canvas with a faint speckle, slate cards with a dim gold rule under the title, fog-pale text and a bog-gold accent. Alegreya for notes, Alegreya Sans for controls.
+  - Outer Wilds (the game's ship log): a deep-space indigo canvas with stars at the grid crossings, indigo cards with a Nomai-blue rule under the title, warm cream text and a campfire-orange accent. Fraunces for notes, Space Grotesk for controls.
 - **A theme is a set of design tokens:** CSS custom properties, picked by the `data-theme` attribute on the root element. A new theme, or a dark variant, is a new set of values with no component changes.
   - The tokens also set whether the theme is light or dark (for scrollbars and form controls), the wash behind a dialog, how strongly zones and cards are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
   - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **The paper belongs to the vault too:** how its canvas is marked, picked in Appearance under the themes from a sample of each in the vault's theme, applied at once and written to `vault.json` (`paper`).
   - **Dots** at the grid's crossings, **Grid** (ruled lines), **Crosses** (a small cross at each crossing) or **Empty** (the paper alone). Major marks, every fifth square, are stronger than minor ones, which fade out as the squares shrink, as the grid steps up while zooming out. A cross's arms shorten on small squares, so crosses never meet.
-  - Until one is picked, each theme brings its own: Studio and Cairn dots, Engineering pad and Orbit a grid (Orbit's with nodes where its major lines cross). Once picked, it stays the vault's whatever the theme, and the themes' previews show it.
+  - Until one is picked, each theme brings its own: Studio, Cairn and Outer Wilds dots, Engineering pad and Orbit a grid (Orbit's with nodes where its major lines cross, as Outer Wilds' grid has). Once picked, it stays the vault's whatever the theme, and the themes' previews show it.
   - A theme gives each mark its colors; crosses take the dots'.
 - **Screens outside a vault** (the vault picker, errors) use the default theme and its paper.
 - **The interface size belongs to the device:** 100% (the default), 115% or 130%, picked in Appearance, applied at once and kept in the app-data folder's `device.json`, the same in every vault and never synced. The default is left out of the file.
@@ -668,7 +669,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - It never scales the canvas's cards, zones and edges, nor the marks drawn at a constant size on screen over them: zone names once collapsed, zone and cluster markers, bundles and resize handles. They belong to the map, and the zoomed-out map is built on their sizes.
   - It works through CSS `zoom` on each piece of chrome, never through the WebView's own zoom, which would scale the canvas too and fight the pinch. `zoom` scales viewport units along with everything else, so chrome sizes itself against the window with percentages instead.
 - Zone and card colors live in their files, so they are the same in every theme. The default zone gray, for a zone with no color, and the plain card stock, for a card with none, come from the theme.
-- Later: a dark mode (Orbit and Cairn are dark themes of their own, not that feature).
+- Later: a dark mode (Orbit, Cairn and Outer Wilds are dark themes of their own, not that feature).
 
 ## Sync
 
