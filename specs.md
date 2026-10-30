@@ -98,7 +98,7 @@ src/routes/
 - **`#lib/platform`:** the two backends behind it. `tauri.ts` calls the desktop's commands. `browser/` is the browser's backend, in small modules, one concern each (the vault list, notes, card, zone, edge and drawing edits, the batch builder, the viewport query, the lists beside the canvas, the index it keeps). Browser-only UI, such as naming a vault, is mounted by the browser backend itself, and words that differ by platform, such as the vault picker's and where Settings > Vault says the vault lives, come from the backend too, so no page knows which platform it runs on.
 - **Shared state** lives in `.svelte.ts` modules using runes, not passed down through many component levels.
 - **One system per cross-cutting behavior**, never a copy per component or route:
-  - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open. Each part keeps its keys, with what each does, in a table its bindings take them from; Settings > Keyboard lists those tables, so the list is what is bound. A digit is read from the key's place, not what it types, so Mod+1 is the same key on AZERTY, where that key types & unshifted.
+  - keyboard shortcuts: one declarative key layer. A screen over the canvas adds a modal layer, which turns the canvas's keys off while it is open. Each part keeps its keys, with what each does, in a table its bindings take them from; Settings > Keyboard lists those tables, so the list is what is bound. A digit is read from the key's place, not what it types, so Mod+1 is the same key on AZERTY, where that key types & unshifted. A binding can leave its key to the browser too, whose own command follows: Mod+V's paste event.
   - selection and focus
   - world-to-screen conversion: one module owns the pan and zoom transform
   - undo
@@ -362,6 +362,18 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **Deleting:** Delete, or the selection bar's, takes the selected drawings with the selected cards, zones and edges, as one undo step.
 - **Drawn above cards and edges,** below the chrome; zone names and cluster markers stay above them, so a zone's handle and a marker's count are never covered. Presses go through a drawing except on its ink, and a few pixels around it. Drawings never dim when cards are selected, as zones do not. Each drawing is drawn in its own error boundary, as each card is.
 - **Zoomed out,** a loose drawing is drawn as itself at any zoom, skipped when smaller than a few pixels on screen like everything else, and never counted in a cluster. Below 40%, a drawing inside a collapsed zone is not drawn as itself: the zone's [preview](#previews) draws its strokes. Fit (Mod+1, opening a vault) frames drawings too.
+
+## Copying and pasting
+
+- **Copy (Mod+C)** puts the selected cards, zones and drawings on the system clipboard, with everything inside the selected zones at any depth, and the edges whose two cards are both copied. A selected edge comes only with its cards: edges alone copy nothing, and neither does an empty selection, which leaves the clipboard as it was.
+- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's text rather than its note. A clip names nothing in the vault it came from, so it pastes into any vault, in either build.
+- **Paste (Mod+V)** lands centered under the pointer, or on the middle of the canvas when the pointer is elsewhere, as the builder's cards do; with snapping on, the corner of what it pastes lands on the grid.
+  - **Copied items paste as new ones:** each with a new ID, each card with text a new note holding it, named after its title (`Idea 2.md` beside `Idea.md`). Until V3 a note has one card, so a pasted card never shows the note it was copied from. A card whose note was missing pastes as an empty card.
+  - **Text copied from another app** becomes one card holding it, as a card placed by double-click: the same size and alignment.
+  - **Where it lands:** what was copied on its own joins the innermost zone under the middle of what is pasted, as a batch's cards do, and that zone grows to hold it. Never one of the zones the clip copies, so a copy never lands inside its original. What was inside a copied zone stays inside its copy, where it was.
+  - **Then** the pasted items are selected, and framed as a batch's cards are when zoomed out, where they would be hidden, or when they land partly off-screen. The paste is one undo step; undoing it keeps the new notes, unplaced, as undoing a batch does.
+  - **Only the browser's paste event reads the clipboard without asking,** so Mod+V on the canvas notes where to land and lets the key through, and the paste event that follows pastes. Typing in a card, a field or the builder, Mod+V pastes the text there, as usual.
+- **Duplicate (Mod+D)** copies the selection as Mod+C does, without the clipboard, and pastes it two graph-paper squares right and down of where it is, in one undo step. The copies are selected, so Mod+D again steps on.
 
 ## Canvas chrome
 
