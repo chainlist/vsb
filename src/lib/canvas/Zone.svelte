@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Frame, ZoneView } from '#lib/api.js';
+	import { motion } from '#lib/motion.js';
 	import { edit, rename } from './actions.js';
 	import { camera } from './camera.svelte.js';
 	import { startMove } from './gestures.js';
@@ -17,6 +18,22 @@
 	/** Collapsed and drawn as a frame, what the zone holds, faded inside it. */
 	const preview = $derived(items.collapsed && !marker ? items.previewOf(zone.id) : undefined);
 	let width = $state(0);
+	let node: HTMLDivElement;
+
+	// As the zones collapse or open, the name glides between the corner and the middle, growing or
+	// shrinking to its size, while the cards fade. Only meanwhile: collapsed, its size follows the
+	// zoom, which a transition would lag behind.
+	let gliding = $state(false);
+	let collapsed = items.collapsed;
+	$effect.pre(() => {
+		if (items.collapsed === collapsed) return;
+		collapsed = items.collapsed;
+		const duration = motion(parseFloat(getComputedStyle(node).getPropertyValue('--fade')));
+		if (!duration) return;
+		gliding = true;
+		const timer = setTimeout(() => (gliding = false), duration);
+		return () => clearTimeout(timer);
+	});
 
 	/** Boxes as one SVG path: thousands of cards are a few paths, not thousands of elements. */
 	const outline = (boxes: Frame[]) => boxes.map((b) => `M${b.x} ${b.y}h${b.w}v${b.h}h${-b.w}z`).join('');
@@ -48,9 +65,11 @@
      As a marker, the rim around the name is the body. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+	bind:this={node}
 	class="zone"
 	class:selected
 	class:collapsed={items.collapsed}
+	class:gliding
 	class:marker
 	style:left="{zone.x}px"
 	style:top="{zone.y}px"
@@ -159,6 +178,12 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		transform: translate(-50%, -50%);
+	}
+
+	.gliding .title {
+		transition-property: left, top, transform, font-size;
+		transition-duration: var(--fade);
+		transition-timing-function: ease-out;
 	}
 
 	/* Smaller on screen than a marker, the zone is drawn as one instead of its frame: its name on its
