@@ -109,7 +109,7 @@ src/routes/
 - **shadcn-svelte components** live in `#lib/components/ui`, copied from its registry. `app.css` maps their colors, radii and shadows onto the theme's tokens, so they follow the vault's theme. Tailwind comes without its preflight reset, which the rest of the app is not styled for, and without `dark:` variants: a theme, not the OS, decides whether it is dark.
 - **Icons are Lucide icons**, drawn in the color of their text, at a size set once in the root layout. An icon Lucide lacks (the angled edge shape) is drawn through Lucide's own `Icon` component, so it matches.
   - A universal symbol in a tight bar stands alone, with a tooltip and a screen-reader label: close (cross), delete (trash).
-  - The [rail](#canvas-chrome) and the zoom controls show their icons alone too: a tooltip gives each one's name and shortcut, and a label names it for screen readers.
+  - The [rail](#canvas-chrome), the zoom controls, the pen bar and the selection bar show their icons alone too: a tooltip gives each one's name and shortcut, and a label names it for screen readers.
   - Everywhere else the icon sits beside its text.
 - **The interface size scales the chrome through one mechanism:** CSS `zoom` on each piece of chrome (the `.chrome` class), never a multiplier per component, never the WebView's own zoom. See [Appearance](#appearance).
 
@@ -264,6 +264,7 @@ Competitor scan
 - Moving or resizing a zone never changes what is inside it. Moving a zone over loose cards does not capture them.
 - A zone cannot be resized smaller than the area its contents cover, drawings included. Resizing from the left or top keeps the contents in place, so its direct children's coordinates are rewritten.
 - Ctrl+drag (Cmd on macOS) on the paper draws a zone. A zone's name is its handle: click selects, drag moves, double-click renames. Its body behaves like the paper: dragging pans, double-clicking places a card inside.
+- **A zone around the selection:** with two or more cards, zones or drawings selected, the selection bar's Zone around them draws a zone 20 world units clear of them on the sides and at the bottom, and 60 at the top, where its name goes. It is created as a drawn zone is, in one undo step: whatever else lies fully inside it joins too, and its name opens for editing.
 - **Resizing:** dragging a side or corner of a card or zone resizes it, selected or not. The card or zone under the pointer, and the single selected one, show a square on each corner; the sides are 10 screen pixels wide, half inside the item. A click on a side or corner selects the item, and a double-click on a card's side edits it.
 - **Snap to grid**, on by default: a card or zone being moved lands with its top-left corner on a crossing of the minor grid (20 world units). With several items selected, the one pressed snaps and the others keep their places around it. Resizing, the sides pulled land on grid lines; the minimum size and a zone's contents still win over the grid. Holding Alt (Option on macOS) while dragging moves or resizes freely. A drag that snaps back to where it started writes nothing. Turned off in Settings > Canvas, which writes `snap: false` to `vault.json`.
 
@@ -372,7 +373,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
   - Fit frames everything on the canvas, as opening the vault does, gliding there; Mod+1 does the same. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
-- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards, zones and drawings, the edges' style, Arrange, Builder and Delete.
+- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid), the color of the cards, zones and drawings, the edges' style, Arrange, Builder, [Zone around them](#zones-and-membership) and Delete. Its buttons, selects and alignment grid show no words: each has a tooltip, as the rail's buttons do.
   - The color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
   - One color select serves the selected cards, zones and drawings together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray, every stroke of a drawing to the theme's ink.
   - A menu keeps its keys: Escape, Enter or Delete pressed in it never reach the canvas. Choosing leaves the selection and the view as they are, and the focus goes back to the canvas.
@@ -435,7 +436,7 @@ This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
 
 ### Editing edges with the builder
 
-- **Opening it on cards of the canvas.** With a zone selected alone, or one card or more, Mod+B, the rail's Builder button or the selection bar's (icon beside text) opens the builder on them, titled "Edit edges, add cards", with Apply in place of Create. With nothing selected it makes new cards, as above.
+- **Opening it on cards of the canvas.** With a zone selected alone, or one card or more, Mod+B, the rail's Builder button or the selection bar's opens the builder on them, titled "Edit edges, add cards", with Apply in place of Create. With nothing selected it makes new cards, as above.
   - A zone brings every card inside it, its inner zones' included.
   - Selected cards bring every card an edge joins to one of them, with the edges between all those cards.
   - Cards with no title (empty, unresolved, or a note whose first line is blank) cannot be written, so they are left out, and so are their edges.
@@ -456,7 +457,7 @@ This creates 5 cards and 3 edges: one solid, one dashed, one dotted.
 
 ### Arranging cards
 
-- With two cards or more selected, the selection bar's Arrange button (icon beside text) lays them out as the builder lays out a batch: with dagre, along the edges between them, in the direction last picked in the builder (left to right until then).
+- With two cards or more selected, the selection bar's Arrange button lays them out as the builder lays out a batch: with dagre, along the edges between them, in the direction last picked in the builder (left to right until then).
 - With a zone selected alone, Arrange lays out what is directly in it: its own cards and its inner zones together. An inner zone moves as one block with everything in it, and an edge to a card inside it, at any depth, counts as an edge to it.
 - Each card and inner zone keeps its size. The group stays centered where it was, each one landing on the grid when snapping is on.
 - Each stays in its zone, which grows where needed to hold them, its contents staying in place, as for a batch. Cards not selected are not moved out of the way.
