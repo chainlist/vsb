@@ -21,6 +21,10 @@ export default defineConfig({
 			appDir: 'app'
 		})
 	],
+	// Its own prebundled dependencies: its conditions differ from the desktop's, so sharing
+	// node_modules/.vite would replace the desktop dev server's while it runs, and the files it has not
+	// served yet would fail with "Outdated Optimize Dep".
+	cacheDir: 'node_modules/.vite-web',
 	resolve: { conditions: ['web', ...defaultClientConditions] },
 	environments: { ssr: { resolve: { conditions: ['web', ...defaultServerConditions] } } }
 });
