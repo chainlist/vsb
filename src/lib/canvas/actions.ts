@@ -6,6 +6,7 @@ import {
 	canvasContents,
 	clearCard,
 	colorItems,
+	createZone,
 	deleteCards,
 	deleteDrawings,
 	deleteEdges,
@@ -63,6 +64,28 @@ export function deleteSelected() {
 		...(await deleteDrawings(drawings)),
 		...(await deleteZones(zones))
 	]);
+}
+
+/** Room a zone drawn around the selection leaves around it, in world units: a graph-paper square on
+ * the sides and at the bottom, three at the top, where the zone's name is. */
+const MARGIN = 20;
+const NAME_ROOM = 60;
+
+/** Draws a zone around the selected cards, zones and drawings, which join it as they would a zone
+ * drawn there by hand, with whatever else lies fully inside it. Like a drawn zone, it opens for
+ * editing: its name. */
+export function zoneSelected() {
+	const boxes = [...selection.cards, ...selection.zones, ...selection.drawings];
+	const x = Math.round(Math.min(...boxes.map((b) => b.x)) - MARGIN);
+	const y = Math.round(Math.min(...boxes.map((b) => b.y)) - NAME_ROOM);
+	const w = Math.round(Math.max(...boxes.map((b) => b.x + b.w)) + MARGIN) - x;
+	const h = Math.round(Math.max(...boxes.map((b) => b.y + b.h)) + MARGIN) - y;
+	return history.edit(async () => {
+		const { id, undo } = await createZone(x, y, w, h);
+		selection.only(id);
+		selection.editing = id;
+		return undo;
+	});
 }
 
 export function alignSelected(halign: HAlign, valign: VAlign) {

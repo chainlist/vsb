@@ -2,6 +2,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import type { Snippet } from 'svelte';
+	import Tip from '#lib/chrome/Tip.svelte';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 
 	// One style of the selection in the selection bar (or of new edges, in Settings), as a small
@@ -29,18 +30,22 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger>
-		{#snippet child({ props })}
-			<button {...props} class="trigger" {title} aria-label={title}>
-				{#if chosen}
-					{@render look(chosen[2])}
-				{:else}
-					<span class="mixed">Mixed</span>
-				{/if}
-				<ChevronDown size={12} />
-			</button>
+	<Tip label={title} side="top">
+		{#snippet children(tip)}
+			<DropdownMenu.Trigger {...tip}>
+				{#snippet child({ props })}
+					<button {...props} class="trigger">
+						{#if chosen}
+							{@render look(chosen[2])}
+						{:else}
+							<span class="mixed">Mixed</span>
+						{/if}
+						<ChevronDown size={12} />
+					</button>
+				{/snippet}
+			</DropdownMenu.Trigger>
 		{/snippet}
-	</DropdownMenu.Trigger>
+	</Tip>
 	<!-- Closing it leaves the focus off the trigger, so the canvas's keys work again at once. -->
 	<DropdownMenu.Content align="start" sideOffset={6} class="chrome" onCloseAutoFocus={(e) => e.preventDefault()}>
 		{#each options as [value, name, glyph] (name)}

@@ -1,16 +1,19 @@
 <script lang="ts">
+	import Group from '@lucide/svelte/icons/group';
 	import Network from '@lucide/svelte/icons/network';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Workflow from '@lucide/svelte/icons/workflow';
-	import { MOD_NAME } from '#lib/keys.js';
-	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, strokeSelected } from './actions.js';
+	import Tip from '#lib/chrome/Tip.svelte';
+	import { keyName } from '#lib/keys.js';
+	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, strokeSelected, zoneSelected } from './actions.js';
 	import { arrangeSelected } from './arrange.js';
-	import { batchDialog } from './batchDialog.svelte.js';
+	import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { COLORS, shared } from './colors.js';
 	import { items } from './items.svelte.js';
 	import { LABEL_HALF } from './route.js';
 	import { selection } from './selection.svelte.js';
+	import { CANVAS_KEYS } from './shortcuts.js';
 	import { picker } from './tab.svelte.js';
 	import AlignGrid from './AlignGrid.svelte';
 	import EdgeStyle from './EdgeStyle.svelte';
@@ -76,16 +79,31 @@
 			{/if}
 			<!-- Arranging and the builder work on the selected cards, or on a lone selected zone's contents. -->
 			{#if cards.length > 1 || zone}
-				<button class="tool icon-label" title="Arrange along their edges, in the builder's direction" onclick={arrangeSelected}>
-					<Network /> Arrange
-				</button>
+				<Tip label="Arrange: along their edges, in the builder's direction" side="top">
+					{#snippet children(props)}
+						<button {...props} class="tool" onclick={arrangeSelected}><Network /></button>
+					{/snippet}
+				</Tip>
 			{/if}
 			{#if cards.length || zone}
-				<button class="tool icon-label" title="Edit edges, add cards ({MOD_NAME}+B)" onclick={() => batchDialog.open()}>
-					<Workflow /> Builder
-				</button>
+				<Tip label="Builder: edit edges, add cards" keys={keyName(BUILDER_KEYS.open.keys[0])} side="top">
+					{#snippet children(props)}
+						<button {...props} class="tool" onclick={() => batchDialog.open()}><Workflow /></button>
+					{/snippet}
+				</Tip>
 			{/if}
-			<button class="delete" aria-label="Delete" title="Delete" onclick={deleteSelected}><Trash2 /></button>
+			{#if cards.length + zones.length + drawings.length > 1}
+				<Tip label="Zone around them" side="top">
+					{#snippet children(props)}
+						<button {...props} class="tool" onclick={zoneSelected}><Group /></button>
+					{/snippet}
+				</Tip>
+			{/if}
+			<Tip label="Delete" keys={keyName(CANVAS_KEYS.remove.keys[0])} side="top">
+				{#snippet children(props)}
+					<button {...props} class="tool delete" onclick={deleteSelected}><Trash2 /></button>
+				{/snippet}
+			</Tip>
 		</div>
 	</div>
 {/if}
@@ -112,32 +130,27 @@
 		transform: translate(-50%, -100%);
 	}
 
-	.delete {
+	.tool {
 		display: flex;
 		padding: 4px;
 		border: none;
 		border-radius: var(--radius-control);
 		background: none;
-		color: var(--danger);
-		cursor: pointer;
-	}
-
-	.delete:hover {
-		background: var(--danger-paper);
-	}
-
-	.tool {
-		padding: 3px 8px;
-		border: none;
-		border-radius: var(--radius-control);
-		background: none;
 		color: var(--ink-soft);
-		font: 500 13px var(--font-ui);
 		cursor: pointer;
 	}
 
 	.tool:hover {
 		background: var(--paper);
 		color: var(--ink);
+	}
+
+	.delete {
+		color: var(--danger);
+	}
+
+	.delete:hover {
+		background: var(--danger-paper);
+		color: var(--danger);
 	}
 </style>
