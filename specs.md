@@ -682,7 +682,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 ## Browser
 
-The web build runs the same app in a browser, without Tauri: the [platform layer](#responsibilities) talks to the browser backend, TypeScript on IndexedDB, with no WebAssembly. It is a static site for GitHub Pages, under `/vsb`.
+The web build runs the same app in a browser, without Tauri: the [platform layer](#responsibilities) talks to the browser backend, TypeScript on IndexedDB, with no WebAssembly. It is a static site for GitHub Pages, under `/vsb/web`, beside the [presentation site](#presentation-site).
 
 ### Storage
 
@@ -717,9 +717,18 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 ### The web build
 
-- `pnpm build:web` writes the static site to `build/web`, for `/vsb`. Every route is served by the app's one page, also copied to `404.html`, which GitHub Pages serves for any path it does not know, so a link to a vault opens it. The app's folder is `app`, not `_app`, which Jekyll would leave out. `pnpm dev:web` serves it on port 5175.
+- `pnpm build:web` writes the static site to `build/pages/web`, for `/vsb/web`. Every route is served by the app's one page, also written as the Pages site's `404.html`, which GitHub Pages serves for any path it does not know, so a link to a vault opens it. A path outside `/vsb/web/` goes to the presentation site's home before the app starts: the app would send the browser there itself, and get `404.html` again, forever. The app's folder is `app`, not `_app`, which Jekyll would leave out. `pnpm dev:web` serves it on port 5175.
 - Its configuration is `vite.web.config.ts`: the desktop's `vite.config.ts` does not change.
-- `.github/workflows/pages.yml` publishes it: on every push to `main`, or when run by hand, it installs from the lockfile, runs `pnpm build:web` and deploys `build/web` to GitHub Pages. The repository's Pages source is GitHub Actions.
+- `.github/workflows/pages.yml` publishes it with the presentation site: on every push to `main`, or when run by hand, it installs from the lockfile, runs `pnpm build:pages` and deploys `build/pages` to GitHub Pages. The repository's Pages source is GitHub Actions.
+
+## Presentation site
+
+The Pages site's front: what the app is, with screenshots, and where to get it. Static HTML in `site/`, built by Vite with `vite.site.config.ts` to `build/pages`, at `/vsb`; `pnpm build:pages` builds it, then the web build into `build/pages/web`. `pnpm dev:site` serves it on port 5176.
+
+- **Two pages:** the home page (`site/index.html`) and the download page (`site/download/`). They share their header and footer through an include the config resolves, and write the app's name as `%name%`, which the config takes from `productName` in `tauri.conf.json`: renaming the app renames the site.
+- **It wears Studio:** the dotted paper, white cards, graphite ink and petrol accent, in Instrument Sans, bundled as the app bundles it. Each part of the home page is drawn as a zone in one of the highlighters, its name on the frame, the parts joined by edges.
+- **The download page asks GitHub for the latest release** and lists its installers under Windows, macOS and Linux by their file names, with a button for the visitor's own system first. Signatures and updater files are left out. With no release it says so; when GitHub does not answer it links to the releases page. The browser version and building from source are offered either way.
+- **The screenshots** are of the web build, in `site/shots`, taken by `site/shoot.mjs`: with `pnpm dev:web` running and Chrome started on a debug port, it builds a demo vault through `#lib/api` (a thesis, with a reading list, a lab notebook, teaching and meetings around it) and shoots the canvas, the builder, the pen, the panels, the zoomed-out map and each theme. Run it again when the app's look changes.
 
 ## V3: shared note references
 
