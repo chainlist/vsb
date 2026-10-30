@@ -72,7 +72,8 @@ const cardView = ({ id, file, ax, ay, title, excerpt, resolved }: CardRecord): C
 	color: file.color ?? null,
 	title,
 	excerpt,
-	resolved
+	resolved,
+	file: file.file ?? null
 });
 
 const drawingView = ({ id, file, ax, ay }: DrawingRecord): DrawingView => ({ id, zone: file.zone, x: ax, y: ay, w: file.w, h: file.h, strokes: file.strokes });

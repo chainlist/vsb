@@ -15,7 +15,7 @@ export const CANVAS_KEYS = {
 	remove: { keys: ['Delete', 'Backspace'], label: 'Delete the selection' },
 	child: { keys: ['Tab'], label: 'Add a linked card after the selected card' },
 	copy: { keys: ['Mod+c'], label: 'Copy the selection, with what its zones hold' },
-	paste: { keys: ['Mod+v'], label: 'Paste under the pointer: copied items, or text as a card' },
+	paste: { keys: ['Mod+v'], label: 'Paste under the pointer: copied items, text as a card, or an image' },
 	duplicate: { keys: ['Mod+d'], label: 'Duplicate the selection' },
 	undo: { keys: ['Mod+z'], label: 'Undo' },
 	redo: { keys: ['Mod+Shift+z', 'Mod+y'], label: 'Redo' },

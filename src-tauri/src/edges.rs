@@ -106,6 +106,6 @@ fn new_edge(from: &str, to: &str, style: EdgeStyle) -> Edge {
 /// An empty card on the world rectangle `at` in `zone`, and where it is placed.
 fn empty_card(id: &str, zone: Option<String>, at: Rect) -> (Move, Card) {
   let (x, y, w, h) = (at.min_x, at.min_y, at.max_x - at.min_x, at.max_y - at.min_y);
-  let card = Card { note: None, zone, x, y, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None };
+  let card = Card { note: None, zone, x, y, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None, file: None };
   (Move { id: id.to_string(), x, y }, card)
 }

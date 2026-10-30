@@ -4283,6 +4283,7 @@ name = "visual-second-brain"
 version = "0.1.0"
 dependencies = [
  "log",
+ "percent-encoding",
  "rusqlite",
  "serde",
  "serde_json",

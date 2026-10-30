@@ -1,9 +1,11 @@
 <script lang="ts">
 	import Eraser from '@lucide/svelte/icons/eraser';
 	import FileQuestionMark from '@lucide/svelte/icons/file-question-mark';
+	import ImageOff from '@lucide/svelte/icons/image-off';
 	import type { CardView } from '#lib/api.js';
 	import { renderMarkdown } from '#lib/markdown.js';
 	import { clear } from './actions.js';
+	import { imageUrl } from './images.js';
 
 	let { card, missing }: { card: CardView; missing: boolean } = $props();
 
@@ -14,9 +16,17 @@
 </script>
 
 {#if missing}
-	<strong class="notice icon-label"><FileQuestionMark /> Note not found</strong>
+	<strong class="notice icon-label">
+		{#if card.file}<ImageOff /> Image{:else}<FileQuestionMark /> Note{/if} not found
+	</strong>
 	<span class="hint">Its file is missing, or not synced to this device yet.</span>
 	<button class="clear icon-label" title="Turn it into an empty card" onclick={() => clear(card)}><Eraser size={14} /> Clear</button>
+{:else if card.file}
+	{#await imageUrl(card.file) then url}
+		<img class="image" src={url} alt="" draggable="false" />
+	{:catch}
+		<!-- Its file is missing: the card says so (missing). -->
+	{/await}
 {:else if card.note}
 	<strong class="index-card-title">{card.title}</strong>
 	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -29,8 +39,18 @@
 	.hint,
 	.clear,
 	.index-card-title,
-	.body {
+	.body,
+	.image {
 		opacity: var(--shown);
+	}
+
+	/* The whole card, its shape kept as it is resized. */
+	.image {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		pointer-events: none;
 	}
 
 	.notice {

@@ -1,7 +1,8 @@
 //! Card edits: placing, moving, resizing, aligning, clearing and deleting. Each builds the
 //! target item states and hands them to `apply`, so every edit can be undone.
 
-use crate::error::Result;
+use crate::attachments;
+use crate::error::{msg, Result};
 use crate::index::Rect;
 use crate::items::{Card, Drawing, HAlign, Kind, VAlign, Zone};
 use crate::session::Session;
@@ -26,7 +27,17 @@ impl Session {
 
   /// Places an empty card on a world rectangle. It joins the innermost zone under its center.
   pub fn create_card(&self, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
-    Ok(self.place(None, x, y, w, h)?.id)
+    Ok(self.place(None, None, x, y, w, h)?.id)
+  }
+
+  /// Places a card showing the vault's attachment at vault path `path`, like an empty card. Several
+  /// cards may show one file.
+  pub fn place_file(&self, path: &str, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
+    attachments::check(path)?;
+    if !self.vault.abs(path).is_file() {
+      return msg("file not found");
+    }
+    self.place(None, Some(path.to_string()), x, y, w, h)
   }
 
   /// Places a card for the note at vault path `path`, like an empty card, and gives the note its
@@ -37,12 +48,12 @@ impl Session {
     if let Some(id) = self.index.card_of_note(&note)? {
       return Ok(Created { id, undo: Vec::new() });
     }
-    self.place(Some(note), x, y, w, h)
+    self.place(Some(note), None, x, y, w, h)
   }
 
-  fn place(&self, note: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
+  fn place(&self, note: Option<String>, file: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
     let (zone, ox, oy) = self.landing(x, y, w, h)?;
-    let card = Card { note, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None };
+    let card = Card { note, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None, file };
     let id = crate::new_id();
     let undo = self.apply(vec![ItemState::of(&id, &card)?])?;
     Ok(Created { id, undo })
@@ -144,10 +155,11 @@ impl Session {
     })
   }
 
-  /// Turns an unresolved card into an empty one.
+  /// Turns an unresolved card, whose note or file is missing, into an empty one.
   pub fn clear_card(&self, id: &str) -> Result<Vec<ItemState>> {
     self.edit::<Card>(&[id], |_, card| {
       card.note = None;
+      card.file = None;
       Ok(())
     })
   }

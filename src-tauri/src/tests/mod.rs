@@ -1,4 +1,5 @@
 mod arrange;
+mod attachments;
 mod batch;
 mod batch_edit;
 mod check;

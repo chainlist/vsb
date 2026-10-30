@@ -56,7 +56,7 @@ impl Index {
   pub fn item<T: Item>(&self, id: &str) -> Result<Option<T>> {
     let fields = match T::KIND {
       Kind::Zone => "'name', name, 'parent', parent, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color",
-      Kind::Card => "'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign, 'color', color",
+      Kind::Card => "'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign, 'color', color, 'file', file",
       Kind::Edge => "'from', from_card, 'to', to_card, 'label', label, 'shape', shape, 'arrow', arrow, 'stroke', stroke",
       Kind::Drawing => "'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'strokes', json(strokes)",
     };
@@ -81,12 +81,12 @@ impl Index {
 
   pub fn put_card(&self, id: &str, c: &Card, stamp: Stamp) -> Result<()> {
     self.db.execute(
-      "INSERT INTO cards (id, note, zone, x, y, w, h, halign, valign, color, mtime, size)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+      "INSERT INTO cards (id, note, zone, x, y, w, h, halign, valign, color, file, mtime, size)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
        ON CONFLICT (id) DO UPDATE SET note = excluded.note, zone = excluded.zone, x = excluded.x, y = excluded.y,
          w = excluded.w, h = excluded.h, halign = excluded.halign, valign = excluded.valign, color = excluded.color,
-         mtime = excluded.mtime, size = excluded.size",
-      params![id, c.note, c.zone, c.x, c.y, c.w, c.h, c.halign.as_str(), c.valign.as_str(), c.color, stamp.mtime, stamp.size],
+         file = excluded.file, mtime = excluded.mtime, size = excluded.size",
+      params![id, c.note, c.zone, c.x, c.y, c.w, c.h, c.halign.as_str(), c.valign.as_str(), c.color, c.file, stamp.mtime, stamp.size],
     )?;
     Ok(())
   }

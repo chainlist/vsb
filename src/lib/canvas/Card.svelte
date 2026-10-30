@@ -4,6 +4,7 @@
 	import { isMod } from '#lib/keys.js';
 	import { edit } from './actions.js';
 	import { startMove } from './gestures.js';
+	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
 	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
 	import { selection } from './selection.svelte.js';
@@ -13,7 +14,13 @@
 	let { card }: { card: CardView } = $props();
 
 	const justify = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
-	const missing = $derived(card.note !== null && !card.resolved);
+	/** Whether the card's image file was found missing. */
+	let lost = $state(false);
+	$effect(() => {
+		lost = false;
+		if (card.file) imageUrl(card.file).catch(() => (lost = true));
+	});
+	const missing = $derived((card.note !== null && !card.resolved) || lost);
 	const editing = $derived(selection.editing === card.id);
 	const selected = $derived(selection.has(card.id));
 	const dimmed = $derived(selection.dims(card.id));
@@ -41,7 +48,8 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="card index-card note-card"
+	class="card index-card"
+	class:note-card={card.file === null || missing}
 	class:tinted={card.color !== null}
 	class:missing
 	class:selected

@@ -4,7 +4,7 @@ import type { EdgeStyle } from '#lib/api.js';
 import { request } from './idb.ts';
 import { fileOf, type CardRecord, type DrawingRecord, type ZoneRecord } from './records.ts';
 
-export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'drawings', 'clusters', 'bundles'];
+export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges', 'drawings', 'clusters', 'bundles', 'attachments'];
 
 /** The vault's settings, as the desktop's `vault.json`: settings at their default are left out, and
  * so is each part of the style for new edges, as in an edge file. */
@@ -14,7 +14,7 @@ export type VaultFile = { format: number; id: string; theme?: string; paper?: st
 export const FORMAT = 1;
 
 export function openDb(vault: string) {
-	const open = indexedDB.open(`vsb-${vault}`, 4);
+	const open = indexedDB.open(`vsb-${vault}`, 5);
 	open.onupgradeneeded = ({ oldVersion }) => {
 		if (oldVersion === 0) create(open.result);
 		// Version 2: a zone keeps the cards it holds, where version 1 kept how many and their box.
@@ -23,6 +23,8 @@ export function openDb(vault: string) {
 		if (oldVersion > 0 && oldVersion < 3) drawings(open.result);
 		// Version 4: each stroke has its own color and width.
 		if (oldVersion === 3) void reshape(open.transaction!);
+		// Version 5: attachments.
+		if (oldVersion > 0 && oldVersion < 5) attachments(open.result);
 	};
 	return request(open);
 }
@@ -49,6 +51,12 @@ function create(db: IDBDatabase) {
 	drawings(db);
 	db.createObjectStore('clusters', { keyPath: ['cell', 'cx', 'cy'] });
 	db.createObjectStore('bundles', { keyPath: ['cell', 'a', 'b'] });
+	attachments(db);
+}
+
+/** The files cards show in place of notes, by vault path, a clash found ignoring case. */
+function attachments(db: IDBDatabase) {
+	db.createObjectStore('attachments', { keyPath: 'path' }).createIndex('pk', 'pk', { unique: true });
 }
 
 function drawings(db: IDBDatabase) {

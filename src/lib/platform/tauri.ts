@@ -110,6 +110,18 @@ export const createCard = (x: number, y: number, w: number, h: number) =>
 export const placeNote = (path: string, x: number, y: number, w: number, h: number) =>
 	invoke<Created>('place_note', { path, x, y, w, h });
 
+/** Places a card showing the vault's attachment at vault path `path`, like an empty card. */
+export const placeFile = (path: string, x: number, y: number, w: number, h: number) =>
+	invoke<Created>('place_file', { path, x, y, w, h });
+
+/** Writes an image under `attachments/images/`, named after `name`, and returns its vault path. Its
+ * bytes go as they are, not as JSON; its name, which may hold any character, URI-encoded in a header. */
+export const writeImage = (name: string, bytes: ArrayBuffer) =>
+	invoke<string>('write_image', bytes, { headers: { name: encodeURIComponent(name) } });
+
+/** The bytes of an attachment, by its vault path. */
+export const readAttachment = (path: string) => invoke<ArrayBuffer>('read_attachment', { path });
+
 /** Writes a note for each card, then the cards, centered, then the edges between them. They all
  * join the innermost zone under world point (x, y), which grows to hold them. */
 export const createBatch = (x: number, y: number, cards: BatchCard[], edges: BatchEdge[]) =>

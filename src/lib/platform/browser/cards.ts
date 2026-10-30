@@ -2,6 +2,7 @@
 // desktop. Each builds target item states and hands them to `apply`, so every edit can be undone.
 import type { Created, HAlign, ItemState, Move, Rect, VAlign } from '#lib/api.js';
 import { apply, edit, gone, read, state, type Edit } from './apply.ts';
+import { check, hasAttachment } from './attachments.ts';
 import { cover, rectAt } from './grid.ts';
 import { cardOfNote, edgesTouching } from './lookups.ts';
 import { noteAt } from './notes.ts';
@@ -13,22 +14,30 @@ import { holding } from './zones.ts';
  * with that zone's origin. The canvas is null at (0, 0). */
 export const landing = (e: Edit, x: number, y: number, w: number, h: number) => e.layout.around(rectAt(x + w / 2, y + h / 2, 0, 0));
 
-async function place(e: Edit, note: string | null, x: number, y: number, w: number, h: number): Promise<Created> {
+async function place(e: Edit, note: string | null, file: string | null, x: number, y: number, w: number, h: number): Promise<Created> {
 	const at = landing(e, x, y, w, h);
 	const id = newId();
-	const undo = await apply(e, [state('card', id, { note, zone: at.zone, x: x - at.x, y: y - at.y, w, h })]);
+	const undo = await apply(e, [state('card', id, { note, zone: at.zone, x: x - at.x, y: y - at.y, w, h, file: file ?? undefined })]);
 	return { id, undo };
 }
 
 /** Places an empty card on a world rectangle. It joins the innermost zone under its center. */
-export const createCard = async (e: Edit, x: number, y: number, w: number, h: number) => (await place(e, null, x, y, w, h)).id;
+export const createCard = async (e: Edit, x: number, y: number, w: number, h: number) => (await place(e, null, null, x, y, w, h)).id;
+
+/** Places a card showing the vault's attachment at vault path `path`, like an empty card. Several
+ * cards may show one file. */
+export async function placeFile(e: Edit, path: string, x: number, y: number, w: number, h: number): Promise<Created> {
+	check(path);
+	if (!(await hasAttachment(e, path))) throw new Error('file not found');
+	return place(e, null, path, x, y, w, h);
+}
 
 /** Places a card for the note at `path`. Until V3 a note has one card: when it already has it, that
  * card comes back with nothing to undo. */
 export async function placeNote(e: Edit, path: string, x: number, y: number, w: number, h: number): Promise<Created> {
 	const note = await noteAt(e, path);
 	const card = await cardOfNote(e, note);
-	return card ? { id: card, undo: [] } : place(e, note, x, y, w, h);
+	return card ? { id: card, undo: [] } : place(e, note, null, x, y, w, h);
 }
 
 /** Drops cards at new world positions. Each joins the innermost zone under its center, or the canvas. */
@@ -96,8 +105,12 @@ export function resizeCard(e: Edit, id: string, x: number, y: number, w: number,
 export const alignCards = (e: Edit, ids: string[], halign: HAlign, valign: VAlign) =>
 	edit(e, 'card', ids, (card) => Object.assign(card, { halign, valign }));
 
-/** Turns an unresolved card into an empty one. */
-export const clearCard = (e: Edit, id: string) => edit(e, 'card', [id], (card) => (card.note = null));
+/** Turns an unresolved card, whose note or file is missing, into an empty one. */
+export const clearCard = (e: Edit, id: string) =>
+	edit(e, 'card', [id], (card) => {
+		card.note = null;
+		delete card.file;
+	});
 
 /** Deletes cards and the edges that touch them. Their notes stay, unplaced. */
 export async function deleteCards(e: Edit, ids: string[]) {

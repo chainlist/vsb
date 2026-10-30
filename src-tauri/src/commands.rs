@@ -14,7 +14,9 @@ use crate::registry::{self, VaultEntry};
 use crate::session::Session;
 use crate::vault::Vault;
 use std::path::{Path, PathBuf};
+use percent_encoding::percent_decode_str;
 use std::sync::{Mutex, MutexGuard};
+use tauri::ipc::{InvokeBody, Request, Response};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
@@ -170,6 +172,28 @@ pub async fn create_card(state: State<'_, AppState>, x: f64, y: f64, w: f64, h: 
 #[tauri::command]
 pub async fn place_note(state: State<'_, AppState>, path: String, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
   state.with(|s| s.place_note(&path, x, y, w, h))
+}
+
+#[tauri::command]
+pub async fn place_file(state: State<'_, AppState>, path: String, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
+  state.with(|s| s.place_file(&path, x, y, w, h))
+}
+
+/// An image's bytes come as the request's body, its name, URI-encoded, as its `name` header.
+#[tauri::command]
+pub async fn write_image(state: State<'_, AppState>, request: Request<'_>) -> Result<String> {
+  let InvokeBody::Raw(bytes) = request.body() else {
+    return msg("an image comes as bytes");
+  };
+  let name = request.headers().get("name").and_then(|v| v.to_str().ok()).unwrap_or_default();
+  let name = percent_decode_str(name).decode_utf8_lossy();
+  state.with(|s| s.write_image(&name, bytes))
+}
+
+/// An attachment's bytes, sent as they are rather than as JSON.
+#[tauri::command]
+pub async fn read_attachment(state: State<'_, AppState>, path: String) -> Result<Response> {
+  state.with(|s| s.read_attachment(&path)).map(Response::new)
 }
 
 #[tauri::command]

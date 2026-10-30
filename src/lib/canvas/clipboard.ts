@@ -1,6 +1,6 @@
 // Copying, pasting and duplicating. Copying puts the selection on the system clipboard twice: as its
 // cards' text, for other apps, and as a clip hidden in the HTML, for this app, in any vault. Pasting
-// lands centered under the pointer; text from another app becomes a card.
+// lands centered under the pointer; text from another app becomes a card, and an image an image card.
 import { copyItems, pasteItems, type Clip } from '#lib/api.js';
 import { typing } from '#lib/keys.js';
 import { renderMarkdown } from '#lib/markdown.js';
@@ -9,6 +9,7 @@ import { camera } from './camera.svelte.js';
 import { NEW_CARD } from './gestures.js';
 import { GRID, snap, toGrid } from './grid.svelte.js';
 import { history } from './history.js';
+import { addImages, isImage, pastedName } from './images.js';
 import { selection } from './selection.svelte.js';
 
 /** The attribute of the HTML on the clipboard that holds a clip. */
@@ -63,14 +64,18 @@ export function listenForPaste() {
 	return () => removeEventListener('paste', onPaste);
 }
 
+// Text comes before an image: an app such as a word processor copies text with a picture of it.
 function onPaste(e: ClipboardEvent) {
 	const at = due;
 	due = null;
-	if (!at || typing(e.target) || !e.clipboardData) return;
-	const clip = clipIn(e.clipboardData.getData('text/html')) ?? textClip(e.clipboardData.getData('text/plain'));
-	if (!clip) return;
+	const data = e.clipboardData;
+	if (!at || typing(e.target) || !data) return;
+	const clip = clipIn(data.getData('text/html')) ?? textClip(data.getData('text/plain'));
+	const image = clip ? undefined : [...data.files].find(isImage);
+	if (!clip && !image) return;
 	e.preventDefault();
-	paste(clip, at);
+	if (clip) paste(clip, at);
+	else if (image) void addImages([{ name: pastedName(image), blob: image }], at);
 }
 
 /** Pastes a clip centered on a world point, its corner on the grid when snapping is on, as one undo

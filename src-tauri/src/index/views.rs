@@ -34,6 +34,8 @@ pub struct CardView {
   pub excerpt: Option<String>,
   /// False when `note` is set but no indexed file has that ID.
   pub resolved: bool,
+  /// The vault file the card shows in place of a note: an image.
+  pub file: Option<String>,
 }
 
 /// An item's box in absolute coordinates.

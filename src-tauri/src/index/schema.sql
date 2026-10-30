@@ -25,6 +25,7 @@ CREATE TABLE cards (
   halign    TEXT NOT NULL DEFAULT 'left',
   valign    TEXT NOT NULL DEFAULT 'top',
   color     TEXT,                     -- NULL = the theme's plain stock
+  file      TEXT,                     -- a vault file shown in place of a note
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX cards_note ON cards(note);

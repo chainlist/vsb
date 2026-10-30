@@ -19,6 +19,8 @@ export type CardFile = {
 	halign?: HAlign;
 	valign?: VAlign;
 	color?: string;
+	/** A file of the vault the card shows in place of a note, by its vault path: an image. */
+	file?: string;
 };
 
 export type EdgeFile = { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke };
@@ -148,6 +150,7 @@ export function fileOf(kind: Kind, value: unknown): File {
 		...at,
 		halign: choice(v.halign, ['left', 'center', 'right'], 'left', 'halign'),
 		valign: choice(v.valign, ['top', 'center', 'bottom'], 'top', 'valign'),
-		color: maybe(v.color) ?? undefined
+		color: maybe(v.color) ?? undefined,
+		file: maybe(v.file) ?? undefined
 	});
 }

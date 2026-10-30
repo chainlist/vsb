@@ -130,7 +130,7 @@ fn drawings_copy_with_their_strokes() {
   let f = Fixture::new();
   let s = open(&f);
   let drawing = s.add_stroke(&[0.0, 0.0, 0.5, 30.0, 20.0, 0.5], Some("#f5d76e".into()), 8.0).unwrap().id;
-  let clip = s.copy_items(&[], &[], &[drawing.clone()]).unwrap();
+  let clip = s.copy_items(&[], &[], std::slice::from_ref(&drawing)).unwrap();
   let pasted = s.paste_items(&clip, 500.0, 500.0).unwrap();
 
   let original: serde_json::Value = serde_json::from_str(&f.read(&format!(".canvas/drawings/{drawing}.json"))).unwrap();

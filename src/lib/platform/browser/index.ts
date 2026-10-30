@@ -21,6 +21,7 @@ import type {
 } from '#lib/api.js';
 import type * as Desktop from '../tauri.ts';
 import { apply, type Edit } from './apply.ts';
+import * as attachments from './attachments.ts';
 import * as batch from './batch.ts';
 import * as cards from './cards.ts';
 import * as clip from './clip.ts';
@@ -72,6 +73,9 @@ export const vaultHome = () => command(vaults.home);
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) => reading((e) => viewport(e, rect, minSize, cell));
 export const createCard = (x: number, y: number, w: number, h: number) => writing((e) => cards.createCard(e, x, y, w, h));
 export const placeNote = (path: string, x: number, y: number, w: number, h: number) => writing((e) => cards.placeNote(e, path, x, y, w, h));
+export const placeFile = (path: string, x: number, y: number, w: number, h: number) => writing((e) => cards.placeFile(e, path, x, y, w, h));
+export const writeImage = (name: string, bytes: ArrayBuffer) => writing((e) => attachments.writeImage(e, name, bytes));
+export const readAttachment = (path: string) => reading((e) => attachments.readAttachment(e, path));
 export const createBatch = (x: number, y: number, c: BatchCard[], l: BatchEdge[]) => writing((e) => batch.createBatch(e, x, y, c, l));
 export const copyItems = (c: string[], z: string[], d: string[]) => reading((e) => clip.copyItems(e, c, z, d));
 export const pasteItems = (from: Clip, x: number, y: number) => writing((e) => clip.pasteItems(e, from, x, y));

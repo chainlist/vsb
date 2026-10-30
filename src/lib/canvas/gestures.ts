@@ -119,6 +119,11 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 			}
 			item.w = stretch(from.w, px, bx, MIN.w);
 			item.h = stretch(from.h, py, by, MIN.h);
+			// An image keeps its shape, led by the side pulled further.
+			if ('file' in item && item.file !== null) {
+				const scale = Math.max(px ? item.w / from.w : 0, py ? item.h / from.h : 0, MIN.w / from.w, MIN.h / from.h);
+				[item.w, item.h] = [Math.round(from.w * scale), Math.round(from.h * scale)];
+			}
 			// Pulling the left or top edge keeps the opposite edge in place.
 			item.x = px < 0 ? from.x + from.w - item.w : from.x;
 			item.y = py < 0 ? from.y + from.h - item.h : from.y;

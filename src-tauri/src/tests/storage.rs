@@ -106,7 +106,7 @@ fn open_refuses_a_folder_that_is_not_a_vault() {
 #[test]
 fn card_file_leaves_out_default_alignment() {
   let f = Fixture::new();
-  let mut card = Card { note: None, zone: None, x: 1.0, y: 2.0, w: 3.0, h: 4.0, halign: HAlign::Left, valign: VAlign::Top, color: None };
+  let mut card = Card { note: None, zone: None, x: 1.0, y: 2.0, w: 3.0, h: 4.0, halign: HAlign::Left, valign: VAlign::Top, color: None, file: None };
   let path = items::write(&f.vault, "C1", &card).unwrap();
   let json: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
   assert_eq!(json, serde_json::json!({ "note": null, "zone": null, "x": 1.0, "y": 2.0, "w": 3.0, "h": 4.0 }));

@@ -112,10 +112,16 @@ pub fn stem_fits(current: &str, stem: &str) -> bool {
 /// `dir/<stem>.md`, or `<stem> 2.md`, `<stem> 3.md`... : the first name no other file uses.
 /// `current` is the note being renamed, which may take a name that only differs from its own by case.
 pub fn free_path(dir: &Path, stem: &str, current: Option<&Path>) -> PathBuf {
+  free_name(dir, stem, "md", current)
+}
+
+/// `<dir>/<stem>.<ext>`, or `<stem> 2.<ext>`, `<stem> 3.<ext>`...: the first name no file takes,
+/// apart from `current`, the file being renamed.
+pub fn free_name(dir: &Path, stem: &str, ext: &str, current: Option<&Path>) -> PathBuf {
   (1..)
     .map(|n| match n {
-      1 => dir.join(format!("{stem}.md")),
-      _ => dir.join(format!("{stem} {n}.md")),
+      1 => dir.join(format!("{stem}.{ext}")),
+      _ => dir.join(format!("{stem} {n}.{ext}")),
     })
     .find(|p| !p.exists() || current.is_some_and(|c| same_file(p, c)))
     .expect("an unused name exists")

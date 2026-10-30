@@ -5,7 +5,7 @@ import { apply, read, state, type Edit } from './apply.ts';
 import { request } from './idb.ts';
 import { tray, type CardRecord, type NoteRecord } from './records.ts';
 import { showing } from './settle.ts';
-import { excerpt, fileStem, stemFits, title, wordSet } from './text.ts';
+import { excerpt, fileStem, freeName, stemFits, title, wordSet } from './text.ts';
 import { newId } from './ulid.ts';
 import { reindex } from './words.ts';
 
@@ -35,12 +35,11 @@ async function keep(e: Edit, id: string, was: NoteRecord | undefined, now: NoteR
 
 /** `<dir>/<stem>.md`, or `<stem> 2.md`, `<stem> 3.md`... : the first name no other note uses,
  * ignoring case. The note `self` may take a name that differs from its own only by case. */
-async function freePath(e: Edit, dir: string, stem: string, self: string | null) {
-	for (let n = 1; ; n++) {
-		const path = n === 1 ? `${dir}/${stem}.md` : `${dir}/${stem} ${n}.md`;
+function freePath(e: Edit, dir: string, stem: string, self: string | null) {
+	return freeName(dir, stem, 'md', async (path) => {
 		const taken = (await request(notes(e).index('pk').get(path.toLowerCase()))) as NoteRecord | undefined;
-		if (!taken || taken.id === self) return path;
-	}
+		return taken !== undefined && taken.id !== self;
+	});
 }
 
 export const readNote = async (e: Edit, id: string) => (await note(e, id)).body;

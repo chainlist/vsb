@@ -1,3 +1,4 @@
+mod attachments;
 mod batch;
 mod batch_edit;
 mod clip;
@@ -86,6 +87,9 @@ pub fn run() {
       commands::query_viewport,
       commands::create_card,
       commands::place_note,
+      commands::place_file,
+      commands::write_image,
+      commands::read_attachment,
       commands::create_batch,
       commands::copy_items,
       commands::paste_items,

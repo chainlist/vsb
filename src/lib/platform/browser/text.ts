@@ -31,6 +31,14 @@ export function fileStem(title: string) {
 	return RESERVED.has(stem.split('.')[0].toUpperCase()) ? `${stem}_` : stem;
 }
 
+/** `<dir>/<stem>.<ext>`, or `<stem> 2.<ext>`, `<stem> 3.<ext>`...: the first path not `taken`. */
+export async function freeName(dir: string, stem: string, ext: string, taken: (path: string) => Promise<boolean>) {
+	for (let n = 1; ; n++) {
+		const path = n === 1 ? `${dir}/${stem}.${ext}` : `${dir}/${stem} ${n}.${ext}`;
+		if (!(await taken(path))) return path;
+	}
+}
+
 /** Whether a file stem already fits a title's stem: `Idea`, or a clash name like `Idea 2`. */
 export function stemFits(current: string, stem: string) {
 	const number = current.startsWith(`${stem} `) ? current.slice(stem.length + 1) : '';

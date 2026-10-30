@@ -169,6 +169,9 @@ pub struct Card {
   pub valign: VAlign,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub color: Option<String>,
+  /// A file of the vault the card shows in place of a note, by its vault path: an image.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub file: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

@@ -23,6 +23,8 @@
 	const colors = COLORS.map(([value, name]): [string | null, string, string | null] => [value, name, value]);
 
 	const cards = $derived(selection.cards);
+	/** The cards with text to align: not those showing an image. */
+	const texts = $derived(cards.filter((c) => c.file === null));
 	const zones = $derived(selection.zones);
 	const drawings = $derived(selection.drawings);
 	const zone = $derived(zones.length === 1 && selection.ids.length === 1);
@@ -68,8 +70,8 @@
 		ondblclick={(e) => e.stopPropagation()}
 	>
 		<div class="bar index-card chrome">
-			{#if cards.length}
-				<AlignGrid {cards} />
+			{#if texts.length}
+				<AlignGrid cards={texts} />
 			{/if}
 			{#if cards.length || zones.length || drawings.length}
 				<StyleSelect label="Color" options={colors} current={color} pick={colorSelected} look={swatch} />

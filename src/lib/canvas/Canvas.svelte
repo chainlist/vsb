@@ -9,6 +9,7 @@
 	import { GRIP, newCardAt } from './gestures.js';
 	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
+	import { forgetImages, listenForDrops } from './images.js';
 	import { outline } from './ink.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
 	import { newEdges } from './newEdges.svelte.js';
@@ -51,6 +52,7 @@
 	selection.editing = null;
 	history.reset();
 	batchDialog.close();
+	forgetImages();
 	ink.on = false;
 
 	// Frames the contents once, as soon as the canvas has a size.
@@ -62,6 +64,7 @@
 	$effect(() => items.update());
 	$effect(() => bindKeys(shortcuts));
 	$effect(listenForPaste);
+	$effect(() => listenForDrops(el));
 	$effect(() => zoomOn(el, hover));
 
 	// The paper moves with the world. Its minor lines fade out as squares shrink, then the grid

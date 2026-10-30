@@ -4,6 +4,7 @@
 // names its items by the IDs they were copied from, only to join them to each other.
 import type { Clip, ItemState, Pasted, Rect } from '#lib/api.js';
 import { apply, read, state, type Edit } from './apply.ts';
+import { isAttachment } from './attachments.ts';
 import { cover, rectAt } from './grid.ts';
 import { children, edgesAmong } from './lookups.ts';
 import { bodyOf, newNote } from './notes.ts';
@@ -70,7 +71,9 @@ export async function pasteItems(e: Edit, clip: Clip, x: number, y: number): Pro
 		const note = text?.trim() ? await newNote(e, text) : null;
 		const id = newId();
 		if (zone === landing) ids.push(id);
-		states.push(state('card', id, { ...card, note, zone, x: cx, y: cy }));
+		// A clip can come from anywhere: a file outside the vault's attachments is left out.
+		const file = card.file !== undefined && isAttachment(card.file) ? card.file : undefined;
+		states.push(state('card', id, { ...card, note, zone, x: cx, y: cy, file }));
 		cards.set(was, id);
 	}
 	for (const { id: _, ...drawing } of clip.drawings) {

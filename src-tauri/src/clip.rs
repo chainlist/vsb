@@ -3,6 +3,7 @@
 //! clip back as new items: each gets a new ID, each card with text a new note. A clip names its
 //! items by the IDs they were copied from, only to join them to each other.
 
+use crate::attachments;
 use crate::error::Result;
 use crate::index::Rect;
 use crate::items::{is_default, Card, Drawing, Edge, HAlign, Kind, VAlign, Zone};
@@ -41,6 +42,9 @@ pub struct ClipCard {
   pub color: Option<String>,
   #[serde(default)]
   pub text: Option<String>,
+  /// The vault file it shows, as in its card file: a pasted copy shows the same file.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub file: Option<String>,
 }
 
 /// What copying gathers: the box around it in the world it was copied from, zones parents first,
@@ -145,7 +149,9 @@ impl Session {
       if zone == landing {
         ids.push(id.clone());
       }
-      let card = Card { note, zone, x: cx, y: cy, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color: c.color.clone() };
+      // A clip can come from anywhere: a file outside the vault's attachments is left out.
+      let file = c.file.clone().filter(|f| attachments::check(f).is_ok());
+      let card = Card { note, zone, x: cx, y: cy, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color: c.color.clone(), file };
       states.push(ItemState::of(&id, &card)?);
       cards.insert(c.id.as_str(), id);
     }
@@ -186,8 +192,8 @@ impl Session {
           Some(note) if self.index.note_path(note)?.is_some() => Some(self.read_note(note)?),
           _ => None,
         };
-        let (halign, valign, color) = (c.halign, c.valign, c.color);
-        clip.cards.push(ClipCard { id: id.into(), zone: within, x: ox + c.x, y: oy + c.y, w: c.w, h: c.h, halign, valign, color, text });
+        let (halign, valign, color, file) = (c.halign, c.valign, c.color, c.file);
+        clip.cards.push(ClipCard { id: id.into(), zone: within, x: ox + c.x, y: oy + c.y, w: c.w, h: c.h, halign, valign, color, text, file });
       }
       Kind::Drawing => {
         let d: Drawing = self.read(id)?;

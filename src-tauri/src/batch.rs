@@ -59,7 +59,7 @@ impl Session {
     let ids: Vec<String> = cards.iter().map(|_| crate::new_id()).collect();
     for (id, c) in ids.iter().zip(cards) {
       let note = Some(self.new_note(&c.text)?);
-      let card = Card { note, zone: zone.map(str::to_string), x: c.x - ox, y: c.y - oy, w: c.w, h: c.h, halign: HAlign::Center, valign: VAlign::Center, color: None };
+      let card = Card { note, zone: zone.map(str::to_string), x: c.x - ox, y: c.y - oy, w: c.w, h: c.h, halign: HAlign::Center, valign: VAlign::Center, color: None, file: None };
       states.push(ItemState::of(id, &card)?);
     }
     Ok((ids, states))

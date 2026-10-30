@@ -53,7 +53,7 @@ impl Rect {
 }
 
 /// Bump on any schema change: a mismatch drops the index and rebuilds it.
-pub(crate) const VERSION: i32 = 7;
+pub(crate) const VERSION: i32 = 8;
 const SCHEMA: &str = include_str!("schema.sql");
 
 pub struct Index {

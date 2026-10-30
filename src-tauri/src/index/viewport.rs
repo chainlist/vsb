@@ -46,7 +46,7 @@ impl Index {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
        SELECT c.id, c.note, c.zone, coalesce(zabs.ax, 0) + c.x, coalesce(zabs.ay, 0) + c.y, c.w, c.h,
-         c.halign, c.valign, c.color, n.title, n.excerpt, n.key IS NOT NULL
+         c.halign, c.valign, c.color, n.title, n.excerpt, n.key IS NOT NULL, c.file
        FROM card_bounds b JOIN cards c ON c.key = b.key
        LEFT JOIN zabs ON zabs.id = c.zone LEFT JOIN notes n ON n.id = c.note
        WHERE {MEETS} AND {LARGE}"
@@ -67,6 +67,7 @@ impl Index {
           title: r.get(10)?,
           excerpt: r.get(11)?,
           resolved: r.get(12)?,
+          file: r.get(13)?,
         })
       })?
       .collect::<rusqlite::Result<_>>()?;

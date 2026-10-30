@@ -35,6 +35,20 @@
 		return () => removeEventListener('wheel', onwheel);
 	});
 
+	// Files dragged in from the system may be dropped anywhere: dropped where nothing takes them, they
+	// would open in place of the app. The canvas takes images.
+	$effect(() => {
+		const refuse = (e: DragEvent) => {
+			if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+		};
+		addEventListener('dragover', refuse);
+		addEventListener('drop', refuse);
+		return () => {
+			removeEventListener('dragover', refuse);
+			removeEventListener('drop', refuse);
+		};
+	});
+
 	// A command that fails from a click or a key, with nothing to catch it, says so.
 	$effect(() => {
 		const onrejection = (e: PromiseRejectionEvent) => {
