@@ -1,7 +1,7 @@
 // Builds the test vault in a browser through `#lib/api`, as the app would: zones, then cards and
 // their notes, then the unplaced notes and the edges. Prints the new vault's ID.
 //
-//   node bench/generate-browser.mjs --port 9225 --base /vsb/ --name bench-vault
+//   node bench/generate-browser.mjs --port 9225 --base /vsb/web/ --name bench-vault
 import { parseArgs } from 'node:util';
 import { connect } from './cdp.mjs';
 import { generate } from './vault.mjs';
@@ -44,7 +44,7 @@ async function build({ base, name }) {
 	return { id, seconds: Math.round((performance.now() - started) / 1000) };
 }
 
-const { values: args } = parseArgs({ options: { port: { type: 'string' }, base: { type: 'string', default: '/vsb/' }, name: { type: 'string', default: 'bench-vault' } } });
+const { values: args } = parseArgs({ options: { port: { type: 'string' }, base: { type: 'string', default: '/vsb/web/' }, name: { type: 'string', default: 'bench-vault' } } });
 const page = await connect(Number(args.port));
 const made = await page.evaluate(`(() => { ${generate}; return (${build})(${JSON.stringify({ base: args.base, name: args.name })}); })()`);
 page.close();

@@ -4,7 +4,7 @@
 // canvas is emptied first each time, so every zone, preview, cluster and bundle is drawn anew, as
 // when zooming out from open zones.
 //
-//   node bench/render.mjs --port 9224 --label desktop-render-after-1 [--base /vsb/] [--vault <id>]
+//   node bench/render.mjs --port 9224 --label desktop-render-after-1 [--base /vsb/web/] [--vault <id>]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { connect } from './cdp.mjs';

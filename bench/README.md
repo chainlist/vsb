@@ -64,16 +64,16 @@ with the app closed. "Before" runs put `main`'s `api.ts` back in the working tre
 dev server reloads it), alternating with "after" runs, so a drift in the machine's load hits both.
 
 **The browser** runs in Chrome with its own profile and debug port, on the web build's dev server
-(the base path is `/vsb/`):
+(the base path is `/vsb/web/`):
 
 ```powershell
 pnpm dev:web
-chrome --headless=new --remote-debugging-port=9225 --user-data-dir=<short temp folder> http://localhost:5175/vsb/
+chrome --headless=new --remote-debugging-port=9225 --user-data-dir=<short temp folder> http://localhost:5175/vsb/web/
 node bench/generate-browser.mjs --port 9225
-node bench/run.mjs --port 9225 --base /vsb/ --vault <id it printed> --label browser-1
+node bench/run.mjs --port 9225 --base /vsb/web/ --vault <id it printed> --label browser-1
 ```
 
-In Git Bash, set `MSYS_NO_PATHCONV=1` so `/vsb/` is passed as is. Chrome fails to open IndexedDB
+In Git Bash, set `MSYS_NO_PATHCONV=1` so `/vsb/web/` is passed as is. Chrome fails to open IndexedDB
 under a profile folder with a long path.
 
 Each label is run three times. Background load on the machine moves whole runs by 20% and more, so
