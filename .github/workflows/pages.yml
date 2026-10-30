@@ -1,0 +1,45 @@
+# Builds the web version (`pnpm build:web`) on every push to main and publishes build/web to
+# GitHub Pages, under /vsb. The repository's Pages source must be "GitHub Actions".
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time: a newer push waits for the running one instead of cutting it short.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # pnpm from `packageManager` in package.json, Node 22, then `pnpm install --frozen-lockfile`.
+      - uses: pnpm/setup@v3
+        with:
+          runtime: node@22
+          cache: true
+          require-lockfile: true
+      - run: pnpm build:web
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
