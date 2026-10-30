@@ -17,6 +17,7 @@
 
 	$effect(() => {
 		document.documentElement.dataset.theme = theme.id;
+		document.documentElement.dataset.paper = theme.paperIn(theme.id);
 	});
 
 	$effect(() => interfaceSize.use(data.interfaceSize));

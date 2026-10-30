@@ -114,9 +114,11 @@ a {
 	color: var(--pen);
 }
 
-/* Graph paper, ruled with lines, dotted at their crossings, or both: a theme leaves the marks it
-   does not draw transparent. The canvas moves it through --cell (minor square), --ox and --oy
-   (offset) and --minor (opacity of the minor marks); elsewhere it lies still. */
+/* Graph paper, marked as data-paper says (#lib/theme.svelte.ts): on the root, the vault's pick or its
+   theme's; on a preview, its own. Dots at the grid's crossings, ruled lines, small crosses at the
+   crossings, or the paper alone. A theme gives each mark its colors, crosses taking the dots', and
+   its nodes, dots where ruled major lines cross. The canvas moves it through --cell (minor square),
+   --ox and --oy (offset) and --minor (opacity of the minor marks); elsewhere it lies still. */
 .graph-paper {
 	--cell: 20px;
 	--ox: 0px;
@@ -125,31 +127,76 @@ a {
 	--major: calc(var(--cell) * 5);
 	--minor-line: color-mix(in srgb, var(--grid-line-minor) calc(var(--minor) * 100%), transparent);
 	--minor-dot: color-mix(in srgb, var(--grid-dot-minor) calc(var(--minor) * 100%), transparent);
+	/* The dots sit 1.5px further in than the lines, so they are centered on the crossings. */
+	--dot-ox: calc(var(--ox) - 1.5px);
+	--dot-oy: calc(var(--oy) - 1.5px);
+	/* How far a cross's arms reach from its middle: less on small squares, so crosses never meet. */
+	--arm: min(3.5px, calc(var(--cell) / 5));
+	--major-arm: 5px;
 	background-color: var(--paper);
+}
+
+/* :where() keeps the root's pick weaker than a preview's own. */
+:where([data-paper='dots']) .graph-paper,
+.graph-paper[data-paper='dots'] {
+	background-image:
+		radial-gradient(circle at 2px 2px, var(--grid-dot-major) 1.1px, transparent 1.7px),
+		radial-gradient(circle at 2px 2px, var(--minor-dot) 0.7px, transparent 1.3px);
+	background-size:
+		var(--major) var(--major),
+		var(--cell) var(--cell);
+	background-position:
+		var(--dot-ox) var(--dot-oy),
+		var(--dot-ox) var(--dot-oy);
+}
+
+:where([data-paper='grid']) .graph-paper,
+.graph-paper[data-paper='grid'] {
 	background-image:
 		linear-gradient(var(--grid-line-major) 1px, transparent 1px),
 		linear-gradient(90deg, var(--grid-line-major) 1px, transparent 1px),
 		linear-gradient(var(--minor-line) 1px, transparent 1px),
 		linear-gradient(90deg, var(--minor-line) 1px, transparent 1px),
-		radial-gradient(circle at 2px 2px, var(--grid-dot-major) 1.1px, transparent 1.7px),
-		radial-gradient(circle at 2px 2px, var(--minor-dot) 0.7px, transparent 1.3px);
+		radial-gradient(circle at 2px 2px, var(--grid-node) 1.1px, transparent 1.7px);
 	background-size:
 		var(--major) var(--major),
 		var(--major) var(--major),
 		var(--cell) var(--cell),
 		var(--cell) var(--cell),
-		var(--major) var(--major),
-		var(--cell) var(--cell);
-	/* The dots sit 1.5px further in than the lines, so they are centered on the crossings. */
-	--dot-ox: calc(var(--ox) - 1.5px);
-	--dot-oy: calc(var(--oy) - 1.5px);
+		var(--major) var(--major);
 	background-position:
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
-		var(--dot-ox) var(--dot-oy),
 		var(--dot-ox) var(--dot-oy);
+}
+
+/* Each arm a thin ellipse, centered on the crossing as a dot is. */
+:where([data-paper='cross']) .graph-paper,
+.graph-paper[data-paper='cross'] {
+	--at-major: calc(var(--major-arm) + 1px);
+	--at: calc(var(--arm) + 1px);
+	background-image:
+		radial-gradient(var(--major-arm) 0.7px at var(--at-major) var(--at-major), var(--grid-dot-major) 75%, transparent),
+		radial-gradient(0.7px var(--major-arm) at var(--at-major) var(--at-major), var(--grid-dot-major) 75%, transparent),
+		radial-gradient(var(--arm) 0.7px at var(--at) var(--at), var(--minor-dot) 75%, transparent),
+		radial-gradient(0.7px var(--arm) at var(--at) var(--at), var(--minor-dot) 75%, transparent);
+	background-size:
+		var(--major) var(--major),
+		var(--major) var(--major),
+		var(--cell) var(--cell),
+		var(--cell) var(--cell);
+	background-position:
+		calc(var(--ox) - var(--major-arm) - 0.5px) calc(var(--oy) - var(--major-arm) - 0.5px),
+		calc(var(--ox) - var(--major-arm) - 0.5px) calc(var(--oy) - var(--major-arm) - 0.5px),
+		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px),
+		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px);
+}
+
+:where([data-paper='empty']) .graph-paper,
+.graph-paper[data-paper='empty'] {
+	background-image: none;
 }
 
 /* An index card: white stock lifted off the paper, a rule under its heading. */

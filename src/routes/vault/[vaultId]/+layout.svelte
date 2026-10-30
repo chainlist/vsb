@@ -16,9 +16,9 @@
 
 	let { data, children }: LayoutProps = $props();
 
-	// The vault's own theme while it is open, the default again once it closes.
+	// The vault's own theme and paper while it is open, the defaults again once it closes.
 	$effect(() => {
-		theme.use(data.theme);
+		theme.use(data.theme, data.paper);
 		return () => theme.use(null);
 	});
 	$effect(() => {

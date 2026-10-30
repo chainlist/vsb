@@ -8,8 +8,9 @@
 	--paper: #0d1520;
 	--grid-line-major: #1a2736;
 	--grid-line-minor: #111b27;
+	--grid-node: #4a6684;
 	--grid-dot-major: #4a6684;
-	--grid-dot-minor: transparent;
+	--grid-dot-minor: #23344a;
 	--border: #26384b;
 	--ink: #dce6f0;
 	--ink-soft: #8fa3b8;

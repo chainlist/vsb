@@ -74,6 +74,8 @@ pub fn run() {
       commands::open_vault,
       commands::vault_theme,
       commands::set_vault_theme,
+      commands::vault_paper,
+      commands::set_vault_paper,
       commands::vault_snap,
       commands::set_vault_snap,
       commands::vault_edge_style,

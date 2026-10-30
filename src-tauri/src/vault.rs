@@ -17,6 +17,9 @@ struct VaultFile {
   /// The theme the app is drawn in for this vault; left out for the default.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   theme: Option<String>,
+  /// How the paper is marked (dots, grid, cross, empty); left out for the theme's own.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  paper: Option<String>,
   /// Whether moved and resized cards and zones land on the grid; left out while on, the default.
   #[serde(default = "on", skip_serializing_if = "is_on")]
   snap: bool,
@@ -74,7 +77,7 @@ impl Vault {
   pub fn open_or_init(root: &Path) -> Result<Vault> {
     let file = vault_file(root);
     if !file.exists() {
-      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, snap: true, new_edges: NewEdges::default() };
+      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, new_edges: NewEdges::default() };
       atomic_write(&file, &serde_json::to_vec_pretty(&v)?)?;
     }
     fs::create_dir_all(root.join("notes"))?;
@@ -91,6 +94,19 @@ impl Vault {
   pub fn set_theme(&self, theme: Option<String>) -> Result<()> {
     let mut v = read_vault_file(&self.root)?;
     v.theme = theme;
+    atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
+  }
+
+  /// How `vault.json` has the paper marked, or None for the theme's own.
+  pub fn paper(&self) -> Result<Option<String>> {
+    Ok(read_vault_file(&self.root)?.paper)
+  }
+
+  /// Names how the paper is marked in `vault.json`, or leaves it out for the theme's own. Read again
+  /// first, as for the theme.
+  pub fn set_paper(&self, paper: Option<String>) -> Result<()> {
+    let mut v = read_vault_file(&self.root)?;
+    v.paper = paper;
     atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
   }
 

@@ -114,6 +114,16 @@ pub async fn set_vault_theme(state: State<'_, AppState>, theme: Option<String>) 
 }
 
 #[tauri::command]
+pub async fn vault_paper(state: State<'_, AppState>) -> Result<Option<String>> {
+  state.with(|s| s.vault.paper())
+}
+
+#[tauri::command]
+pub async fn set_vault_paper(state: State<'_, AppState>, paper: Option<String>) -> Result<()> {
+  state.with(|s| s.vault.set_paper(paper))
+}
+
+#[tauri::command]
 pub async fn vault_snap(state: State<'_, AppState>) -> Result<bool> {
   state.with(|s| s.vault.snap())
 }

@@ -7,8 +7,9 @@
 [data-theme='studio'] {
 	--scheme: light;
 	--paper: #eef1f3;
-	--grid-line-major: transparent;
-	--grid-line-minor: transparent;
+	--grid-line-major: #d3d9de;
+	--grid-line-minor: #e2e6e9;
+	--grid-node: transparent;
 	--grid-dot-major: #a9b3bc;
 	--grid-dot-minor: #c9d0d6;
 	--border: #d3d9de;

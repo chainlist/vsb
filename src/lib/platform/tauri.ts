@@ -66,6 +66,13 @@ export const vaultTheme = () => invoke<string | null>('vault_theme');
 /** Names the open vault's theme in its `vault.json`; null leaves it out, for the default. */
 export const setVaultTheme = (theme: string | null) => invoke<void>('set_vault_theme', { theme });
 
+/** How the open vault's `vault.json` has its paper marked, or null for its theme's own. */
+export const vaultPaper = () => invoke<string | null>('vault_paper');
+
+/** Names how the open vault's paper is marked in its `vault.json`; null leaves it out, for the theme's
+ * own. */
+export const setVaultPaper = (paper: string | null) => invoke<void>('set_vault_paper', { paper });
+
 /** Whether the open vault's `vault.json` has moved and resized cards and zones snap to the grid. */
 export const vaultSnap = () => invoke<boolean>('vault_snap');
 

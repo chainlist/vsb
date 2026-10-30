@@ -59,6 +59,8 @@ export const vaultPicker = {
 export const openVault = (id: string) => command(() => vaults.openVault(id));
 export const vaultTheme = () => reading(settings.theme);
 export const setVaultTheme = (theme: string | null) => writing((e) => settings.setTheme(e, theme));
+export const vaultPaper = () => reading(settings.paper);
+export const setVaultPaper = (paper: string | null) => writing((e) => settings.setPaper(e, paper));
 export const vaultSnap = () => reading(settings.snap);
 export const setVaultSnap = (snap: boolean) => writing((e) => settings.setSnap(e, snap));
 export const vaultEdgeStyle = () => reading(settings.edgeStyle);

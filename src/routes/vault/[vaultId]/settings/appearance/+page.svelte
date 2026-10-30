@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { setDeviceInterfaceSize, setVaultTheme } from '#lib/api.js';
+	import { setDeviceInterfaceSize, setVaultPaper, setVaultTheme } from '#lib/api.js';
 	import Segmented from '#lib/chrome/Segmented.svelte';
 	import { DEFAULT_INTERFACE_SIZE, INTERFACE_SIZES, interfaceSize } from '#lib/interfaceSize.svelte.js';
-	import { DEFAULT_THEME, THEMES, theme } from '#lib/theme.svelte.js';
+	import { DEFAULT_THEME, PAPERS, THEMES, theme, type Paper } from '#lib/theme.svelte.js';
 
 	let error = $state('');
 
-	// Each choice shows at once, then is kept: the theme in vault.json, the size for this device.
-	// Both leave the default out.
+	// Each choice shows at once, then is kept: the theme and the paper in vault.json, the size for
+	// this device. The default theme and size are left out; the paper, once picked, stays the pick
+	// whatever the theme.
 	async function keep(write: Promise<void>) {
 		error = '';
 		try {
@@ -22,6 +23,11 @@
 		keep(setVaultTheme(id === DEFAULT_THEME ? null : id));
 	}
 
+	function pickPaper(id: Paper) {
+		theme.paper = id;
+		keep(setVaultPaper(id));
+	}
+
 	function pickSize(percent: number) {
 		interfaceSize.percent = percent;
 		keep(setDeviceInterfaceSize(percent === DEFAULT_INTERFACE_SIZE ? null : percent));
@@ -34,8 +40,8 @@
 	<div class="themes">
 		{#each THEMES as t (t.id)}
 			<label class="option">
-				<!-- A corner of a canvas, drawn in that theme's own tokens. -->
-				<span class="preview graph-paper" data-theme={t.id}>
+				<!-- A corner of a canvas, drawn in that theme's own tokens, on the paper it would have. -->
+				<span class="preview graph-paper" data-theme={t.id} data-paper={theme.paperIn(t.id)}>
 					<span class="index-card note-card">
 						<span class="index-card-title">Competitor scan</span>
 						Price tiers first, then customer interviews.
@@ -44,6 +50,28 @@
 				<span class="name">
 					<input type="radio" name="theme" value={t.id} checked={theme.id === t.id} onchange={() => pickTheme(t.id)} />
 					{t.name}
+				</span>
+			</label>
+		{/each}
+	</div>
+</fieldset>
+
+<fieldset>
+	<legend>Paper</legend>
+	<p class="hint">How the canvas is marked in this vault. Until you pick, each theme brings its own.</p>
+	<div class="papers">
+		{#each PAPERS as p (p.id)}
+			<label class="option">
+				<span class="preview sample graph-paper" data-paper={p.id}></span>
+				<span class="name">
+					<input
+						type="radio"
+						name="paper"
+						value={p.id}
+						checked={theme.paperIn(theme.id) === p.id}
+						onchange={() => pickPaper(p.id)}
+					/>
+					{p.name}
 				</span>
 			</label>
 		{/each}
@@ -72,6 +100,12 @@
 		gap: 18px;
 	}
 
+	.papers {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+		gap: 18px;
+	}
+
 	.option {
 		display: grid;
 		gap: 10px;
@@ -85,6 +119,10 @@
 		overflow: hidden;
 		border-radius: var(--radius-control);
 		box-shadow: inset 0 0 0 1px var(--border);
+	}
+
+	.sample {
+		height: 80px;
 	}
 
 	/* In the preview's own accent: the theme picked is the one on screen. */

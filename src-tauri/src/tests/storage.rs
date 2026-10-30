@@ -55,6 +55,20 @@ fn theme_is_kept_in_vault_json_and_left_out_for_the_default() {
 }
 
 #[test]
+fn paper_is_kept_in_vault_json_and_left_out_for_the_themes_own() {
+  let f = Fixture::new();
+  assert_eq!(f.vault.paper().unwrap(), None);
+  f.vault.set_theme(Some("pad".into())).unwrap();
+  f.vault.set_paper(Some("cross".into())).unwrap();
+  let json: serde_json::Value = serde_json::from_str(&f.read(".canvas/vault.json")).unwrap();
+  assert_eq!(json["paper"], "cross");
+  assert_eq!(json["theme"], "pad");
+  assert_eq!(Vault::open(f.dir.path()).unwrap().paper().unwrap().as_deref(), Some("cross"));
+  f.vault.set_paper(None).unwrap();
+  assert!(!f.read(".canvas/vault.json").contains("paper"));
+}
+
+#[test]
 fn snap_is_on_by_default_and_only_written_while_off() {
   let f = Fixture::new();
   assert!(f.vault.snap().unwrap());

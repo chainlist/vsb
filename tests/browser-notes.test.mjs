@@ -105,6 +105,18 @@ test("a vault's theme and snapping are its own, left out at their default", asyn
 	assert.deepEqual([await api.vaultTheme(), await api.vaultSnap()], [null, true]);
 });
 
+test("a vault's paper is its own, left out for the theme's", async () => {
+	const a = await fresh();
+	assert.equal(await api.vaultPaper(), null);
+	await api.setVaultPaper('cross');
+	await fresh();
+	assert.equal(await api.vaultPaper(), null);
+	await api.openVault(a);
+	assert.equal(await api.vaultPaper(), 'cross');
+	await api.setVaultPaper(null);
+	assert.equal(await api.vaultPaper(), null);
+});
+
 test("a vault's style for new edges keeps only what is not the default", async () => {
 	const a = await fresh();
 	const plain = { shape: 'curved', arrow: 'to', stroke: 'solid' };

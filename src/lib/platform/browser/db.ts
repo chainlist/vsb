@@ -8,7 +8,7 @@ export const STORES = ['meta', 'ui', 'notes', 'words', 'zones', 'cards', 'edges'
 
 /** The vault's settings, as the desktop's `vault.json`: settings at their default are left out, and
  * so is each part of the style for new edges, as in an edge file. */
-export type VaultFile = { format: number; id: string; theme?: string; snap?: boolean; newEdges?: Partial<EdgeStyle> };
+export type VaultFile = { format: number; id: string; theme?: string; paper?: string; snap?: boolean; newEdges?: Partial<EdgeStyle> };
 
 /** Version of the format written by this build. */
 export const FORMAT = 1;

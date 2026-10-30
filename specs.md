@@ -170,6 +170,7 @@ Rarely written. Holds:
 - `id`: vault ULID, used to find the index in the app-data folder
 - vault settings, each left out at its default:
   - `theme`: the theme the vault is drawn in
+  - `paper`: how its canvas is marked, `dots`, `grid`, `cross` or `empty` (see [Appearance](#appearance)); left out until picked, for the theme's own
   - `snap`: `false` when moved and resized cards and zones do not snap to the grid (on by default)
   - `newEdges`: the style every edge the app creates gets (see [Edges](#edges)), each part (`shape`, `arrow`, `stroke`) left out at its default as in an edge file, and the whole of it while all are: `"newEdges": { "shape": "angled", "stroke": "dashed" }`
 
@@ -607,7 +608,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 - **Settings is a modal** at `vault/[vaultId]/settings/`: the shared dialog, a centered sheet over the canvas, which stays mounted and visible behind the theme's dialog wash. It is sized as Obsidian's settings are: 90% of the window wide and 85% tall, at most 1100 by 1000 pixels at the interface size, whichever tab is open; a long tab scrolls. Each tab is a child route, so a tab can be linked to: Appearance, Canvas, Keyboard and Vault. The focus stays inside, and the canvas's keys are off while it is open. Escape, Close or a click on the wash goes back to the canvas.
   - **Mod+, opens it** (Ctrl+, or Cmd+, on macOS) from anywhere in a vault, also while typing, on its first tab; the same key again closes it, as the rail's keys open and close the panels.
-  - **Appearance:** the vault's theme and the device's interface size, below.
+  - **Appearance:** the vault's theme and paper, and the device's interface size, below.
   - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
   - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, drawing, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Mod+drag and Alt while dragging.
   - **Vault:** the vault's name and where it lives, in its backend's words. On the desktop, its folder's path and Show in folder, which opens the folder around it in Explorer or Finder with the vault selected (the opener plugin's Rust function, called by a command of the app's own; the plugin is not registered, so its commands stay out of the page's reach). In the browser, that it is kept in this browser and whether the browser agreed to keep it (see [Persistence](#persistence)).
@@ -620,7 +621,11 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - The tokens also set whether the theme is light or dark (for scrollbars and form controls), the wash behind a dialog, how strongly zones and cards are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
   - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
-- **Screens outside a vault** (the vault picker, errors) use the default theme.
+- **The paper belongs to the vault too:** how its canvas is marked, picked in Appearance under the themes from a sample of each in the vault's theme, applied at once and written to `vault.json` (`paper`).
+  - **Dots** at the grid's crossings, **Grid** (ruled lines), **Crosses** (a small cross at each crossing) or **Empty** (the paper alone). Major marks, every fifth square, are stronger than minor ones, which fade out as the squares shrink, as the grid steps up while zooming out. A cross's arms shorten on small squares, so crosses never meet.
+  - Until one is picked, each theme brings its own: Studio and Cairn dots, Engineering pad and Orbit a grid (Orbit's with nodes where its major lines cross). Once picked, it stays the vault's whatever the theme, and the themes' previews show it.
+  - A theme gives each mark its colors; crosses take the dots'.
+- **Screens outside a vault** (the vault picker, errors) use the default theme and its paper.
 - **The interface size belongs to the device:** 100% (the default), 115% or 130%, picked in Appearance, applied at once and kept in the app-data folder's `device.json`, the same in every vault and never synced. The default is left out of the file.
   - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the pen bar, the batch dialog, menus and tooltips, the settings dialog and the vault picker.
   - It never scales the canvas's cards, zones and edges, nor the marks drawn at a constant size on screen over them: zone names once collapsed, zone and cluster markers, bundles and resize handles. They belong to the map, and the zoomed-out map is built on their sizes.

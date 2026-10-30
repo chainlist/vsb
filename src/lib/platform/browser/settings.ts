@@ -23,6 +23,15 @@ export const setTheme = (e: Edit, theme: string | null) =>
 		else v.theme = theme;
 	});
 
+/** How the paper is marked, or null for the theme's own. */
+export const paper = async (e: Edit) => (await settings(e)).paper ?? null;
+
+export const setPaper = (e: Edit, paper: string | null) =>
+	change(e, (v) => {
+		if (paper === null) delete v.paper;
+		else v.paper = paper;
+	});
+
 /** Snapping to the grid: on unless the vault says otherwise. */
 export const snap = async (e: Edit) => (await settings(e)).snap ?? true;
 

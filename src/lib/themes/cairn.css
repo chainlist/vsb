@@ -10,8 +10,9 @@
 [data-theme='cairn'] {
 	--scheme: dark;
 	--paper: #171f1b;
-	--grid-line-major: transparent;
-	--grid-line-minor: transparent;
+	--grid-line-major: #27322c;
+	--grid-line-minor: #1e2722;
+	--grid-node: transparent;
 	--grid-dot-major: #3e4d44;
 	--grid-dot-minor: #29342e;
 	--border: #35443b;
