@@ -719,6 +719,7 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 - `pnpm build:web` writes the static site to `build/web`, for `/vsb`. Every route is served by the app's one page, also copied to `404.html`, which GitHub Pages serves for any path it does not know, so a link to a vault opens it. The app's folder is `app`, not `_app`, which Jekyll would leave out. `pnpm dev:web` serves it on port 5175.
 - Its configuration is `vite.web.config.ts`: the desktop's `vite.config.ts` does not change.
+- `.github/workflows/pages.yml` publishes it: on every push to `main`, or when run by hand, it installs from the lockfile, runs `pnpm build:web` and deploys `build/web` to GitHub Pages. The repository's Pages source is GitHub Actions.
 
 ## V3: shared note references
 
