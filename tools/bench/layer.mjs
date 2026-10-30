@@ -2,7 +2,7 @@
 // module (today's code, as `api.ts` held it before the layer) and through `api.ts`, alternating call
 // by call, so drift in the machine's load hits both alike.
 //
-//   node bench/layer.mjs --port 9224
+//   node tools/bench/layer.mjs --port 9224
 import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { connect } from './cdp.mjs';

@@ -7,7 +7,7 @@
 //   node site/shoot.mjs --port 9226
 import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { connect } from '../bench/cdp.mjs';
+import { connect } from '../../tools/bench/cdp.mjs';
 
 const { values: args } = parseArgs({
 	options: { port: { type: 'string' }, app: { type: 'string', default: 'http://localhost:5175/vsb/web/' } }

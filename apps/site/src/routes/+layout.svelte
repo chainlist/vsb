@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '../../../src/lib/themes/studio.css';
+	import '../../../frontend/src/lib/themes/studio.css';
 	import '../app.css';
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';

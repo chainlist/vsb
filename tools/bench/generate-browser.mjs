@@ -1,7 +1,7 @@
 // Builds the test vault in a browser through `#lib/api`, as the app would: zones, then cards and
 // their notes, then the unplaced notes and the edges. Prints the new vault's ID.
 //
-//   node bench/generate-browser.mjs --port 9225 --base /vsb/web/ --name bench-vault
+//   node tools/bench/generate-browser.mjs --port 9225 --base /vsb/web/ --name bench-vault
 import { parseArgs } from 'node:util';
 import { connect } from './cdp.mjs';
 import { generate } from './vault.mjs';

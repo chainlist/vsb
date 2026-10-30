@@ -1,10 +1,10 @@
-// Writes the test vault as files, for the desktop app: node bench/write-vault.mjs <folder>
+// Writes the test vault as files, for the desktop app: node tools/bench/write-vault.mjs <folder>
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generate } from './vault.mjs';
 
 const root = process.argv[2];
-if (!root) throw new Error('usage: node bench/write-vault.mjs <folder>');
+if (!root) throw new Error('usage: node tools/bench/write-vault.mjs <folder>');
 const plan = generate();
 rmSync(root, { recursive: true, force: true });
 for (const dir of ['notes', '.canvas/zones', '.canvas/cards', '.canvas/edges']) mkdirSync(join(root, dir), { recursive: true });

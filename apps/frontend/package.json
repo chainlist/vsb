@@ -1,0 +1,58 @@
+{
+	"name": "frontend",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"dev:web": "vite dev --config vite.web.config.ts --port 5175",
+		"build:web": "vite build --config vite.web.config.ts",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "node --test \"tests/*.test.mjs\""
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-static": "^4.0.0",
+		"@sveltejs/kit": "^3.0.0",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"@tailwindcss/vite": "^4.3.3",
+		"@types/markdown-it": "^14.2.0",
+		"fake-indexeddb": "^6.2.6",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.6.0",
+		"tailwindcss": "^4.3.3",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.0"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*",
+		"#platform": {
+			"web": "./src/lib/platform/browser/index.ts",
+			"default": "./src/lib/platform/tauri.ts"
+		}
+	},
+	"dependencies": {
+		"@dagrejs/dagre": "^3.1.1",
+		"@fontsource-variable/alegreya": "^5.3.0",
+		"@fontsource-variable/fraunces": "^5.3.0",
+		"@fontsource-variable/ibm-plex-sans": "^5.3.0",
+		"@fontsource-variable/instrument-sans": "^5.3.0",
+		"@fontsource-variable/literata": "^5.3.0",
+		"@fontsource-variable/saira": "^5.3.0",
+		"@fontsource-variable/space-grotesk": "^5.3.0",
+		"@fontsource/alegreya-sans": "^5.3.0",
+		"@lucide/svelte": "^1.62.0",
+		"@tauri-apps/api": "^2.12.4",
+		"bits-ui": "^2.19.5",
+		"clsx": "^2.1.1",
+		"markdown-it": "^15.0.3",
+		"perfect-freehand": "1.2.3",
+		"tailwind-merge": "^3.7.0",
+		"tailwind-variants": "^3.3.1",
+		"tw-animate-css": "^1.4.0"
+	}
+}

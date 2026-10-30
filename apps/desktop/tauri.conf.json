@@ -1,10 +1,10 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "$schema": "../../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Visual Second Brain",
   "version": "0.1.0",
   "identifier": "com.visualsecondbrain.app",
   "build": {
-    "frontendDist": "../build",
+    "frontendDist": "../frontend/build",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build"

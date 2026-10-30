@@ -33,7 +33,7 @@
 		</p>
 		<pre><code>{`pnpm install
 pnpm tauri build`}</code></pre>
-		<p>The installers land in <code>src-tauri/target/release/bundle</code>.</p>
+		<p>The installers land in <code>apps/desktop/target/release/bundle</code>.</p>
 	</Card>
 </section>
 

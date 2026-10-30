@@ -1,9 +1,9 @@
 // What the site takes from the app itself, so it follows the app: its name, its highlighters and
 // its themes. (Its look comes from the app's Studio theme, which the layout imports.)
-import tauri from '../../../src-tauri/tauri.conf.json';
-import { COLORS } from '../../../src/lib/canvas/colors.js';
+import tauri from '../../../desktop/tauri.conf.json';
+import { COLORS } from '../../../frontend/src/lib/canvas/colors.js';
 
-export { THEMES } from '../../../src/lib/theme.svelte.js';
+export { THEMES } from '../../../frontend/src/lib/theme.svelte.js';
 
 /** The app's name, as it is installed: renaming the app renames the site. */
 export const NAME = tauri.productName;

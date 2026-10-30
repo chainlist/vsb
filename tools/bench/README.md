@@ -12,8 +12,8 @@ backend. The numbers and what they mean are in [REPORT.md](REPORT.md).
 inside each zone and clump, links between zones, and between clumps and zones, so about half the
 edges are long). It spans about 49,000 by 46,000 world units.
 
-- Desktop: `node bench/write-vault.mjs <folder>` writes it as vault files.
-- Browser: `node bench/generate-browser.mjs --port <cdp port>` builds it in the page through
+- Desktop: `node tools/bench/write-vault.mjs <folder>` writes it as vault files.
+- Browser: `node tools/bench/generate-browser.mjs --port <cdp port>` builds it in the page through
   `#lib/api`, as the app would: about 23,000 commands.
 
 ## The scenarios
@@ -56,7 +56,7 @@ From the repo root, in PowerShell, with the vault written to `<vault>`:
 $env:CARGO_TARGET_DIR = "<short temp folder>"   # the MSVC linker fails on long paths
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9224"
 pnpm tauri dev --release --config tauri.bench.json
-node bench/run.mjs --port 9224 --label desktop-after-1 [--cold]
+node tools/bench/run.mjs --port 9224 --label desktop-after-1 [--cold]
 ```
 
 `--cold` opens first on a missing index: delete `%LOCALAPPDATA%\com.visualsecondbrain.bench\<vault id>`
@@ -69,8 +69,8 @@ dev server reloads it), alternating with "after" runs, so a drift in the machine
 ```powershell
 pnpm dev:web
 chrome --headless=new --remote-debugging-port=9225 --user-data-dir=<short temp folder> http://localhost:5175/vsb/web/
-node bench/generate-browser.mjs --port 9225
-node bench/run.mjs --port 9225 --base /vsb/web/ --vault <id it printed> --label browser-1
+node tools/bench/generate-browser.mjs --port 9225
+node tools/bench/run.mjs --port 9225 --base /vsb/web/ --vault <id it printed> --label browser-1
 ```
 
 In Git Bash, set `MSYS_NO_PATHCONV=1` so `/vsb/web/` is passed as is. Chrome fails to open IndexedDB

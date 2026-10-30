@@ -1,8 +1,8 @@
-// Runs the scenarios in a running app over CDP and writes their p50 and p95 to bench/results.
+// Runs the scenarios in a running app over CDP and writes their p50 and p95 to tools/bench/results.
 //
-//   node bench/run.mjs --port 9224 --label desktop-before [--cold] [--base /] [--vault <id>] [--only <regex>]
+//   node tools/bench/run.mjs --port 9224 --label desktop-before [--cold] [--base /] [--vault <id>] [--only <regex>]
 //
-// See bench/README.md for starting the app copies.
+// See tools/bench/README.md for starting the app copies.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { connect } from './cdp.mjs';

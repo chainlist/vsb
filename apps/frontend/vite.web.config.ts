@@ -1,7 +1,7 @@
 // The web build: the same app on the browser's own backend (the `web` condition of `#platform` in
 // package.json), as a static site for GitHub Pages under /vsb/web, beside the presentation site
-// (vite.site.config.ts) at /vsb. `pnpm dev:web` and `pnpm build:web` use it; the desktop keeps
-// vite.config.ts, untouched.
+// (../site) at /vsb, both written to the repository's build/pages. `pnpm dev:web` and
+// `pnpm build:web` use it; the desktop keeps vite.config.ts, untouched.
 import { readFileSync, writeFileSync } from 'node:fs';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -10,7 +10,7 @@ import { defaultClientConditions, defaultServerConditions, defineConfig } from '
 
 const base = '/vsb/web';
 // Every route is served by the fallback page.
-const pages = adapter({ pages: 'build/pages/web', fallback: 'index.html' });
+const pages = adapter({ pages: '../../build/pages/web', fallback: 'index.html' });
 
 export default defineConfig({
 	plugins: [
@@ -27,9 +27,9 @@ export default defineConfig({
 					// page, so a link to a vault opens it. A path outside the app goes to the site's home
 					// before the app starts, which would send the browser there itself and get this page
 					// again, forever.
-					const page = readFileSync('build/pages/web/index.html', 'utf8');
+					const page = readFileSync('../../build/pages/web/index.html', 'utf8');
 					const guard = `<script>if (!location.pathname.startsWith('${base}/')) { stop(); location.replace('/vsb/'); }</script>`;
-					writeFileSync('build/pages/404.html', page.replace('<head>', `<head>\n\t\t${guard}`));
+					writeFileSync('../../build/pages/404.html', page.replace('<head>', `<head>\n\t\t${guard}`));
 				}
 			},
 			paths: { base },
