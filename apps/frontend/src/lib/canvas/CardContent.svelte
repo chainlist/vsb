@@ -44,7 +44,7 @@
 		<!-- Its file is missing: the card says so (missing). -->
 	{/await}
 {:else if card.link && video}
-	<div class="player" class:upright={video.upright}>
+	<div class="player">
 		{#if playing}
 			<iframe
 				class:live={selected}
@@ -65,8 +65,6 @@
 			<button class="play" title="Play the video" aria-label="Play the video" onclick={() => (playing = true)}><Play size={24} /></button>
 		{/if}
 	</div>
-	{#if card.preview?.title}<strong class="page-title">{card.preview.title}</strong>{/if}
-	<span class="site"><Link size={13} /><span>{hostOf(card.link)}</span></span>
 {:else if card.link}
 	{@const page = card.preview}
 	{#if page?.image}
@@ -118,21 +116,17 @@
 		pointer-events: none;
 	}
 
-	/* A YouTube video's card: its player across the top, edge to edge, lying flat (16:9) or a Short
-	   upright (9:16), in a well of a video's black; its thumbnail and a play button until it plays. The
-	   player takes presses and the wheel only while its card is selected, so the card drags, pans and
-	   zooms over it otherwise. */
+	/* A YouTube video's card is the video alone, filling the card edge to edge in a well of a video's
+	   black: its thumbnail and a play button until it plays, then its player. The player takes presses
+	   and the wheel only while its card is selected, so the card drags, pans and zooms over it
+	   otherwise. */
 	.player {
 		position: relative;
-		flex: none;
+		flex: 1 1 auto;
+		min-height: 0;
 		width: calc(100% + 28px);
-		aspect-ratio: 16 / 9;
-		margin: -12px -14px 10px;
+		margin: -12px -14px;
 		background: black;
-	}
-
-	.player.upright {
-		aspect-ratio: 9 / 16;
 	}
 
 	.player img,

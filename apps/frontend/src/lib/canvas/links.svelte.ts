@@ -9,10 +9,9 @@ import { videoOf } from './video.js';
 const W = 320;
 const TALL = 320;
 const SHORT = 160;
-/** A YouTube video's card, lying flat or a Short standing upright: room for its player, two lines of
- * title and the host. */
-const FLAT = { w: 480, h: 360 };
-const UPRIGHT = { w: 240, h: 520 };
+/** A YouTube video's card, the video alone: lying flat (16:9), or a Short standing upright (9:16). */
+const FLAT = { w: 480, h: 270 };
+const UPRIGHT = { w: 240, h: 427 };
 
 /** The placeholders of the pages being read, in world coordinates, each with its page's host. */
 export const reading = $state({ pages: [] as (Frame & { id: number; host: string })[] });
