@@ -21,6 +21,7 @@ Principles:
 | Browser backend | TypeScript on IndexedDB, for the web build (see [Browser](#browser)). No WebAssembly. |
 | Platform layer | `#lib/api`, which talks to one of the two backends, picked when the app is built |
 | Frontend | SvelteKit 3 with Svelte 5, built as a static single-page app (`@sveltejs/adapter-static`) |
+| Link previews | `ureq` with the system's TLS (`native-tls`), reading a pasted link's page on the desktop |
 | Index | SQLite, used only from Rust. The build must include FTS5, R*Tree and math functions (`floor()`). |
 | Batch creation layout | `@dagrejs/dagre` |
 | Pen strokes | `perfect-freehand`, which outlines a stroke from its points and their pressure |
@@ -158,6 +159,8 @@ apps/frontend/src/routes/
   attachments/                # files cards show in place of notes, user-owned, a folder per kind
     images/
       Pasted image 20261030130732.png
+    links/                    # the images of link cards' pages, named after the page's host
+      github.com.jpg
   .canvas/                    # app-owned, synced with the vault
     vault.json
     zones/<zone-id>.json
@@ -237,6 +240,7 @@ Competitor scan
 - `color`: one of the highlighters zones take (see [Color](#color)), or left out for none.
 - `file`: the vault path of a file under `attachments/` the card shows in place of a note, `attachments/images/Diagram.png`; left out for none. A card shows a note or a file, never both, so `note` is `null` beside it.
 - `link`: the address of a web page the card shows in place of a note, `https://example.com/a`, http or https only; left out for none. Like `file`, it stands in for a note: `note` is `null` beside it.
+- `preview`: what that page said of itself when it was pasted (see [Links](#links)), `{ "title": "...", "description": "...", "image": "attachments/links/github.com.jpg" }`, each part left out when the page gave none, and the whole of it left out when it gave nothing or was not read.
 - Fields at their default value are left out of the file.
 
 ### Edge: `.canvas/edges/<edge-id>.json`
@@ -362,11 +366,16 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 
 ### Links
 
-- **A link card shows a web page** in place of a note, by its address. Its title is the page's host, without `www.`, beside a link icon; under it, the whole address in the theme's soft ink, cut with an ellipsis after three lines. It has no text: Enter and a double-click open nothing, and the selection bar's alignment grid leaves it out. It resizes as a note card does.
+- **A link card shows a web page** in place of a note, by its address, with what the page said of itself when it was pasted: its preview.
+  - **With a preview:** the page's image across the top, edge to edge, cropped to the 1.91:1 shape link previews are made for; under it the page's title (bold, cut after two lines), its description (in the theme's soft ink, cut after three) and, at the bottom, its host without `www.` beside a link icon. A part the page did not give is left out, and so is an image whose file is missing.
+  - **Without one,** or with only an image: the host as the card's title beside a link icon, and the whole address under it in the theme's soft ink, cut after three lines.
+  - It has no text: Enter and a double-click open nothing, and the selection bar's alignment grid leaves it out. It resizes as a note card does.
 - **Adding one.** A lone web address pasted with Mod+V becomes a link card (see [Copying and pasting](#copying-and-pasting)). There is no other way to make one yet.
+- **Reading the page.** On the desktop, the page is read as it is pasted, before the card lands; meanwhile a faint card where it will land says "Reading github.com…". The backend reads the first megabyte of the page, an HTML page only, for its head's tags, the first that gives each one winning: the title from `og:title`, `twitter:title`, then `<title>`; the description from `og:description`, `twitter:description`, then `description`; the image from `og:image` (or `og:image:url`, `og:image:secure_url`), then `twitter:image`, made whole against the page's address after redirects. Character references are decoded and runs of spaces made one; a title is cut at 200 characters, a description at 500. The image, a type an image card shows and at most 5 MB, is saved under `attachments/links/`, named after the page's host as a note is after its title, a clash numbered (`github.com 2.jpg`): the card shows it as an image card shows its file, offline too, and the site is not asked again. Each request gives up after 8 seconds and says it comes from Visual Second Brain. The page is read without holding the vault, so other edits go on meanwhile.
+- **Its size:** 320 by 320 with an image, room for the image, two lines of title, three of description and the host; 320 by 160 without. A page that cannot be read, or says nothing, makes a card without a preview. The web build reads no page (see [What does not apply](#what-does-not-apply)): its link cards have none.
 - **Opening it.** Ctrl+click (Cmd on macOS) anywhere on the card opens the page outside the app: on the desktop in the system's browser, in the browser build in a new tab. A plain click selects the card, and Ctrl+drag from it still draws an edge. A link in a note's text opens the same way with Ctrl+click; a plain click on it does nothing, since following it would navigate the whole app away.
-- **The app never fetches the page:** no title, no preview, nothing sent to the site until the page is opened.
-- **Web pages only.** The backend opens an address only when it is http or https, and a pasted clip naming any other leaves it out, so the card pastes empty: a link can come from anywhere, and opening another scheme could start any program. Ctrl+click on any other link in a note's text shows a failure notice.
+- **Read once:** the page is asked for when its link is pasted and when it is opened, never again. A copied link card brings its preview and shows the same image file, which another vault may not have: pasted there, it shows without its image.
+- **Web pages only.** The backend opens an address only when it is http or https, and a pasted clip naming any other leaves it out with its preview, so the card pastes empty, as it leaves out a preview's image outside `attachments/`: a link can come from anywhere, and opening another scheme could start any program. Ctrl+click on any other link in a note's text shows a failure notice.
 - **Not a note.** A link card has no note, so search and the Unplaced tray do not find it, and deleting it leaves nothing behind. A copied link card pastes as one in any vault; other apps get its address as text.
 
 ## Edges
@@ -420,7 +429,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **Paste (Mod+V)** lands centered under the pointer, or on the middle of the canvas when the pointer is elsewhere, as the builder's cards do; with snapping on, the corner of what it pastes lands on the grid.
   - **Copied items paste as new ones:** each with a new ID, each card with text a new note holding it, named after its title (`Idea 2.md` beside `Idea.md`). Until V3 a note has one card, so a pasted card never shows the note it was copied from. A card whose note was missing pastes as an empty card.
   - **Text copied from another app** becomes one card holding it, as a card placed by double-click: the same size and alignment.
-  - **A lone web address,** `http://` or `https://` with no space in it and nothing else but spaces around it, becomes a [link card](#links) the size of a placed card, with no note. Text holding an address among other words stays text.
+  - **A lone web address,** `http://` or `https://` with no space in it and nothing else but spaces around it, becomes a [link card](#links) with no note, once its page is read on the desktop, centered under the pointer as anything pasted. Text holding an address among other words stays text.
   - **An image** on the clipboard, as a screenshot leaves it, becomes an [image card](#images). Text comes first: a word processor copies text with a picture of it.
   - **Where it lands:** what was copied on its own joins the innermost zone under the middle of what is pasted, as a batch's cards do, and that zone grows to hold it. Never one of the zones the clip copies, so a copy never lands inside its original. What was inside a copied zone stays inside its copy, where it was.
   - **Then** the pasted items are selected, and framed as a batch's cards are when zoomed out, where they would be hidden, or when they land partly off-screen. The paste is one undo step; undoing it keeps the new notes, unplaced, as undoing a batch does.
@@ -572,6 +581,7 @@ CREATE TABLE cards (
   color     TEXT,                     -- NULL = the theme's plain stock
   file      TEXT,                     -- a vault file shown in place of a note
   link      TEXT,                     -- a web page shown in place of a note
+  preview   TEXT,                     -- JSON, what that page said of itself, as in the file
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX cards_note ON cards(note);
@@ -742,6 +752,7 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
 
 - **The startup scan, the check before every write and conflict copies.** Nothing changes a vault from outside the browser, so a save always lands (`saveNote` returns true) and a card is unresolved only when its note was deleted. These are no-ops, not missing features.
 - **Sync, atomic file writes and the write order.** A browser vault lives in one browser; a transaction stands in for the other two.
+- **Reading a link's page.** A page cannot read another site's page (CORS), and the web build has no server of its own, so `linkPreview` answers null and a pasted link card has no preview. One pasted from a desktop clip keeps its title and description; its image is not in the browser's vault.
 
 ### Persistence
 
