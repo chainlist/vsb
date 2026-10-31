@@ -2,8 +2,8 @@
 	import { snap } from './grid.svelte.js';
 </script>
 
-<!-- Each line the card or zone being moved or resized shares with the cards around it: a hairline on
-     screen at any zoom, with a dot at the ends of each card on it. -->
+<!-- Each line the card or zone being moved or resized shares with the cards around it: a faint
+     hairline on screen at any zoom, with a dot where it meets each card. -->
 {#each snap.guides as g (g.axis + g.at)}
 	{#if g.axis === 'x'}
 		<div class="guide down" style:left="{g.at}px" style:top="{g.from}px" style:height="{g.to - g.from}px"></div>
@@ -22,7 +22,7 @@
 	.guide,
 	.dot {
 		position: absolute;
-		background: var(--pen);
+		background: color-mix(in srgb, var(--pen) 40%, transparent);
 		pointer-events: none;
 	}
 
@@ -37,9 +37,10 @@
 	}
 
 	.dot {
-		width: calc(5px * var(--scale));
-		height: calc(5px * var(--scale));
+		width: calc(4px * var(--scale));
+		height: calc(4px * var(--scale));
 		border-radius: 50%;
+		background: color-mix(in srgb, var(--pen) 65%, transparent);
 		translate: -50% -50%;
 	}
 </style>

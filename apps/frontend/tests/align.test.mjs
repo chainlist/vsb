@@ -30,7 +30,7 @@ test('nothing around, nothing pulls', () => {
 	assert.equal(pull([0, 50, 100], [], 'x', 8), undefined);
 });
 
-test('a guide runs past the box and every card sharing its line, with dots at their ends', () => {
+test('a shared side runs corner to corner, a shared middle center to center', () => {
 	// Above shares its left, below its middle, and the far card nothing.
 	const moved = box(0, 300);
 	const above = box(0, 0, 100);
@@ -39,7 +39,7 @@ test('a guide runs past the box and every card sharing its line, with dots at th
 	const found = guides(moved, [above, below, far]);
 	assert.deepEqual(found, [
 		{ axis: 'x', at: 0, from: 0, to: 440, dots: [300, 440, 0, 140] },
-		{ axis: 'x', at: 120, from: 300, to: 740, dots: [300, 440, 600, 740] }
+		{ axis: 'x', at: 120, from: 370, to: 670, dots: [370, 670] }
 	]);
 });
 
@@ -50,8 +50,14 @@ test('guides across: a shared top and a shared middle', () => {
 	const found = guides(moved, [right, further]);
 	assert.deepEqual(found, [
 		{ axis: 'y', at: 0, from: 0, to: 400, dots: [0, 100, 300, 400] },
-		{ axis: 'y', at: 50, from: 0, to: 700, dots: [0, 100, 600, 700] }
+		{ axis: 'y', at: 50, from: 50, to: 650, dots: [50, 650] }
 	]);
+});
+
+test('a side on the middle of another card runs from its corners to that center', () => {
+	const moved = box(100, 300);
+	const above = box(0, 0, 200, 100);
+	assert.deepEqual(guides(moved, [above]), [{ axis: 'x', at: 100, from: 50, to: 440, dots: [300, 440, 50] }]);
 });
 
 test('only the lines asked for count, as the sides pulled while resizing', () => {
