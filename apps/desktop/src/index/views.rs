@@ -36,6 +36,8 @@ pub struct CardView {
   pub resolved: bool,
   /// The vault file the card shows in place of a note: an image.
   pub file: Option<String>,
+  /// The web page the card shows in place of a note, by its address.
+  pub link: Option<String>,
 }
 
 /// An item's box in absolute coordinates.

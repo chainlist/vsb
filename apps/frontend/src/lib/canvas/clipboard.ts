@@ -1,6 +1,7 @@
 // Copying, pasting and duplicating. Copying puts the selection on the system clipboard twice: as its
 // cards' text, for other apps, and as a clip hidden in the HTML, for this app, in any vault. Pasting
-// lands centered under the pointer; text from another app becomes a card, and an image an image card.
+// lands centered under the pointer; text from another app becomes a card, a lone web address a link
+// card, and an image an image card.
 import { copyItems, pasteItems, type Clip } from '#lib/api.js';
 import { typing } from '#lib/keys.js';
 import { renderMarkdown } from '#lib/markdown.js';
@@ -29,11 +30,11 @@ const gather = () =>
 
 export async function copySelected() {
 	const clip = await gather();
-	// The cards' text in reading order, top to bottom, then left to right.
+	// The cards' text in reading order, top to bottom, then left to right; a link card's is its address.
 	const texts = clip.cards
-		.filter((c) => c.text?.trim())
+		.filter((c) => (c.link ?? c.text)?.trim())
 		.sort((a, b) => a.y - b.y || a.x - b.x)
-		.map((c) => c.text!);
+		.map((c) => c.link ?? c.text!);
 	const html = `<div ${MARK}="${encodeURIComponent(JSON.stringify(clip))}">${texts.map(renderMarkdown).join('')}</div>`;
 	const blob = (text: string, type: string) => new Blob([text], { type });
 	await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob(html, 'text/html'), 'text/plain': blob(texts.join('\n\n'), 'text/plain') })]);
@@ -70,7 +71,8 @@ function onPaste(e: ClipboardEvent) {
 	due = null;
 	const data = e.clipboardData;
 	if (!at || typing(e.target) || !data) return;
-	const clip = clipIn(data.getData('text/html')) ?? textClip(data.getData('text/plain'));
+	const text = data.getData('text/plain');
+	const clip = clipIn(data.getData('text/html')) ?? linkClip(text) ?? textClip(text);
 	const image = clip ? undefined : [...data.files].find(isImage);
 	if (!clip && !image) return;
 	e.preventDefault();
@@ -108,5 +110,14 @@ function clipIn(html: string): Clip | null {
 function textClip(text: string): Clip | null {
 	if (!text.trim()) return null;
 	const card = { id: 'text', zone: null, x: 0, y: 0, ...NEW_CARD, text };
+	return { x: 0, y: 0, ...NEW_CARD, zones: [], cards: [card], drawings: [], edges: [] };
+}
+
+/** Text that is a lone web address, http or https, as a clip of one link card the size of a placed
+ * card; null for any other text. */
+function linkClip(text: string): Clip | null {
+	const link = text.trim();
+	if (!/^https?:\/\/\S+$/i.test(link) || !URL.canParse(link)) return null;
+	const card = { id: 'link', zone: null, x: 0, y: 0, ...NEW_CARD, text: null, link };
 	return { x: 0, y: 0, ...NEW_CARD, zones: [], cards: [card], drawings: [], edges: [] };
 }

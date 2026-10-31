@@ -172,6 +172,9 @@ pub struct Card {
   /// A file of the vault the card shows in place of a note, by its vault path: an image.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub file: Option<String>,
+  /// A web page the card shows in place of a note, by its address.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub link: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

@@ -1,7 +1,7 @@
 // The browser backend's copying and pasting: the desktop's clip tests.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { api, cardAt, changed, file, files, fresh, put, zoneAt } from './browser.mjs';
+import { api, cardAt, changed, file, files, fresh, put, WORLD, zoneAt } from './browser.mjs';
 
 /** Zone A on the canvas holding card c1, with text, and zone B, which holds card c2, whose note is
  * missing; card c3 loose beside it, card c4 below. Edges run from c1 to c2, c3 and c4. */
@@ -99,4 +99,22 @@ test('drawings copy with their strokes', async () => {
 	const [original, copy] = [await file('drawing', id), await file('drawing', pasted.ids[0])];
 	assert.deepEqual(copy.strokes, original.strokes);
 	assert.deepEqual([copy.x, copy.y], [500, 500]);
+});
+
+test('a link card copies with its link, and a clip brings only web pages', async () => {
+	await fresh();
+	await put(cardAt('l', null, 0, 0, { w: 240, h: 140, link: 'https://example.com/a' }));
+	const [view] = (await api.queryViewport(WORLD, 0, null)).cards;
+	assert.deepEqual([view.note, view.link], [null, 'https://example.com/a']);
+
+	const clip = await api.copyItems(['l'], [], []);
+	assert.deepEqual([clip.cards[0].text, clip.cards[0].link], [null, 'https://example.com/a']);
+	const copy = await file('card', (await api.pasteItems(clip, 500, 0)).ids[0]);
+	assert.deepEqual([copy.note, copy.link], [null, 'https://example.com/a']);
+
+	// Any other address is left out: the copy is an empty card. Nor is one opened.
+	clip.cards[0].link = 'javascript:alert(1)';
+	const empty = await file('card', (await api.pasteItems(clip, 1000, 0)).ids[0]);
+	assert.deepEqual([empty.note, 'link' in empty], [null, false]);
+	await assert.rejects(api.openLink('javascript:alert(1)'), (e) => e === 'not a web link');
 });

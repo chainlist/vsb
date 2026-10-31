@@ -105,6 +105,9 @@ export const vaultHome = async (): Promise<VaultHome> => ({
 	action: { label: 'Show in folder', run: () => invoke<void>('reveal_vault') }
 });
 
+/** Opens a web page, an http or https address, in the system's browser. Any other is refused. */
+export const openLink = (url: string) => invoke<void>('open_link', { url });
+
 /** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. Zoomed
  * out, given the size of a `cell` of the clusters' grid, nothing inside a zone comes back: only the
  * outermost zones, the loose cards counted per cell and the edges bundled. */

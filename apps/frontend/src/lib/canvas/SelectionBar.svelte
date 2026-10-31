@@ -24,8 +24,8 @@
 	const colors = COLORS.map(([value, name]): [string | null, string, string | null] => [value, name, value]);
 
 	const cards = $derived(selection.cards);
-	/** The cards with text to align: not those showing an image. */
-	const texts = $derived(cards.filter((c) => c.file === null));
+	/** The cards with text to align: not those showing an image or a web page. */
+	const texts = $derived(cards.filter((c) => c.file === null && c.link === null));
 	const zones = $derived(selection.zones);
 	const drawings = $derived(selection.drawings);
 	const zone = $derived(zones.length === 1 && selection.ids.length === 1);

@@ -34,9 +34,9 @@ import { cover, inside, items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
- * nothing to edit, nor has a card showing an image. */
+ * nothing to edit, nor has a card showing an image or a web page. */
 export function edit(item: CardView | ZoneView | EdgeView) {
-	if ('note' in item && ((item.note !== null && !item.resolved) || item.file !== null)) return;
+	if ('note' in item && ((item.note !== null && !item.resolved) || item.file !== null || item.link !== null)) return;
 	selection.only(item.id);
 	selection.editing = item.id;
 }
@@ -89,9 +89,9 @@ export function zoneSelected() {
 	});
 }
 
-/** Aligns the text of the selected cards; a card showing an image has none. */
+/** Aligns the text of the selected cards; a card showing an image or a web page has none. */
 export function alignSelected(halign: HAlign, valign: VAlign) {
-	const ids = selection.cards.filter((c) => c.file === null).map((c) => c.id);
+	const ids = selection.cards.filter((c) => c.file === null && c.link === null).map((c) => c.id);
 	return history.edit(() => alignCards(ids, halign, valign));
 }
 

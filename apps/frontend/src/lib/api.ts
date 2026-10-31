@@ -67,6 +67,8 @@ export type CardView = {
 	resolved: boolean;
 	/** The vault file the card shows in place of a note, by its vault path: an image. Null for none. */
 	file: string | null;
+	/** The web page the card shows in place of a note, by its address. Null for none. */
+	link: string | null;
 };
 
 /** An item's box in absolute world coordinates. */
@@ -171,10 +173,10 @@ export type Batch = { cards: string[]; undo: ItemState[] };
 /** What copying gathers, for the clipboard: the box around it in the world it was copied from, and
  * its items by the IDs they were copied from, their corners from the box's corner. An item's zone (a
  * zone's `parent`) is the copied zone around it, or null. Zones come parents first. A card brings
- * its note's text, null for none, and the vault file it shows, if any. */
+ * its note's text, null for none, and the vault file or web page it shows, if any. */
 export type Clip = Frame & {
 	zones: (Frame & { id: string; parent: string | null; name: string; color?: string })[];
-	cards: (Frame & { id: string; zone: string | null; halign?: HAlign; valign?: VAlign; color?: string; text: string | null; file?: string })[];
+	cards: (Frame & { id: string; zone: string | null; halign?: HAlign; valign?: VAlign; color?: string; text: string | null; file?: string; link?: string })[];
 	drawings: (Frame & { id: string; zone: string | null; strokes: PenStroke[] })[];
 	edges: { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke }[];
 };

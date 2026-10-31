@@ -73,7 +73,8 @@ const cardView = ({ id, file, ax, ay, title, excerpt, resolved }: CardRecord): C
 	title,
 	excerpt,
 	resolved,
-	file: file.file ?? null
+	file: file.file ?? null,
+	link: file.link ?? null
 });
 
 const drawingView = ({ id, file, ax, ay }: DrawingRecord): DrawingView => ({ id, zone: file.zone, x: ax, y: ay, w: file.w, h: file.h, strokes: file.strokes });

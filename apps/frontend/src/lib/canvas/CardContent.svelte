@@ -2,16 +2,31 @@
 	import Eraser from '@lucide/svelte/icons/eraser';
 	import FileQuestionMark from '@lucide/svelte/icons/file-question-mark';
 	import ImageOff from '@lucide/svelte/icons/image-off';
-	import type { CardView } from '#lib/api.js';
+	import Link from '@lucide/svelte/icons/link';
+	import { openLink, type CardView } from '#lib/api.js';
+	import { isMod } from '#lib/keys.js';
 	import { renderMarkdown } from '#lib/markdown.js';
 	import { clear } from './actions.js';
 	import { imageUrl } from './images.js';
 
 	let { card, missing }: { card: CardView; missing: boolean } = $props();
 
-	// Links render, but following one would navigate the whole app away.
+	// Links render, but following one would navigate the whole app away: Ctrl+click opens it outside
+	// the app instead, as on a link card.
 	function blockLinks(e: MouseEvent) {
-		if ((e.target as Element).closest('a')) e.preventDefault();
+		const link = (e.target as Element).closest('a');
+		if (!link) return;
+		e.preventDefault();
+		if (isMod(e)) void openLink(link.getAttribute('href') ?? '');
+	}
+
+	/** A web page's host, without `www.`; the address itself when it has none. */
+	function hostOf(url: string) {
+		try {
+			return new URL(url).host.replace(/^www\./, '');
+		} catch {
+			return url;
+		}
 	}
 </script>
 
@@ -27,6 +42,9 @@
 	{:catch}
 		<!-- Its file is missing: the card says so (missing). -->
 	{/await}
+{:else if card.link}
+	<strong class="index-card-title host"><Link size={15} /><span>{hostOf(card.link)}</span></strong>
+	<span class="url">{card.link}</span>
 {:else if card.note}
 	<strong class="index-card-title">{card.title}</strong>
 	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -40,8 +58,34 @@
 	.clear,
 	.index-card-title,
 	.body,
+	.url,
 	.image {
 		opacity: var(--shown);
+	}
+
+	/* A link card: its page's host as its title, beside an icon, and its address under it, cut short. */
+	.host {
+		display: flex;
+		align-items: center;
+		gap: 0.45em;
+	}
+
+	.host span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.url {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+		color: var(--ink-soft);
+		font-size: 13px;
+		line-height: 1.4;
 	}
 
 	/* The whole card, its shape kept as it is resized. */

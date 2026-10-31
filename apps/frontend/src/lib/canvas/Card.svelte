@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cubicOut } from 'svelte/easing';
-	import type { CardView } from '#lib/api.js';
+	import { openLink, type CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
 	import { edit } from './actions.js';
 	import { startMove } from './gestures.js';
@@ -36,6 +36,11 @@
 		edit(card);
 	}
 
+	/** Ctrl+click on a link card opens its page, outside the app. */
+	function follow(e: MouseEvent) {
+		if (card.link !== null && isMod(e)) void openLink(card.link);
+	}
+
 	/** As zones collapse, the card fades into the preview drawn beneath it, as long as dimming takes,
 	 * and no longer takes presses. Leaving the canvas any other way, it goes at once. */
 	function collapse(node: HTMLElement) {
@@ -46,7 +51,7 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 <div
 	class="card index-card"
 	class:note-card={card.file === null || missing}
@@ -63,6 +68,7 @@
 	style:text-align={card.halign}
 	style:justify-content={justify[card.valign]}
 	onpointerdown={press}
+	onclick={follow}
 	ondblclick={open}
 	out:collapse
 >

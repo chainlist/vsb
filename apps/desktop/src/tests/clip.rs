@@ -1,4 +1,4 @@
-use super::{card_file, files, open, put_card, put_zone, Fixture};
+use super::{card_file, files, open, put_card, put_zone, Fixture, WORLD};
 use crate::clip::Clip;
 use crate::items::{self, Edge, Kind, Zone};
 use crate::note::NoteText;
@@ -137,4 +137,24 @@ fn drawings_copy_with_their_strokes() {
   let copy: serde_json::Value = serde_json::from_str(&f.read(&format!(".canvas/drawings/{}.json", pasted.ids[0]))).unwrap();
   assert_eq!(copy["strokes"], original["strokes"]);
   assert_eq!((copy["x"].as_f64(), copy["y"].as_f64()), (Some(500.0), Some(500.0)));
+}
+
+#[test]
+fn a_link_card_copies_with_its_link_and_a_clip_brings_only_web_pages() {
+  let f = Fixture::new();
+  let card = json!({ "note": null, "zone": null, "x": 0.0, "y": 0.0, "w": 240.0, "h": 140.0, "link": "https://example.com/a" });
+  f.write(".canvas/cards/l.json", &card.to_string());
+  let s = open(&f);
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap().cards.into_iter().find(|c| c.id == "l").unwrap();
+  assert_eq!((view.note, view.link.as_deref()), (None, Some("https://example.com/a")));
+
+  let mut clip = s.copy_items(&ids(&["l"]), &[], &[]).unwrap();
+  assert_eq!((clip.cards[0].text.as_deref(), clip.cards[0].link.as_deref()), (None, Some("https://example.com/a")));
+  let copy = card_file(&f, &s.paste_items(&clip, 500.0, 0.0).unwrap().ids[0]);
+  assert_eq!((copy.note, copy.link.as_deref()), (None, Some("https://example.com/a")));
+
+  // Any other address is left out: the copy is an empty card.
+  clip.cards[0].link = Some("javascript:alert(1)".into());
+  let copy = card_file(&f, &s.paste_items(&clip, 1000.0, 0.0).unwrap().ids[0]);
+  assert_eq!((copy.note, copy.link), (None, None));
 }

@@ -11,6 +11,7 @@ mod fsx;
 mod index;
 mod items;
 mod layout;
+mod links;
 mod note;
 mod registry;
 mod scan;
@@ -84,6 +85,7 @@ pub fn run() {
       commands::set_vault_edge_style,
       commands::vault_folder,
       commands::reveal_vault,
+      commands::open_link,
       commands::query_viewport,
       commands::create_card,
       commands::place_note,

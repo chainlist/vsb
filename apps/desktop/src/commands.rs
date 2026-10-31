@@ -9,6 +9,7 @@ use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
 use crate::items::{Arrow, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign};
 use crate::layout::Move;
+use crate::links;
 use crate::states::{Created, ItemState};
 use crate::registry::{self, VaultEntry};
 use crate::session::Session;
@@ -157,6 +158,14 @@ pub async fn vault_folder(state: State<'_, AppState>) -> Result<String> {
 pub async fn reveal_vault(state: State<'_, AppState>) -> Result<()> {
   // The opener plugin's own function: the plugin is not registered, so its commands stay out of reach.
   state.with(|s| tauri_plugin_opener::reveal_item_in_dir(&s.vault.root).map_err(|e| Error::Msg(e.to_string())))
+}
+
+/// Opens a web page in the system's browser, with the opener plugin's own function as above. Any
+/// other address is refused.
+#[tauri::command]
+pub async fn open_link(url: String) -> Result<()> {
+  links::check(&url)?;
+  tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| Error::Msg(e.to_string()))
 }
 
 #[tauri::command]

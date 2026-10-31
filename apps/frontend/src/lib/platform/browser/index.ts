@@ -28,6 +28,7 @@ import * as cards from './cards.ts';
 import * as clip from './clip.ts';
 import * as drawings from './drawings.ts';
 import * as edges from './edges.ts';
+import * as links from './links.ts';
 import * as lists from './lists.ts';
 import * as notes from './notes.ts';
 import * as scope from './scope.ts';
@@ -72,6 +73,7 @@ export const setVaultSnap = (snap: boolean) => writing((e) => settings.setSnap(e
 export const vaultEdgeStyle = () => reading(settings.edgeStyle);
 export const setVaultEdgeStyle = (style: EdgeStyle) => writing((e) => settings.setEdgeStyle(e, style));
 export const vaultHome = () => command(vaults.home);
+export const openLink = (url: string) => local(() => links.openLink(url));
 
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) => reading((e) => viewport(e, rect, minSize, cell));
 export const createCard = (x: number, y: number, w: number, h: number) => writing((e) => cards.createCard(e, x, y, w, h));
