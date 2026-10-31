@@ -28,6 +28,7 @@
 	import EdgeLine from './EdgeLine.svelte';
 	import Edge from './Edge.svelte';
 	import EdgeInsert from './EdgeInsert.svelte';
+	import Guides from './Guides.svelte';
 	import ResizeHandles from './ResizeHandles.svelte';
 	import SelectionBar from './SelectionBar.svelte';
 	import WayPicker from './WayPicker.svelte';
@@ -230,6 +231,7 @@
 				style:height="{selecting.box.h}px"
 			></div>
 		{/if}
+		<Guides />
 		<ResizeHandles {hovered} />
 	</div>
 	{#if ink.on}

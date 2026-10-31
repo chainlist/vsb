@@ -14,6 +14,7 @@ import {
 	type Rect,
 	type ZoneView
 } from '#lib/api.js';
+import { guides, lines, pull, type Axis } from './align.js';
 import { camera } from './camera.svelte.js';
 import { track } from './drag.js';
 import { snap, toGrid } from './grid.svelte.js';
@@ -27,6 +28,8 @@ export const MIN = { w: 60, h: 40 };
 export const NEW_CARD = { w: 240, h: 140 };
 /** Width of a resize handle on a side or corner, in screen pixels, half of it outside the item. */
 export const GRIP = 10;
+/** How near, in screen pixels, a side or middle is pulled onto one of a card around it. */
+const REACH = 6;
 
 /** Where a new card lies, centered on a world point. */
 export function newCardAt(p: { x: number; y: number }) {
@@ -36,6 +39,14 @@ export function newCardAt(p: { x: number; y: number }) {
 type Item = CardView | ZoneView;
 
 const drops = (moved: (Item | DrawingView)[]) => moved.map(({ id, x, y }) => ({ id, x, y }));
+
+/** The cards on screen, other than these, for what is moved or resized to line up with. */
+function around(skip: Set<string>) {
+	const v = camera.visible;
+	return items.cards
+		.filter((c) => !skip.has(c.id) && c.x < v.maxX && c.x + c.w > v.minX && c.y < v.maxY && c.y + c.h > v.minY)
+		.map(({ x, y, w, h }) => ({ x, y, w, h }));
+}
 
 export function startMove(down: PointerEvent, item: { id: string }) {
 	if (down.button !== 0) return;
@@ -54,23 +65,31 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 	const cards = selection.cards.filter((c) => !carried.has(c.id));
 	const drawings = selection.drawings.filter((d) => !carried.has(d.id));
 	const moving = [...zones, ...cards, ...drawings, ...inside].map((i) => ({ item: i, x: i.x, y: i.y }));
-	// The item pressed lands on the grid and the others keep their places around it. Pressing an
-	// edge moves its selection, led by the first item in it.
+	// The item pressed lines up with the cards around or lands on the grid, and the others keep their
+	// places around it. Pressing an edge moves its selection, led by the first item in it.
 	const lead = moving.find((m) => m.item.id === item.id) ?? moving[0];
+	const still = around(new Set(moving.map((m) => m.item.id)));
 	track(down, {
 		move(dx, dy, e) {
 			const by = { x: Math.round(dx / camera.zoom), y: Math.round(dy / camera.zoom) };
 			// Alt held moves freely.
-			if (lead && snap.on && !e.altKey) {
-				by.x = toGrid(lead.x + by.x) - lead.x;
-				by.y = toGrid(lead.y + by.y) - lead.y;
+			const snapping = lead && snap.on && !e.altKey;
+			if (snapping) {
+				// A side or the middle within reach of one of a card around lands on it, or else the
+				// corner lands on the grid.
+				const at = { x: lead.x + by.x, y: lead.y + by.y, w: lead.item.w, h: lead.item.h };
+				const reach = REACH / camera.zoom;
+				by.x += pull(lines(at, 'x'), still, 'x', reach) ?? toGrid(at.x) - at.x;
+				by.y += pull(lines(at, 'y'), still, 'y', reach) ?? toGrid(at.y) - at.y;
 			}
 			for (const m of moving) {
 				m.item.x = m.x + by.x;
 				m.item.y = m.y + by.y;
 			}
+			snap.guides = snapping ? guides(lead.item, still) : [];
 		},
 		end(dragged) {
+			snap.guides = [];
 			if (dragged) {
 				// Back where it started, as a short drag can snap, nothing is written.
 				if (!lead || (lead.item.x === lead.x && lead.item.y === lead.y)) return;
@@ -108,14 +127,18 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 	// A zone can't shrink smaller than the area its contents cover.
 	let cover: Rect | null = null;
 	if (kind === 'zone') zoneContents(item.id).then((r) => (cover = r));
+	const still = around(new Set([item.id]));
+	// A pulled side within reach of a side or the middle of a card around lands on it, or else on the grid.
+	const land = (v: number, axis: Axis) => v + (pull([v], still, axis, REACH / camera.zoom) ?? toGrid(v) - v);
 	track(down, {
 		move(dx, dy, e) {
 			let bx = dx / camera.zoom;
 			let by = dy / camera.zoom;
-			// The pulled sides land on the grid. Alt held resizes freely.
-			if (snap.on && !e.altKey) {
-				bx = toGrid(side.x + bx) - side.x;
-				by = toGrid(side.y + by) - side.y;
+			// Alt held resizes freely.
+			const snapping = snap.on && !e.altKey;
+			if (snapping) {
+				bx = land(side.x + bx, 'x') - side.x;
+				by = land(side.y + by, 'y') - side.y;
 			}
 			item.w = stretch(from.w, px, bx, MIN.w);
 			item.h = stretch(from.h, py, by, MIN.h);
@@ -135,8 +158,12 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 				item.w = right - item.x;
 				item.h = bottom - item.y;
 			}
+			// Only the pulled sides show the lines they share.
+			const pulled = { x: px ? [px < 0 ? item.x : item.x + item.w] : [], y: py ? [py < 0 ? item.y : item.y + item.h] : [] };
+			snap.guides = snapping ? guides(item, still, pulled) : [];
 		},
 		end(dragged) {
+			snap.guides = [];
 			const { id, x, y, w, h } = item;
 			// A click on a side or corner selects the item, as a click inside it does.
 			if (!dragged) {
