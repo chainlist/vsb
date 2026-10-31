@@ -7,7 +7,7 @@ use crate::device::{self, Pen, Wheel};
 use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
-use crate::items::{Arrow, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign};
+use crate::items::{Arrow, EdgeStyle, HAlign, Kind, Preview, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::links;
 use crate::states::{Created, ItemState};
@@ -166,6 +166,16 @@ pub async fn reveal_vault(state: State<'_, AppState>) -> Result<()> {
 pub async fn open_link(url: String) -> Result<()> {
   links::check(&url)?;
   tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| Error::Msg(e.to_string()))
+}
+
+/// What a web page says of itself, read as a link to it is pasted: its title, description and
+/// image, the image written under `attachments/links/`. None when it says nothing. The page is read
+/// without holding the vault, so other commands go on meanwhile.
+#[tauri::command]
+pub async fn link_preview(state: State<'_, AppState>, url: String) -> Result<Option<Preview>> {
+  let read = url.clone();
+  let page = tauri::async_runtime::spawn_blocking(move || links::fetch(&read)).await.map_err(|e| Error::Msg(e.to_string()))??;
+  state.with(|s| s.keep_preview(&url, page))
 }
 
 #[tauri::command]

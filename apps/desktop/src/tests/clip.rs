@@ -1,6 +1,6 @@
 use super::{card_file, files, open, put_card, put_zone, Fixture, WORLD};
 use crate::clip::Clip;
-use crate::items::{self, Edge, Kind, Zone};
+use crate::items::{self, Edge, Kind, Preview, Zone};
 use crate::note::NoteText;
 use crate::session::Session;
 use serde_json::json;
@@ -140,21 +140,29 @@ fn drawings_copy_with_their_strokes() {
 }
 
 #[test]
-fn a_link_card_copies_with_its_link_and_a_clip_brings_only_web_pages() {
+fn a_link_card_copies_with_its_link_and_preview_and_a_clip_brings_only_web_pages() {
   let f = Fixture::new();
-  let card = json!({ "note": null, "zone": null, "x": 0.0, "y": 0.0, "w": 240.0, "h": 140.0, "link": "https://example.com/a" });
+  let preview = json!({ "title": "A", "description": "About A", "image": "attachments/links/example.com.png" });
+  let card = json!({ "note": null, "zone": null, "x": 0.0, "y": 0.0, "w": 320.0, "h": 300.0, "link": "https://example.com/a", "preview": preview });
   f.write(".canvas/cards/l.json", &card.to_string());
   let s = open(&f);
   let view = s.index.viewport(WORLD, 0.0, None).unwrap().cards.into_iter().find(|c| c.id == "l").unwrap();
   assert_eq!((view.note, view.link.as_deref()), (None, Some("https://example.com/a")));
+  let shown = Preview { title: Some("A".into()), description: Some("About A".into()), image: Some("attachments/links/example.com.png".into()) };
+  assert_eq!(view.preview.as_ref(), Some(&shown));
 
   let mut clip = s.copy_items(&ids(&["l"]), &[], &[]).unwrap();
   assert_eq!((clip.cards[0].text.as_deref(), clip.cards[0].link.as_deref()), (None, Some("https://example.com/a")));
   let copy = card_file(&f, &s.paste_items(&clip, 500.0, 0.0).unwrap().ids[0]);
-  assert_eq!((copy.note, copy.link.as_deref()), (None, Some("https://example.com/a")));
+  assert_eq!((copy.note, copy.link.as_deref(), copy.preview.as_ref()), (None, Some("https://example.com/a"), Some(&shown)));
 
-  // Any other address is left out: the copy is an empty card.
+  // A preview's image outside the attachments is left out.
+  clip.cards[0].preview.as_mut().unwrap().image = Some("../secret.png".into());
+  let copy = card_file(&f, &s.paste_items(&clip, 500.0, 500.0).unwrap().ids[0]);
+  assert_eq!(copy.preview.map(|p| (p.title, p.image)), Some((Some("A".into()), None)));
+
+  // Any other address is left out, with its preview: the copy is an empty card.
   clip.cards[0].link = Some("javascript:alert(1)".into());
   let copy = card_file(&f, &s.paste_items(&clip, 1000.0, 0.0).unwrap().ids[0]);
-  assert_eq!((copy.note, copy.link), (None, None));
+  assert_eq!((copy.note, copy.link, copy.preview), (None, None, None));
 }

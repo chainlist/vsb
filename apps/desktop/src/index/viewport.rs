@@ -4,6 +4,7 @@ use super::bounds::ZONE_ABS;
 use super::views::{CardView, EdgeView, Frame, Viewport, ZoneView};
 use super::{Index, Rect};
 use crate::error::Result;
+use crate::items::Preview;
 use rusqlite::params;
 
 /// R*Tree filter: bounds `b` meet the rectangle ?1..?4.
@@ -46,7 +47,8 @@ impl Index {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
        SELECT c.id, c.note, c.zone, coalesce(zabs.ax, 0) + c.x, coalesce(zabs.ay, 0) + c.y, c.w, c.h,
-         c.halign, c.valign, c.color, n.title, n.excerpt, n.key IS NOT NULL, c.file, c.link
+         c.halign, c.valign, c.color, n.title, n.excerpt, n.key IS NOT NULL, c.file, c.link,
+         json_extract(c.preview, '$.title'), json_extract(c.preview, '$.description'), json_extract(c.preview, '$.image')
        FROM card_bounds b JOIN cards c ON c.key = b.key
        LEFT JOIN zabs ON zabs.id = c.zone LEFT JOIN notes n ON n.id = c.note
        WHERE {MEETS} AND {LARGE}"
@@ -69,6 +71,7 @@ impl Index {
           resolved: r.get(12)?,
           file: r.get(13)?,
           link: r.get(14)?,
+          preview: Some(Preview { title: r.get(15)?, description: r.get(16)?, image: r.get(17)? }).filter(|p| *p != Preview::default()),
         })
       })?
       .collect::<rusqlite::Result<_>>()?;

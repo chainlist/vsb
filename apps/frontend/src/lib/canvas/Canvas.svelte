@@ -13,6 +13,7 @@
 	import { forgetImages, listenForDrops } from './images.js';
 	import { outline } from './ink.js';
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
+	import { forgetReading, reading } from './links.svelte.js';
 	import { newEdges } from './newEdges.svelte.js';
 	import { ink, startInk } from './pen.svelte.js';
 	import { route } from './route.js';
@@ -54,6 +55,7 @@
 	history.reset();
 	batchDialog.close();
 	forgetImages();
+	forgetReading();
 	ink.on = false;
 
 	// Frames the contents once, as soon as the canvas has a size.
@@ -183,6 +185,17 @@
 		{#each items.cards as card (card.id)}
 			<Card {card} />
 		{/each}
+		{#each reading.pages as page (page.id)}
+			<div
+				class="reading index-card note-card"
+				style:left="{page.x}px"
+				style:top="{page.y}px"
+				style:width="{page.w}px"
+				style:height="{page.h}px"
+			>
+				Reading {page.host}…
+			</div>
+		{/each}
 		{#each items.drawings as drawing (drawing.id)}
 			<Drawing {drawing} />
 		{/each}
@@ -285,6 +298,18 @@
 			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='white' stroke-width='3'/%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%23222' stroke-width='1.25'/%3E%3C/svg%3E")
 				10 10,
 			crosshair;
+	}
+
+	/* Where a pasted link's card will land, while its page is read: a faint card saying so. */
+	.reading {
+		position: absolute;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--ink-soft);
+		font: 13px var(--font-ui);
+		opacity: 0.7;
+		pointer-events: none;
 	}
 
 	.draft {

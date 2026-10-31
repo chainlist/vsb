@@ -11,6 +11,7 @@ import type {
 	HAlign,
 	ItemState,
 	Link,
+	LinkPreview,
 	Move,
 	Pen,
 	Rect,
@@ -74,6 +75,8 @@ export const vaultEdgeStyle = () => reading(settings.edgeStyle);
 export const setVaultEdgeStyle = (style: EdgeStyle) => writing((e) => settings.setEdgeStyle(e, style));
 export const vaultHome = () => command(vaults.home);
 export const openLink = (url: string) => local(() => links.openLink(url));
+/** None: a page cannot read another site's page (CORS), and the web build has no server of its own. */
+export const linkPreview = (_url: string) => local((): LinkPreview | null => null);
 
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) => reading((e) => viewport(e, rect, minSize, cell));
 export const createCard = (x: number, y: number, w: number, h: number) => writing((e) => cards.createCard(e, x, y, w, h));

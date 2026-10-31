@@ -101,20 +101,28 @@ test('drawings copy with their strokes', async () => {
 	assert.deepEqual([copy.x, copy.y], [500, 500]);
 });
 
-test('a link card copies with its link, and a clip brings only web pages', async () => {
+test('a link card copies with its link and preview, and a clip brings only web pages', async () => {
 	await fresh();
-	await put(cardAt('l', null, 0, 0, { w: 240, h: 140, link: 'https://example.com/a' }));
+	const preview = { title: 'A', description: 'About A', image: 'attachments/links/example.com.png' };
+	await put(cardAt('l', null, 0, 0, { w: 320, h: 300, link: 'https://example.com/a', preview }));
 	const [view] = (await api.queryViewport(WORLD, 0, null)).cards;
-	assert.deepEqual([view.note, view.link], [null, 'https://example.com/a']);
+	assert.deepEqual([view.note, view.link, view.preview], [null, 'https://example.com/a', preview]);
 
 	const clip = await api.copyItems(['l'], [], []);
 	assert.deepEqual([clip.cards[0].text, clip.cards[0].link], [null, 'https://example.com/a']);
 	const copy = await file('card', (await api.pasteItems(clip, 500, 0)).ids[0]);
-	assert.deepEqual([copy.note, copy.link], [null, 'https://example.com/a']);
+	assert.deepEqual([copy.note, copy.link, copy.preview], [null, 'https://example.com/a', preview]);
 
-	// Any other address is left out: the copy is an empty card. Nor is one opened.
+	// A preview's image outside the attachments is left out.
+	clip.cards[0].preview = { ...preview, image: '../secret.png' };
+	const outside = await file('card', (await api.pasteItems(clip, 500, 500)).ids[0]);
+	assert.deepEqual(outside.preview, { title: 'A', description: 'About A' });
+
+	// Any other address is left out, with its preview: the copy is an empty card. Nor is one opened.
 	clip.cards[0].link = 'javascript:alert(1)';
 	const empty = await file('card', (await api.pasteItems(clip, 1000, 0)).ids[0]);
-	assert.deepEqual([empty.note, 'link' in empty], [null, false]);
+	assert.deepEqual([empty.note, 'link' in empty, 'preview' in empty], [null, false, false]);
 	await assert.rejects(api.openLink('javascript:alert(1)'), (e) => e === 'not a web link');
+	// The browser reads no other site's page.
+	assert.equal(await api.linkPreview('https://example.com/a'), null);
 });

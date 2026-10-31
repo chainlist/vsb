@@ -175,6 +175,21 @@ pub struct Card {
   /// A web page the card shows in place of a note, by its address.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub link: Option<String>,
+  /// What that page said of itself when it was pasted.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub preview: Option<Preview>,
+}
+
+/// A web page's title, description and image, as it gave them in its head; the image by the vault
+/// path it was saved at. Each is left out when the page gave none.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+pub struct Preview {
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub title: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub description: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub image: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

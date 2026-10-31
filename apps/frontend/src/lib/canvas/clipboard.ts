@@ -1,7 +1,7 @@
 // Copying, pasting and duplicating. Copying puts the selection on the system clipboard twice: as its
 // cards' text, for other apps, and as a clip hidden in the HTML, for this app, in any vault. Pasting
 // lands centered under the pointer; text from another app becomes a card, a lone web address a link
-// card, and an image an image card.
+// card once its page is read, and an image an image card.
 import { copyItems, pasteItems, type Clip } from '#lib/api.js';
 import { typing } from '#lib/keys.js';
 import { renderMarkdown } from '#lib/markdown.js';
@@ -11,6 +11,7 @@ import { NEW_CARD } from './gestures.js';
 import { GRID, snap, toGrid } from './grid.svelte.js';
 import { history } from './history.js';
 import { addImages, isImage, pastedName } from './images.js';
+import { linkClip, webAddress } from './links.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** The attribute of the HTML on the clipboard that holds a clip. */
@@ -72,11 +73,13 @@ function onPaste(e: ClipboardEvent) {
 	const data = e.clipboardData;
 	if (!at || typing(e.target) || !data) return;
 	const text = data.getData('text/plain');
-	const clip = clipIn(data.getData('text/html')) ?? linkClip(text) ?? textClip(text);
-	const image = clip ? undefined : [...data.files].find(isImage);
-	if (!clip && !image) return;
+	const link = webAddress(text);
+	const clip = clipIn(data.getData('text/html')) ?? (link ? null : textClip(text));
+	const image = clip || link ? undefined : [...data.files].find(isImage);
+	if (!clip && !link && !image) return;
 	e.preventDefault();
 	if (clip) paste(clip, at);
+	else if (link) void linkClip(link, at).then((read) => read && paste(read, at));
 	else if (image) void addImages([{ name: pastedName(image), blob: image }], at);
 }
 
@@ -110,14 +113,5 @@ function clipIn(html: string): Clip | null {
 function textClip(text: string): Clip | null {
 	if (!text.trim()) return null;
 	const card = { id: 'text', zone: null, x: 0, y: 0, ...NEW_CARD, text };
-	return { x: 0, y: 0, ...NEW_CARD, zones: [], cards: [card], drawings: [], edges: [] };
-}
-
-/** Text that is a lone web address, http or https, as a clip of one link card the size of a placed
- * card; null for any other text. */
-function linkClip(text: string): Clip | null {
-	const link = text.trim();
-	if (!/^https?:\/\/\S+$/i.test(link) || !URL.canParse(link)) return null;
-	const card = { id: 'link', zone: null, x: 0, y: 0, ...NEW_CARD, text: null, link };
 	return { x: 0, y: 0, ...NEW_CARD, zones: [], cards: [card], drawings: [], edges: [] };
 }

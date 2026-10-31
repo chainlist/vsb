@@ -6,7 +6,7 @@
 use crate::attachments;
 use crate::error::Result;
 use crate::index::Rect;
-use crate::items::{is_default, Card, Drawing, Edge, HAlign, Kind, VAlign, Zone};
+use crate::items::{is_default, Card, Drawing, Edge, HAlign, Kind, Preview, VAlign, Zone};
 use crate::links;
 use crate::session::Session;
 use crate::states::ItemState;
@@ -46,9 +46,11 @@ pub struct ClipCard {
   /// The vault file it shows, as in its card file: a pasted copy shows the same file.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub file: Option<String>,
-  /// The web page it shows, as in its card file.
+  /// The web page it shows, and what that page said of itself, as in its card file.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub link: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub preview: Option<Preview>,
 }
 
 /// What copying gathers: the box around it in the world it was copied from, zones parents first,
@@ -154,10 +156,12 @@ impl Session {
         ids.push(id.clone());
       }
       // A clip can come from anywhere: a file outside the vault's attachments is left out, and so is
-      // a link to anything but a web page.
+      // a link to anything but a web page, with its preview, and a preview's image outside them.
       let file = c.file.clone().filter(|f| attachments::check(f).is_ok());
       let link = c.link.clone().filter(|l| links::check(l).is_ok());
-      let card = Card { note, zone, x: cx, y: cy, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color: c.color.clone(), file, link };
+      let preview = c.preview.clone().filter(|_| link.is_some()).map(|p| Preview { image: p.image.filter(|i| attachments::check(i).is_ok()), ..p });
+      let (halign, valign, color) = (c.halign, c.valign, c.color.clone());
+      let card = Card { note, zone, x: cx, y: cy, w: c.w, h: c.h, halign, valign, color, file, link, preview };
       states.push(ItemState::of(&id, &card)?);
       cards.insert(c.id.as_str(), id);
     }
@@ -198,8 +202,9 @@ impl Session {
           Some(note) if self.index.note_path(note)?.is_some() => Some(self.read_note(note)?),
           _ => None,
         };
-        let (halign, valign, color, file, link) = (c.halign, c.valign, c.color, c.file, c.link);
-        clip.cards.push(ClipCard { id: id.into(), zone: within, x: ox + c.x, y: oy + c.y, w: c.w, h: c.h, halign, valign, color, text, file, link });
+        let (halign, valign, color, file, link, preview) = (c.halign, c.valign, c.color, c.file, c.link, c.preview);
+        let (x, y) = (ox + c.x, oy + c.y);
+        clip.cards.push(ClipCard { id: id.into(), zone: within, x, y, w: c.w, h: c.h, halign, valign, color, text, file, link, preview });
       }
       Kind::Drawing => {
         let d: Drawing = self.read(id)?;

@@ -1,7 +1,7 @@
 //! What the viewport query returns: zones, cards, edges and drawings, or zoomed out clusters and
 //! bundles, in absolute coordinates.
 
-use crate::items::PenStroke;
+use crate::items::{PenStroke, Preview};
 use serde::Serialize;
 
 /// A zone, in absolute coordinates.
@@ -36,8 +36,9 @@ pub struct CardView {
   pub resolved: bool,
   /// The vault file the card shows in place of a note: an image.
   pub file: Option<String>,
-  /// The web page the card shows in place of a note, by its address.
+  /// The web page the card shows in place of a note, by its address, and what it said of itself.
   pub link: Option<String>,
+  pub preview: Option<Preview>,
 }
 
 /// An item's box in absolute coordinates.

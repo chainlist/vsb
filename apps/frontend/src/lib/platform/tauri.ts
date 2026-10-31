@@ -14,6 +14,7 @@ import type {
 	HAlign,
 	ItemState,
 	Link,
+	LinkPreview,
 	LinkPlan,
 	Move,
 	Pasted,
@@ -107,6 +108,10 @@ export const vaultHome = async (): Promise<VaultHome> => ({
 
 /** Opens a web page, an http or https address, in the system's browser. Any other is refused. */
 export const openLink = (url: string) => invoke<void>('open_link', { url });
+
+/** What a web page says of itself, read as a link to it is pasted: its title, description and
+ * image, the image saved under `attachments/links/`. Null when it says nothing. */
+export const linkPreview = (url: string) => invoke<LinkPreview | null>('link_preview', { url });
 
 /** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. Zoomed
  * out, given the size of a `cell` of the clusters' grid, nothing inside a zone comes back: only the

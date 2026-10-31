@@ -86,6 +86,7 @@ pub fn run() {
       commands::vault_folder,
       commands::reveal_vault,
       commands::open_link,
+      commands::link_preview,
       commands::query_viewport,
       commands::create_card,
       commands::place_note,

@@ -73,10 +73,12 @@ export async function pasteItems(e: Edit, clip: Clip, x: number, y: number): Pro
 		const id = newId();
 		if (zone === landing) ids.push(id);
 		// A clip can come from anywhere: a file outside the vault's attachments is left out, and so is
-		// a link to anything but a web page.
+		// a link to anything but a web page, with its preview, and a preview's image outside them.
 		const file = card.file !== undefined && isAttachment(card.file) ? card.file : undefined;
 		const link = card.link !== undefined && isWebLink(card.link) ? card.link : undefined;
-		states.push(state('card', id, { ...card, note, zone, x: cx, y: cy, file, link }));
+		const image = card.preview?.image !== undefined && isAttachment(card.preview.image) ? card.preview.image : undefined;
+		const preview = link && card.preview ? { ...card.preview, image } : undefined;
+		states.push(state('card', id, { ...card, note, zone, x: cx, y: cy, file, link, preview }));
 		cards.set(was, id);
 	}
 	for (const { id: _, ...drawing } of clip.drawings) {

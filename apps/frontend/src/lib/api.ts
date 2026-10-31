@@ -69,7 +69,13 @@ export type CardView = {
 	file: string | null;
 	/** The web page the card shows in place of a note, by its address. Null for none. */
 	link: string | null;
+	/** What that page said of itself when it was pasted. Null for nothing. */
+	preview: LinkPreview | null;
 };
+
+/** A web page's title, description and image, as it gave them in its head; the image by the vault
+ * path it was saved at. Each is left out when the page gave none. */
+export type LinkPreview = { title?: string; description?: string; image?: string };
 
 /** An item's box in absolute world coordinates. */
 export type Frame = { x: number; y: number; w: number; h: number };
@@ -176,7 +182,7 @@ export type Batch = { cards: string[]; undo: ItemState[] };
  * its note's text, null for none, and the vault file or web page it shows, if any. */
 export type Clip = Frame & {
 	zones: (Frame & { id: string; parent: string | null; name: string; color?: string })[];
-	cards: (Frame & { id: string; zone: string | null; halign?: HAlign; valign?: VAlign; color?: string; text: string | null; file?: string; link?: string })[];
+	cards: (Frame & { id: string; zone: string | null; halign?: HAlign; valign?: VAlign; color?: string; text: string | null; file?: string; link?: string; preview?: LinkPreview })[];
 	drawings: (Frame & { id: string; zone: string | null; strokes: PenStroke[] })[];
 	edges: { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke }[];
 };

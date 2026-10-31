@@ -11,6 +11,7 @@ mod edges;
 mod index;
 mod insert;
 mod layout;
+mod links;
 mod note;
 mod previews;
 mod scan;

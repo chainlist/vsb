@@ -27,6 +27,7 @@ CREATE TABLE cards (
   color     TEXT,                     -- NULL = the theme's plain stock
   file      TEXT,                     -- a vault file shown in place of a note
   link      TEXT,                     -- a web page shown in place of a note
+  preview   TEXT,                     -- JSON, what that page said of itself, as in the file
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX cards_note ON cards(note);

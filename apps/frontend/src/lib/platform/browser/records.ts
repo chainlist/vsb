@@ -1,7 +1,7 @@
 // What the browser keeps of each item. The `file` of a zone, card, edge or drawing is what the desktop writes
 // to its JSON file, defaults left out, so item states, undo and a later export are the same on both
 // platforms. The rest is derived on every write, as the desktop's index derives it.
-import type { Arrow, Frame, HAlign, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
+import type { Arrow, Frame, HAlign, LinkPreview, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
 import type { Box } from './grid.ts';
 import type { Words } from './words.ts';
 
@@ -21,8 +21,9 @@ export type CardFile = {
 	color?: string;
 	/** A file of the vault the card shows in place of a note, by its vault path: an image. */
 	file?: string;
-	/** A web page the card shows in place of a note, by its address. */
+	/** A web page the card shows in place of a note, by its address, and what it said of itself. */
 	link?: string;
+	preview?: LinkPreview;
 };
 
 export type EdgeFile = { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke };
@@ -125,6 +126,13 @@ function penStroke(s: unknown, color: string | null): PenStroke {
 	return kept({ points, color: maybe(o.color) ?? color ?? undefined, width: width === MEDIUM ? undefined : width });
 }
 
+/** A link card's preview, each part left out when absent; undefined for none. */
+function linkPreview(v: unknown): LinkPreview | undefined {
+	if (typeof v !== 'object' || v === null) return undefined;
+	const o = v as Record<string, unknown>;
+	return kept({ title: maybe(o.title) ?? undefined, description: maybe(o.description) ?? undefined, image: maybe(o.image) ?? undefined });
+}
+
 /** A state's value as the file it stands for, read as the desktop reads it. */
 export function fileOf(kind: Kind, value: unknown): File {
 	const v = (value ?? {}) as Record<string, unknown>;
@@ -154,6 +162,7 @@ export function fileOf(kind: Kind, value: unknown): File {
 		valign: choice(v.valign, ['top', 'center', 'bottom'], 'top', 'valign'),
 		color: maybe(v.color) ?? undefined,
 		file: maybe(v.file) ?? undefined,
-		link: maybe(v.link) ?? undefined
+		link: maybe(v.link) ?? undefined,
+		preview: linkPreview(v.preview)
 	});
 }
