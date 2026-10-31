@@ -6,6 +6,8 @@ import { items } from './items.svelte.js';
 class Selection {
 	ids = $state<string[]>([]);
 	editing = $state<string | null>(null);
+	/** Whether the selection is being dragged to a new place. */
+	moving = $state(false);
 	/** While cards are selected: them, and every card an edge joins to one of them. Null otherwise. */
 	#linked = $derived.by(() => {
 		const cards = new Set(this.cards.map((c) => c.id));

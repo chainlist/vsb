@@ -71,6 +71,7 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 	const still = around(new Set(moving.map((m) => m.item.id)));
 	track(down, {
 		move(dx, dy, e) {
+			selection.moving = true;
 			const by = { x: Math.round(dx / camera.zoom), y: Math.round(dy / camera.zoom) };
 			// Alt held moves freely.
 			const snapping = lead && snap.on && !e.altKey;
@@ -90,6 +91,7 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 		},
 		end(dragged) {
 			snap.guides = [];
+			selection.moving = false;
 			if (dragged) {
 				// Back where it started, as a short drag can snap, nothing is written.
 				if (!lead || (lead.item.x === lead.x && lead.item.y === lead.y)) return;

@@ -58,9 +58,9 @@
 	<span class="swatch" class:none={value === null} style:--swatch={value ?? 'var(--card)'}></span>
 {/snippet}
 
-<!-- Not while the card is edited, while Tab's picker asks where its new card goes, or while a box
-     is selecting. -->
-{#if at && !selection.editing && !picker.card && !selecting.box}
+<!-- Not while the card is edited, while Tab's picker asks where its new card goes, while a box is
+     selecting, or while the selection is moved. -->
+{#if at && !selection.editing && !picker.card && !selecting.box && !selection.moving}
 	<!-- The anchor holds the bar's place on screen; the bar inside it is drawn at the interface size. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
