@@ -59,8 +59,8 @@
 {/snippet}
 
 <!-- Not while the card is edited, while Tab's picker asks where its new card goes, while a box is
-     selecting, or while the selection is moved. -->
-{#if at && !selection.editing && !picker.card && !selecting.box && !selection.moving}
+     selecting, or while the selection is moved or a card or zone resized. -->
+{#if at && !selection.editing && !picker.card && !selecting.box && !selection.dragging}
 	<!-- The anchor holds the bar's place on screen; the bar inside it is drawn at the interface size. -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div

@@ -71,7 +71,7 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 	const still = around(new Set(moving.map((m) => m.item.id)));
 	track(down, {
 		move(dx, dy, e) {
-			selection.moving = true;
+			selection.dragging = true;
 			const by = { x: Math.round(dx / camera.zoom), y: Math.round(dy / camera.zoom) };
 			// Alt held moves freely.
 			const snapping = lead && snap.on && !e.altKey;
@@ -91,7 +91,7 @@ export function startMove(down: PointerEvent, item: { id: string }) {
 		},
 		end(dragged) {
 			snap.guides = [];
-			selection.moving = false;
+			selection.dragging = false;
 			if (dragged) {
 				// Back where it started, as a short drag can snap, nothing is written.
 				if (!lead || (lead.item.x === lead.x && lead.item.y === lead.y)) return;
@@ -134,6 +134,7 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 	const land = (v: number, axis: Axis) => v + (pull([v], still, axis, REACH / camera.zoom) ?? toGrid(v) - v);
 	track(down, {
 		move(dx, dy, e) {
+			selection.dragging = true;
 			let bx = dx / camera.zoom;
 			let by = dy / camera.zoom;
 			// Alt held resizes freely.
@@ -166,6 +167,7 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 		},
 		end(dragged) {
 			snap.guides = [];
+			selection.dragging = false;
 			const { id, x, y, w, h } = item;
 			// A click on a side or corner selects the item, as a click inside it does.
 			if (!dragged) {
