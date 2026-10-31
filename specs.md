@@ -135,13 +135,14 @@ apps/frontend/src/routes/
 | Concept | What it is | Stored in |
 |---|---|---|
 | Note | Markdown content | `notes/**/*.md` |
-| Card | A placement on the canvas: position, size, alignment, and optionally a note or an image | `.canvas/cards/<card-id>.json` |
+| Card | A placement on the canvas: position, size, alignment, and optionally a note, an image or a link | `.canvas/cards/<card-id>.json` |
 | Zone | A user-defined area that groups cards and other zones | `.canvas/zones/<zone-id>.json` |
 | Edge | A connection between two cards | `.canvas/edges/<edge-id>.json` |
 | Drawing | Strokes of the pen grouped as one item, in a zone or on the canvas | `.canvas/drawings/<drawing-id>.json` |
 
 - A card can have no note: an empty card, used to preplace structure.
 - A card can show an image file of the vault in place of a note: an [image card](#images).
+- A card can show a web page in place of a note, by its address: a [link card](#links).
 - A note can have no card: it appears in the Unplaced tray.
 - Edges connect cards, never notes directly.
 - Connections exist only as edges. There are no `[[wikilinks]]` and no backlinks.
@@ -235,6 +236,7 @@ Competitor scan
 - `valign`: `top` (default), `center`, `bottom`.
 - `color`: one of the highlighters zones take (see [Color](#color)), or left out for none.
 - `file`: the vault path of a file under `attachments/` the card shows in place of a note, `attachments/images/Diagram.png`; left out for none. A card shows a note or a file, never both, so `note` is `null` beside it.
+- `link`: the address of a web page the card shows in place of a note, `https://example.com/a`, http or https only; left out for none. Like `file`, it stands in for a note: `note` is `null` beside it.
 - Fields at their default value are left out of the file.
 
 ### Edge: `.canvas/edges/<edge-id>.json`
@@ -358,6 +360,15 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **Read once while the vault is open:** each file comes from the backend once and is shown through an object URL; opening another vault lets them go. The backend reads files only under `attachments/`: a card file naming anything else shows as missing, and a clip naming anything else pastes an empty card.
 - **Dropping files** needs the window to hand them to the page: Tauri's own handling of dropped files is off (`dragDropEnabled: false`), so a drop reaches the page as in a browser. Any other file, dropped anywhere, is refused, so it never opens in place of the app.
 
+### Links
+
+- **A link card shows a web page** in place of a note, by its address. Its title is the page's host, without `www.`, beside a link icon; under it, the whole address in the theme's soft ink, cut with an ellipsis after three lines. It has no text: Enter and a double-click open nothing, and the selection bar's alignment grid leaves it out. It resizes as a note card does.
+- **Adding one.** A lone web address pasted with Mod+V becomes a link card (see [Copying and pasting](#copying-and-pasting)). There is no other way to make one yet.
+- **Opening it.** Ctrl+click (Cmd on macOS) anywhere on the card opens the page outside the app: on the desktop in the system's browser, in the browser build in a new tab. A plain click selects the card, and Ctrl+drag from it still draws an edge. A link in a note's text opens the same way with Ctrl+click; a plain click on it does nothing, since following it would navigate the whole app away.
+- **The app never fetches the page:** no title, no preview, nothing sent to the site until the page is opened.
+- **Web pages only.** The backend opens an address only when it is http or https, and a pasted clip naming any other leaves it out, so the card pastes empty: a link can come from anywhere, and opening another scheme could start any program. Ctrl+click on any other link in a note's text shows a failure notice.
+- **Not a note.** A link card has no note, so search and the Unplaced tray do not find it, and deleting it leaves nothing behind. A copied link card pastes as one in any vault; other apps get its address as text.
+
 ## Edges
 
 - Mod+drag (Ctrl, Cmd on macOS) from a card draws an edge: releasing on another card connects them, `from` the first, `to` the second. Started on the paper, the same gesture draws a zone. Releasing on the paper or on the starting card creates nothing.
@@ -405,10 +416,11 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 ## Copying and pasting
 
 - **Copy (Mod+C)** puts the selected cards, zones and drawings on the system clipboard, with everything inside the selected zones at any depth, and the edges whose two cards are both copied. A selected edge comes only with its cards: edges alone copy nothing, and neither does an empty selection, which leaves the clipboard as it was.
-- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's text rather than its note. Notes travel as their text, so a clip pastes into any vault, in either build. An [image card](#images) names its file, which another vault may not have: pasted there, it shows "Image not found".
+- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, or a [link card](#links)'s address, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's text rather than its note. Notes travel as their text, so a clip pastes into any vault, in either build. An [image card](#images) names its file, which another vault may not have: pasted there, it shows "Image not found".
 - **Paste (Mod+V)** lands centered under the pointer, or on the middle of the canvas when the pointer is elsewhere, as the builder's cards do; with snapping on, the corner of what it pastes lands on the grid.
   - **Copied items paste as new ones:** each with a new ID, each card with text a new note holding it, named after its title (`Idea 2.md` beside `Idea.md`). Until V3 a note has one card, so a pasted card never shows the note it was copied from. A card whose note was missing pastes as an empty card.
   - **Text copied from another app** becomes one card holding it, as a card placed by double-click: the same size and alignment.
+  - **A lone web address,** `http://` or `https://` with no space in it and nothing else but spaces around it, becomes a [link card](#links) the size of a placed card, with no note. Text holding an address among other words stays text.
   - **An image** on the clipboard, as a screenshot leaves it, becomes an [image card](#images). Text comes first: a word processor copies text with a picture of it.
   - **Where it lands:** what was copied on its own joins the innermost zone under the middle of what is pasted, as a batch's cards do, and that zone grows to hold it. Never one of the zones the clip copies, so a copy never lands inside its original. What was inside a copied zone stays inside its copy, where it was.
   - **Then** the pasted items are selected, and framed as a batch's cards are when zoomed out, where they would be hidden, or when they land partly off-screen. The paste is one undo step; undoing it keeps the new notes, unplaced, as undoing a batch does.
@@ -429,7 +441,7 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
   - Fit frames everything on the canvas, as opening the vault does, gliding there; Mod+1 does the same. An empty canvas stays as it is.
   - While a panel is open, they sit left of its sheet.
-- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It waits while a [box](#selecting) is being drawn. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid, left out when only image cards are selected), the color of the cards, zones and drawings, the edges' style, Arrange, Builder, [Zone around them](#zones-and-membership) and Delete. Its buttons, selects and alignment grid show no words: each has a tooltip, as the rail's buttons do.
+- **The selection bar** floats above the selection: above its top-left corner, or centered above an edge's middle when only edges are selected. It waits while a [box](#selecting) is being drawn. It holds what applies to the selection: the cards' text alignment (a 3 by 3 grid, left out when only image and link cards are selected), the color of the cards, zones and drawings, the edges' style, Arrange, Builder, [Zone around them](#zones-and-membership) and Delete. Its buttons, selects and alignment grid show no words: each has a tooltip, as the rail's buttons do.
   - The color and each part of the edges' style (shape, arrowheads, line) is a small select: its button shows the current choice's look (a swatch or an icon) beside a chevron, or "Mixed" when the selected items differ; its list shows each choice's look and name, the current one checked.
   - One color select serves the selected cards, zones and drawings together: a pick colors them all, in one undo step. Its first choice is No color, drawn as the plain stock struck through: a card goes back to the theme's plain stock, a zone to the theme's gray, every stroke of a drawing to the theme's ink.
   - A menu keeps its keys: Escape, Enter or Delete pressed in it never reach the canvas. Choosing leaves the selection and the view as they are, and the focus goes back to the canvas.
@@ -559,6 +571,7 @@ CREATE TABLE cards (
   valign    TEXT NOT NULL DEFAULT 'top',
   color     TEXT,                     -- NULL = the theme's plain stock
   file      TEXT,                     -- a vault file shown in place of a note
+  link      TEXT,                     -- a web page shown in place of a note
   mtime     INTEGER, size INTEGER
 );
 CREATE INDEX cards_note ON cards(note);
