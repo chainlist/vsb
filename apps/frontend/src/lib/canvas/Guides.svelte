@@ -22,7 +22,7 @@
 	.guide,
 	.dot {
 		position: absolute;
-		background: color-mix(in srgb, var(--pen) 40%, transparent);
+		background: color-mix(in srgb, var(--pen) 20%, transparent);
 		pointer-events: none;
 	}
 
@@ -40,7 +40,7 @@
 		width: calc(4px * var(--scale));
 		height: calc(4px * var(--scale));
 		border-radius: 50%;
-		background: color-mix(in srgb, var(--pen) 65%, transparent);
+		background: color-mix(in srgb, var(--pen) 35%, transparent);
 		translate: -50% -50%;
 	}
 </style>
