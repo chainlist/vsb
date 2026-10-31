@@ -3,14 +3,23 @@
 	import FileQuestionMark from '@lucide/svelte/icons/file-question-mark';
 	import ImageOff from '@lucide/svelte/icons/image-off';
 	import Link from '@lucide/svelte/icons/link';
+	import Play from '@lucide/svelte/icons/play';
 	import { openLink, type CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
 	import { renderMarkdown } from '#lib/markdown.js';
 	import { clear } from './actions.js';
 	import { imageUrl } from './images.js';
 	import { hostOf } from './links.svelte.js';
+	import { selection } from './selection.svelte.js';
+	import { playerUrl, videoOf } from './video.js';
 
 	let { card, missing }: { card: CardView; missing: boolean } = $props();
+
+	/** The YouTube video the card's link is, if any; and whether its player has been asked for, which
+	 * lasts while the card stays drawn. */
+	const video = $derived(card.link ? videoOf(card.link) : null);
+	let playing = $state(false);
+	const selected = $derived(selection.has(card.id));
 
 	// Links render, but following one would navigate the whole app away: Ctrl+click opens it outside
 	// the app instead, as on a link card.
@@ -34,6 +43,30 @@
 	{:catch}
 		<!-- Its file is missing: the card says so (missing). -->
 	{/await}
+{:else if card.link && video}
+	<div class="player" class:upright={video.upright}>
+		{#if playing}
+			<iframe
+				class:live={selected}
+				src={playerUrl(video)}
+				title={card.preview?.title ?? 'YouTube video'}
+				allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+				allowfullscreen
+				referrerpolicy="strict-origin-when-cross-origin"
+			></iframe>
+		{:else}
+			{#if card.preview?.image}
+				{#await imageUrl(card.preview.image) then url}
+					<img src={url} alt="" draggable="false" />
+				{:catch}
+					<!-- Its thumbnail is missing: the player's well shows without it. -->
+				{/await}
+			{/if}
+			<button class="play" title="Play the video" aria-label="Play the video" onclick={() => (playing = true)}><Play size={24} /></button>
+		{/if}
+	</div>
+	{#if card.preview?.title}<strong class="page-title">{card.preview.title}</strong>{/if}
+	<span class="site"><Link size={13} /><span>{hostOf(card.link)}</span></span>
 {:else if card.link}
 	{@const page = card.preview}
 	{#if page?.image}
@@ -66,6 +99,7 @@
 	.body,
 	.url,
 	.cover,
+	.player,
 	.page-title,
 	.description,
 	.site,
@@ -82,6 +116,63 @@
 		margin: -12px -14px 10px;
 		object-fit: cover;
 		pointer-events: none;
+	}
+
+	/* A YouTube video's card: its player across the top, edge to edge, lying flat (16:9) or a Short
+	   upright (9:16), in a well of a video's black; its thumbnail and a play button until it plays. The
+	   player takes presses and the wheel only while its card is selected, so the card drags, pans and
+	   zooms over it otherwise. */
+	.player {
+		position: relative;
+		flex: none;
+		width: calc(100% + 28px);
+		aspect-ratio: 16 / 9;
+		margin: -12px -14px 10px;
+		background: black;
+	}
+
+	.player.upright {
+		aspect-ratio: 9 / 16;
+	}
+
+	.player img,
+	.player iframe {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		border: none;
+		pointer-events: none;
+	}
+
+	.player img {
+		object-fit: cover;
+	}
+
+	.player iframe.live {
+		pointer-events: auto;
+	}
+
+	.play {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		display: grid;
+		place-items: center;
+		width: 56px;
+		height: 56px;
+		/* The triangle's weight sits left of its box: nudged right, it looks centered. */
+		padding: 0 0 0 3px;
+		border: none;
+		border-radius: 50%;
+		background: rgb(0 0 0 / 0.65);
+		color: white;
+		cursor: pointer;
+		translate: -50% -50%;
+	}
+
+	.play:hover {
+		background: rgb(0 0 0 / 0.85);
 	}
 
 	.page-title,
