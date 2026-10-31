@@ -21,6 +21,7 @@ import { snap, toGrid } from './grid.svelte.js';
 import { history } from './history.js';
 import { items } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
+import { videoOf } from './video.js';
 
 /** Smallest card or zone, in world units: 3 by 2 graph-paper squares. */
 export const MIN = { w: 60, h: 40 };
@@ -130,6 +131,9 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 	let cover: Rect | null = null;
 	if (kind === 'zone') zoneContents(item.id).then((r) => (cover = r));
 	const still = around(new Set([item.id]));
+	// A YouTube video's width over its height: 16:9, or a Short's 9:16. Null for anything else.
+	const video = 'link' in item && item.link !== null ? videoOf(item.link) : null;
+	const ratio = video ? (video.upright ? 9 / 16 : 16 / 9) : null;
 	// A pulled side within reach of a side or the middle of a card around lands on it, or else on the grid.
 	const land = (v: number, axis: Axis) => v + (pull([v], still, axis, REACH / camera.zoom) ?? toGrid(v) - v);
 	track(down, {
@@ -149,6 +153,11 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 			if ('file' in item && item.file !== null) {
 				const scale = Math.max(px ? item.w / from.w : 0, py ? item.h / from.h : 0, MIN.w / from.w, MIN.h / from.h);
 				[item.w, item.h] = [Math.round(from.w * scale), Math.round(from.h * scale)];
+			}
+			// A video takes its own shape, whatever the card's was, led as an image is.
+			if (ratio) {
+				const w = Math.max(px ? item.w : 0, py ? item.h * ratio : 0, MIN.w, MIN.h * ratio);
+				[item.w, item.h] = [Math.round(w), Math.round(w / ratio)];
 			}
 			// Pulling the left or top edge keeps the opposite edge in place.
 			item.x = px < 0 ? from.x + from.w - item.w : from.x;
