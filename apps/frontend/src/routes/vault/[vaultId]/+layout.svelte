@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import Canvas from '#lib/canvas/Canvas.svelte';
 	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
@@ -35,6 +37,15 @@
 	});
 	$effect(() => {
 		zoneList.open = data.zoneList;
+	});
+
+	// A vault whose onboarding was never through opens on it, once: closing it notes it as done, but
+	// this layout's data still says otherwise until the vault is opened again.
+	let onboarding = '';
+	$effect(() => {
+		if (data.onboarded || onboarding === data.vault.id) return;
+		onboarding = data.vault.id;
+		goto(resolve('/vault/[vaultId]/onboarding', { vaultId: data.vault.id }), { replaceState: true });
 	});
 </script>
 

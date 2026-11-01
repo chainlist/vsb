@@ -26,6 +26,9 @@ struct VaultFile {
   /// The style every edge the app creates gets; left out at the default, each part as in an edge file.
   #[serde(default, rename = "newEdges", skip_serializing_if = "is_default")]
   new_edges: NewEdges,
+  /// Whether the vault's onboarding has been through, so it shows only once; left out until then.
+  #[serde(default, skip_serializing_if = "is_default")]
+  onboarded: bool,
 }
 
 /// The style for new edges, as `vault.json` writes it.
@@ -77,7 +80,7 @@ impl Vault {
   pub fn open_or_init(root: &Path) -> Result<Vault> {
     let file = vault_file(root);
     if !file.exists() {
-      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, new_edges: NewEdges::default() };
+      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, new_edges: NewEdges::default(), onboarded: false };
       atomic_write(&file, &serde_json::to_vec_pretty(&v)?)?;
     }
     fs::create_dir_all(root.join("notes"))?;
@@ -120,6 +123,19 @@ impl Vault {
   pub fn set_snap(&self, snap: bool) -> Result<()> {
     let mut v = read_vault_file(&self.root)?;
     v.snap = snap;
+    atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
+  }
+
+  /// Whether the vault's onboarding has been through: not until `vault.json` says so.
+  pub fn onboarded(&self) -> Result<bool> {
+    Ok(read_vault_file(&self.root)?.onboarded)
+  }
+
+  /// Notes in `vault.json` that the vault's onboarding has been through. Read again first, as for the
+  /// theme.
+  pub fn set_onboarded(&self) -> Result<()> {
+    let mut v = read_vault_file(&self.root)?;
+    v.onboarded = true;
     atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
   }
 

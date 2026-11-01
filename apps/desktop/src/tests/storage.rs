@@ -69,6 +69,18 @@ fn paper_is_kept_in_vault_json_and_left_out_for_the_themes_own() {
 }
 
 #[test]
+fn onboarding_is_written_once_done_and_left_out_until_then() {
+  let f = Fixture::new();
+  assert!(!f.vault.onboarded().unwrap());
+  assert!(!f.read(".canvas/vault.json").contains("onboarded"));
+  f.vault.set_theme(Some("board".into())).unwrap();
+  f.vault.set_onboarded().unwrap();
+  let json: serde_json::Value = serde_json::from_str(&f.read(".canvas/vault.json")).unwrap();
+  assert_eq!((json["onboarded"].as_bool(), json["theme"].as_str()), (Some(true), Some("board")));
+  assert!(Vault::open(f.dir.path()).unwrap().onboarded().unwrap());
+}
+
+#[test]
 fn snap_is_on_by_default_and_only_written_while_off() {
   let f = Fixture::new();
   assert!(f.vault.snap().unwrap());

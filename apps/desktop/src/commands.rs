@@ -138,6 +138,16 @@ pub async fn set_vault_snap(state: State<'_, AppState>, snap: bool) -> Result<()
 }
 
 #[tauri::command]
+pub async fn vault_onboarded(state: State<'_, AppState>) -> Result<bool> {
+  state.with(|s| s.vault.onboarded())
+}
+
+#[tauri::command]
+pub async fn set_vault_onboarded(state: State<'_, AppState>) -> Result<()> {
+  state.with(|s| s.vault.set_onboarded())
+}
+
+#[tauri::command]
 pub async fn vault_edge_style(state: State<'_, AppState>) -> Result<EdgeStyle> {
   state.with(|s| s.vault.edge_style())
 }

@@ -41,6 +41,11 @@ export const setSnap = (e: Edit, snap: boolean) =>
 		else v.snap = false;
 	});
 
+/** Whether the vault's onboarding has been through: not until the vault says so. */
+export const onboarded = async (e: Edit) => (await settings(e)).onboarded ?? false;
+
+export const setOnboarded = (e: Edit) => change(e, (v) => (v.onboarded = true));
+
 /** How new edges look until the vault says otherwise. */
 const NEW_EDGE: EdgeStyle = { shape: 'curved', arrow: 'to', stroke: 'solid' };
 

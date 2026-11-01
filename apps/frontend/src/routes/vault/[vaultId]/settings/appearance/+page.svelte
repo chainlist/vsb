@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { setDeviceInterfaceSize, setVaultPaper, setVaultTheme } from '#lib/api.js';
 	import Segmented from '#lib/chrome/Segmented.svelte';
+	import ThemePicker from '#lib/chrome/ThemePicker.svelte';
 	import { DEFAULT_INTERFACE_SIZE, INTERFACE_SIZES, interfaceSize } from '#lib/interfaceSize.svelte.js';
-	import { DEFAULT_THEME, PAPERS, THEMES, theme, type Paper } from '#lib/theme.svelte.js';
+	import { DEFAULT_THEME, PAPERS, theme, type Paper } from '#lib/theme.svelte.js';
 
 	let error = $state('');
 
@@ -35,25 +39,17 @@
 </script>
 
 <fieldset>
+	<legend>Kind of board</legend>
+	<p class="hint">Start again from Engineering or Investigation: a theme and a style for new edges together.</p>
+	<button class="button" onclick={() => goto(resolve('/vault/[vaultId]/onboarding', { vaultId: page.params.vaultId! }))}>
+		Choose a kind of board
+	</button>
+</fieldset>
+
+<fieldset>
 	<legend>Theme</legend>
 	<p class="hint">How this vault looks, on every device that opens it.</p>
-	<div class="themes">
-		{#each THEMES as t (t.id)}
-			<label class="option">
-				<!-- A corner of a canvas, drawn in that theme's own tokens, on the paper it would have. -->
-				<span class="preview graph-paper" data-theme={t.id} data-paper={theme.paperIn(t.id)}>
-					<span class="index-card note-card">
-						<span class="index-card-title">Competitor scan</span>
-						Price tiers first, then customer interviews.
-					</span>
-				</span>
-				<span class="name">
-					<input type="radio" name="theme" value={t.id} checked={theme.id === t.id} onchange={() => pickTheme(t.id)} />
-					{t.name}
-				</span>
-			</label>
-		{/each}
-	</div>
+	<ThemePicker pick={pickTheme} />
 </fieldset>
 
 <fieldset>
@@ -94,12 +90,6 @@
 {/if}
 
 <style>
-	.themes {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 18px;
-	}
-
 	.papers {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -128,13 +118,6 @@
 	/* In the preview's own accent: the theme picked is the one on screen. */
 	.option:has(:checked) .preview {
 		box-shadow: 0 0 0 2px var(--pen);
-	}
-
-	.index-card {
-		position: absolute;
-		left: 24px;
-		top: 24px;
-		width: 200px;
 	}
 
 	.name {

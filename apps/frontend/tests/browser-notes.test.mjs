@@ -122,6 +122,18 @@ test("a vault's theme and snapping are its own, left out at their default", asyn
 	assert.deepEqual([await api.vaultTheme(), await api.vaultSnap()], [null, true]);
 });
 
+test("a vault's onboarding is noted once done, and left out until then", async () => {
+	const a = await fresh();
+	assert.equal(await api.vaultOnboarded(), false);
+	assert.equal('onboarded' in (await vaultFile()), false);
+	await api.setVaultOnboarded();
+	await fresh();
+	assert.equal(await api.vaultOnboarded(), false, 'each vault its own');
+	await api.openVault(a);
+	assert.equal(await api.vaultOnboarded(), true);
+	assert.equal((await vaultFile()).onboarded, true);
+});
+
 test("a vault's paper is its own, left out for the theme's", async () => {
 	const a = await fresh();
 	assert.equal(await api.vaultPaper(), null);

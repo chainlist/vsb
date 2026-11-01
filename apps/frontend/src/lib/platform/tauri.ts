@@ -93,6 +93,12 @@ export const vaultSnap = () => invoke<boolean>('vault_snap');
 /** Turns snapping to the grid on or off in the open vault's `vault.json`. */
 export const setVaultSnap = (snap: boolean) => invoke<void>('set_vault_snap', { snap });
 
+/** Whether the open vault's onboarding has been through, as its `vault.json` says. */
+export const vaultOnboarded = () => invoke<boolean>('vault_onboarded');
+
+/** Notes in the open vault's `vault.json` that its onboarding has been through. */
+export const setVaultOnboarded = () => invoke<void>('set_vault_onboarded');
+
 /** The style the open vault's `vault.json` gives every edge the app creates. */
 export const vaultEdgeStyle = () => invoke<EdgeStyle>('vault_edge_style');
 
