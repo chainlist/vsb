@@ -41,6 +41,10 @@
 
 	/** Smallest minor square on screen before the paper steps up to the next, 5 times coarser, grid. */
 	const MIN_SQUARE = 8;
+	/** Zooms between which a theme's grain fades into the paper: shrinking with the world, its tile
+	 * soon repeats too often to pass for the board's own surface. */
+	const GRAIN_FULL = 0.5;
+	const GRAIN_GONE = 0.1;
 
 	/** What the canvas holds, framed when it opens; null for an empty canvas. */
 	let { contents }: { contents: Rect | null } = $props();
@@ -79,11 +83,17 @@
 	$effect(() => zoomOn(el, hover));
 
 	// The paper moves with the world. Its minor lines fade out as squares shrink, then the grid
-	// steps up so the old major lines become the new minor ones.
+	// steps up so the old major lines become the new minor ones. A grain scales with the world, as
+	// the cards do, and fades out zoomed far out.
 	const paper = $derived.by(() => {
 		let square = GRID * camera.zoom;
 		while (square < MIN_SQUARE) square *= 5;
-		return { square, origin: camera.toScreen(0, 0), minor: Math.min(1, (square - MIN_SQUARE) / (2 * MIN_SQUARE)) };
+		return {
+			square,
+			origin: camera.toScreen(0, 0),
+			minor: Math.min(1, (square - MIN_SQUARE) / (2 * MIN_SQUARE)),
+			grain: Math.min(1, Math.max(0, (camera.zoom - GRAIN_GONE) / (GRAIN_FULL - GRAIN_GONE)))
+		};
 	});
 
 	function local(e: { clientX: number; clientY: number }) {
@@ -169,6 +179,8 @@
 			style:--ox="{paper.origin.x}px"
 			style:--oy="{paper.origin.y}px"
 			style:--minor={paper.minor}
+			style:--zoom={camera.zoom}
+			style:--grain={paper.grain}
 			bind:this={el}
 			bind:clientWidth={camera.width}
 			bind:clientHeight={camera.height}

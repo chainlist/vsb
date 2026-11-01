@@ -85,10 +85,12 @@
 	--glint: rgb(255 255 255 / 0.85);
 }
 
-/* No grain on a theme's paper unless the theme lays one: a preview drawn in another theme would
-   otherwise take the vault's. Weaker than any theme's own tokens. */
+/* No grain on a theme's paper unless the theme lays one, with its tile's size at 100%
+   (--paper-grain-size): a preview drawn in another theme would otherwise take the vault's. Weaker
+   than any theme's own tokens. */
 :where([data-theme]) {
 	--paper-grain: none;
+	--paper-grain-size: 0px;
 }
 
 /* How much of a card's text shows while it appears (Card.svelte animates it), registered so it
@@ -133,14 +135,19 @@ a {
    theme's; on a preview, its own. Dots at the grid's crossings, ruled lines, small crosses at the
    crossings, or the paper alone. A theme gives each mark its colors, crosses taking the dots', and
    its nodes, dots where ruled major lines cross, and may lay a grain under the marks
-   (--paper-grain), which moves with them but keeps its size. The canvas moves it through --cell
-   (minor square), --ox and --oy (offset) and --minor (opacity of the minor marks); elsewhere it
-   lies still. */
+   (--paper-grain), which moves and scales with the world, under a veil of paper that thickens as
+   it fades. The canvas moves it through --cell (minor square), --ox and --oy (offset), --minor
+   (opacity of the minor marks), --zoom (scale of the grain) and --grain (its opacity); elsewhere
+   it lies still. */
 .graph-paper {
 	--cell: 20px;
 	--ox: 0px;
 	--oy: 0px;
 	--minor: 1;
+	--zoom: 1;
+	--grain: 1;
+	--grain-size: calc(var(--paper-grain-size) * var(--zoom));
+	--grain-veil: linear-gradient(color-mix(in srgb, var(--paper) calc((1 - var(--grain)) * 100%), transparent) 0 0);
 	--major: calc(var(--cell) * 5);
 	--minor-line: color-mix(in srgb, var(--grid-line-minor) calc(var(--minor) * 100%), transparent);
 	--minor-dot: color-mix(in srgb, var(--grid-dot-minor) calc(var(--minor) * 100%), transparent);
@@ -159,14 +166,17 @@ a {
 	background-image:
 		radial-gradient(circle at 2px 2px, var(--grid-dot-major) 1.1px, transparent 1.7px),
 		radial-gradient(circle at 2px 2px, var(--minor-dot) 0.7px, transparent 1.3px),
+		var(--grain-veil),
 		var(--paper-grain);
 	background-size:
 		var(--major) var(--major),
 		var(--cell) var(--cell),
-		auto;
+		auto,
+		var(--grain-size);
 	background-position:
 		var(--dot-ox) var(--dot-oy),
 		var(--dot-ox) var(--dot-oy),
+		0 0,
 		var(--ox) var(--oy);
 }
 
@@ -178,6 +188,7 @@ a {
 		linear-gradient(var(--minor-line) 1px, transparent 1px),
 		linear-gradient(90deg, var(--minor-line) 1px, transparent 1px),
 		radial-gradient(circle at 2px 2px, var(--grid-node) 1.1px, transparent 1.7px),
+		var(--grain-veil),
 		var(--paper-grain);
 	background-size:
 		var(--major) var(--major),
@@ -185,13 +196,15 @@ a {
 		var(--cell) var(--cell),
 		var(--cell) var(--cell),
 		var(--major) var(--major),
-		auto;
+		auto,
+		var(--grain-size);
 	background-position:
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--dot-ox) var(--dot-oy),
+		0 0,
 		var(--ox) var(--oy);
 }
 
@@ -205,25 +218,35 @@ a {
 		radial-gradient(0.7px var(--major-arm) at var(--at-major) var(--at-major), var(--grid-dot-major) 75%, transparent),
 		radial-gradient(var(--arm) 0.7px at var(--at) var(--at), var(--minor-dot) 75%, transparent),
 		radial-gradient(0.7px var(--arm) at var(--at) var(--at), var(--minor-dot) 75%, transparent),
+		var(--grain-veil),
 		var(--paper-grain);
 	background-size:
 		var(--major) var(--major),
 		var(--major) var(--major),
 		var(--cell) var(--cell),
 		var(--cell) var(--cell),
-		auto;
+		auto,
+		var(--grain-size);
 	background-position:
 		calc(var(--ox) - var(--major-arm) - 0.5px) calc(var(--oy) - var(--major-arm) - 0.5px),
 		calc(var(--ox) - var(--major-arm) - 0.5px) calc(var(--oy) - var(--major-arm) - 0.5px),
 		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px),
 		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px),
+		0 0,
 		var(--ox) var(--oy);
 }
 
 :where([data-paper='empty']) .graph-paper,
 .graph-paper[data-paper='empty'] {
-	background-image: var(--paper-grain);
-	background-position: var(--ox) var(--oy);
+	background-image:
+		var(--grain-veil),
+		var(--paper-grain);
+	background-size:
+		auto,
+		var(--grain-size);
+	background-position:
+		0 0,
+		var(--ox) var(--oy);
 }
 
 /* An index card: white stock lifted off the paper, a rule under its heading. */
