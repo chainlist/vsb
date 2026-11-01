@@ -5,7 +5,7 @@
 	import Workflow from '@lucide/svelte/icons/workflow';
 	import Tip from '#lib/chrome/Tip.svelte';
 	import { keyName } from '#lib/keys.js';
-	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, strokeSelected, zoneSelected } from './actions.js';
+	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, showsNote, strokeSelected, zoneSelected } from './actions.js';
 	import { arrangeSelected } from './arrange.js';
 	import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 	import { selecting } from './boxSelect.svelte.js';
@@ -25,7 +25,7 @@
 
 	const cards = $derived(selection.cards);
 	/** The cards with text to align: not those showing an image or a web page. */
-	const texts = $derived(cards.filter((c) => c.file === null && c.link === null));
+	const texts = $derived(cards.filter(showsNote));
 	const zones = $derived(selection.zones);
 	const drawings = $derived(selection.drawings);
 	const zone = $derived(zones.length === 1 && selection.ids.length === 1);

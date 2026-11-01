@@ -2,7 +2,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { openLink, type CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
-	import { edit } from './actions.js';
+	import { edit, tilt } from './actions.js';
 	import { startMove } from './gestures.js';
 	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
@@ -19,12 +19,13 @@
 	let lost = $state(false);
 	$effect(() => {
 		lost = false;
-		if (card.file) imageUrl(card.file).catch(() => (lost = true));
+		if (card.kind === 'image' && card.file) imageUrl(card.file).catch(() => (lost = true));
 	});
 	const missing = $derived((card.note !== null && !card.resolved) || lost);
 	const editing = $derived(selection.editing === card.id);
 	const selected = $derived(selection.has(card.id));
 	const dimmed = $derived(selection.dims(card.id));
+	const lean = $derived(tilt(card));
 
 	// Mod+drag draws an edge from the card: the canvas handles it, as it handles drawing a zone.
 	function press(e: PointerEvent) {
@@ -39,7 +40,7 @@
 
 	/** Ctrl+click on a link card opens its page, outside the app. */
 	function follow(e: MouseEvent) {
-		if (card.link !== null && isMod(e)) void openLink(card.link);
+		if (card.kind === 'link' && card.link !== null && isMod(e)) void openLink(card.link);
 	}
 
 	/** As zones collapse, the card fades into the preview drawn beneath it, as long as dimming takes,
@@ -55,7 +56,8 @@
 <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 <div
 	class="card index-card"
-	class:note-card={card.file === null || missing}
+	class:note-card={card.kind !== 'image' || missing}
+	class:postit={card.kind === 'postit'}
 	class:tinted={card.color !== null}
 	class:missing
 	class:selected
@@ -65,6 +67,7 @@
 	style:top="{card.y}px"
 	style:width="{card.w}px"
 	style:height="{card.h}px"
+	style:rotate={lean ? `${lean}deg` : undefined}
 	style:--tint={card.color}
 	style:text-align={card.halign}
 	style:justify-content={justify[card.valign]}
@@ -107,6 +110,34 @@
 	   while the card is edited, and a dimmed card fades into it. */
 	.tinted {
 		background: var(--stock);
+	}
+
+	/* A post-it: a square of sticky paper written on by hand, the same in every theme, its bottom edge
+	   lifting off the paper. Its color is the paper itself, at full strength rather than a wash, so it
+	   is written on in dark ink whatever the theme. Without a color it is on the theme's plain stock,
+	   in the theme's ink. */
+	.postit {
+		--lift: 0 1px 1px rgb(0 0 0 / 0.08), 0 12px 10px -9px rgb(0 0 0 / 0.4);
+		/* Its hand keeps its own size: a theme scaling up a small x-height would blow it up. */
+		--font-adjust: none;
+		border-radius: 1px;
+		font: 22px/1.2 var(--font-hand);
+	}
+
+	.postit.tinted {
+		--stock: var(--tint);
+	}
+
+	.postit.tinted:not(.missing) {
+		color: var(--postit-ink);
+	}
+
+	/* Its note's first line heads it in the same hand, with no rule under it. */
+	.postit :global(.index-card-title) {
+		margin: 0 0 2px;
+		padding: 0;
+		border: none;
+		font: 700 1em/1.2 var(--font-hand);
 	}
 
 	/* After the tint: a missing note looks the same whatever its card's color. */

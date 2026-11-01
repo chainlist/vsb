@@ -180,7 +180,10 @@ test('drawings written before strokes had colors keep their look', async () => {
 test('opening a version 3 vault gives each stroke its drawing\'s color', async () => {
 	const name = 'vsb-INK';
 	const old = indexedDB.open(name, 3);
-	old.onupgradeneeded = () => old.result.createObjectStore('drawings', { keyPath: 'id' });
+	old.onupgradeneeded = () => {
+		old.result.createObjectStore('drawings', { keyPath: 'id' });
+		old.result.createObjectStore('cards', { keyPath: 'id' });
+	};
 	const v3 = await request(old);
 	const tx = v3.transaction('drawings', 'readwrite');
 	const legacy = { zone: null, x: 0, y: 0, w: 20, h: 0, color: YELLOW, strokes: [[0, 0, 0.5, 20, 0, 0.5]] };

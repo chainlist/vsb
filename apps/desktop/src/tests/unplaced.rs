@@ -1,5 +1,6 @@
 use super::{card_file, hour_ago, names, open, set_time, Fixture};
 use crate::index::Entry;
+use crate::items::CardKind;
 use crate::note::NoteText;
 use crate::session::Session;
 use std::fs;
@@ -35,7 +36,7 @@ fn the_tray_lists_notes_with_no_card_newest_first_a_page_at_a_time() {
 fn a_conflict_copy_lands_in_the_tray() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Plan").unwrap();
   f.write("notes/Plan.md", &format!("---\nid: {note}\n---\nPlan, from another device"));
   assert!(!s.save_note(&note, "Plan\nmine").unwrap());
@@ -125,7 +126,7 @@ fn a_note_changed_outside_the_app_is_kept_and_shown_as_it_is_now() {
 fn undoing_the_delete_of_its_card_after_leaves_the_card_unresolved() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Plan").unwrap();
   let undo = s.delete_cards(&[card.clone()]).unwrap();
   s.delete_note("notes/Plan.md").unwrap();

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CardView, ItemState, ZoneView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
-	import { edit } from './actions.js';
+	import { edit, tilt } from './actions.js';
 	import { GRIP, startResize, type Pull } from './gestures.js';
 	import { items } from './items.svelte.js';
 	import { asMarker } from './marker.js';
@@ -46,7 +46,8 @@
 </script>
 
 {#each targets as { item, kind } (item.id)}
-	<!-- Drawn above every card, at a constant size on screen whatever the zoom. -->
+	{@const lean = kind === 'card' ? tilt(item as CardView) : 0}
+	<!-- Drawn above every card, at a constant size on screen whatever the zoom, leaning as its card does. -->
 	<div
 		class="frame"
 		style:--grip="calc({GRIP}px * var(--scale))"
@@ -54,6 +55,7 @@
 		style:top="{item.y}px"
 		style:width="{item.w}px"
 		style:height="{item.h}px"
+		style:rotate={lean ? `${lean}deg` : undefined}
 	>
 		{#each handles as h (h.at)}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->

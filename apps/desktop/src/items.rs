@@ -157,9 +157,51 @@ pub struct Zone {
   pub color: Option<String>,
 }
 
-/// `x` and `y` are relative to the card's zone (or the canvas).
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+/// What a card shows: a note, on an index card or on a post-it, or in its place an image file of the
+/// vault or a web page.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum CardKind {
+  #[default]
+  Note,
+  Postit,
+  Image,
+  Link,
+}
+
+impl CardKind {
+  pub fn as_str(self) -> &'static str {
+    match self {
+      CardKind::Note => "note",
+      CardKind::Postit => "postit",
+      CardKind::Image => "image",
+      CardKind::Link => "link",
+    }
+  }
+
+  /// Whether the card shows a note: an index card or a post-it, empty or not.
+  pub fn shows_note(self) -> bool {
+    matches!(self, CardKind::Note | CardKind::Postit)
+  }
+
+  /// The kind of a card written before cards had one, told by what it shows: an image card by its
+  /// `file`, a link card by its `link`. A note card leaves its kind out, so it is never written with
+  /// either.
+  pub fn told(self, file: &Option<String>, link: &Option<String>) -> CardKind {
+    match self {
+      CardKind::Note if file.is_some() => CardKind::Image,
+      CardKind::Note if link.is_some() => CardKind::Link,
+      kind => kind,
+    }
+  }
+}
+
+/// `x` and `y` are relative to the card's zone (or the canvas). The default is an empty index card.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(from = "WrittenCard")]
 pub struct Card {
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub kind: CardKind,
   pub note: Option<String>,
   pub zone: Option<String>,
   pub x: f64,
@@ -172,15 +214,48 @@ pub struct Card {
   pub valign: VAlign,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub color: Option<String>,
-  /// A file of the vault the card shows in place of a note, by its vault path: an image.
+  /// The file of the vault an image card shows, by its vault path.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub file: Option<String>,
-  /// A web page the card shows in place of a note, by its address.
+  /// The web page a link card shows, by its address.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub link: Option<String>,
   /// What that page said of itself when it was pasted.
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub preview: Option<Preview>,
+}
+
+/// A card as its file may hold it: with its kind, or written before cards had one.
+#[derive(Deserialize)]
+struct WrittenCard {
+  #[serde(default)]
+  kind: CardKind,
+  note: Option<String>,
+  zone: Option<String>,
+  x: f64,
+  y: f64,
+  w: f64,
+  h: f64,
+  #[serde(default)]
+  halign: HAlign,
+  #[serde(default)]
+  valign: VAlign,
+  #[serde(default)]
+  color: Option<String>,
+  #[serde(default)]
+  file: Option<String>,
+  #[serde(default)]
+  link: Option<String>,
+  #[serde(default)]
+  preview: Option<Preview>,
+}
+
+impl From<WrittenCard> for Card {
+  fn from(c: WrittenCard) -> Card {
+    let kind = c.kind.told(&c.file, &c.link);
+    let (note, zone, color, file, link, preview) = (c.note, c.zone, c.color, c.file, c.link, c.preview);
+    Card { kind, note, zone, x: c.x, y: c.y, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color, file, link, preview }
+  }
 }
 
 /// A web page's title, description and image, as it gave them in its head; the image by the vault

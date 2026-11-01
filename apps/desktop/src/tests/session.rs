@@ -1,4 +1,5 @@
 use super::{card_file, names, open, Fixture, WORLD};
+use crate::items::CardKind;
 use crate::note::NoteText;
 
 #[test]
@@ -13,7 +14,7 @@ fn index_lives_in_the_data_folder_under_the_vault_id() {
 fn placing_a_card_saves_an_empty_card() {
   let f = Fixture::new();
   let s = open(&f);
-  let id = s.create_card(10.0, 20.0, 200.0, 80.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 10.0, 20.0, 200.0, 80.0).unwrap();
   let card = card_file(&f, &id);
   assert_eq!((card.note, card.zone, card.x, card.y), (None, None, 10.0, 20.0));
   let view = s.index.viewport(WORLD, 0.0, None).unwrap();
@@ -25,7 +26,7 @@ fn a_card_placed_in_a_zone_joins_it_with_relative_coordinates() {
   let f = Fixture::new();
   f.write(".canvas/zones/Z.json", r#"{ "name": "Z", "parent": null, "x": 500, "y": 500, "w": 400, "h": 400 }"#);
   let s = open(&f);
-  let id = s.create_card(600.0, 650.0, 100.0, 50.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 600.0, 650.0, 100.0, 50.0).unwrap();
   let card = card_file(&f, &id);
   assert_eq!((card.zone.as_deref(), card.x, card.y), (Some("Z"), 100.0, 150.0));
   let view = s.index.viewport(WORLD, 0.0, None).unwrap();
@@ -36,7 +37,7 @@ fn a_card_placed_in_a_zone_joins_it_with_relative_coordinates() {
 fn first_save_writes_the_note_then_points_the_card_at_it() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Competitor scan\n\nPrices").unwrap();
   assert_eq!(card_file(&f, &card).note.as_deref(), Some(note.as_str()));
   let text = NoteText::parse(&f.read("notes/Competitor scan.md"));
@@ -51,7 +52,7 @@ fn a_title_clash_adds_a_number() {
   let f = Fixture::new();
   f.write("notes/Idea.md", "Idea");
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   s.create_note_for_card(&card, "Idea").unwrap();
   assert_eq!(names(&f.vault.notes_dir()), ["Idea 2.md", "Idea.md"]);
 }
@@ -70,7 +71,7 @@ fn saving_keeps_frontmatter_keys_the_app_did_not_write() {
 fn discarding_empties_the_card_then_deletes_the_file() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "x").unwrap();
   assert!(s.discard_note(&card, &note).is_err(), "a note with content is never discarded");
   s.save_note(&note, "  \n").unwrap();
@@ -84,7 +85,7 @@ fn discarding_empties_the_card_then_deletes_the_file() {
 fn renaming_follows_the_title_and_keeps_the_id() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Draft").unwrap();
   s.save_note(&note, "Final plan\nmore").unwrap();
   assert_eq!(names(&f.vault.notes_dir()), ["Draft.md"], "no rename on save");

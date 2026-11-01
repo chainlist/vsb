@@ -61,6 +61,7 @@ function zonesIn(e: Edit, rect: Rect, minSize: number, cell: number | null): Zon
 
 const cardView = ({ id, file, ax, ay, title, excerpt, resolved }: CardRecord): CardView => ({
 	id,
+	kind: file.kind ?? 'note',
 	note: file.note,
 	zone: file.zone,
 	x: ax,

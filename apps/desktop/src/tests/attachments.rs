@@ -1,4 +1,5 @@
 use super::{card_file, open, put_zone, Fixture, WORLD};
+use crate::items::CardKind;
 
 const PNG: &[u8] = b"\x89PNG\r\n\x1a\n not really an image";
 
@@ -24,14 +25,15 @@ fn an_image_card_shows_its_file_until_it_is_cleared() {
   let placed = s.place_file(&path, 100.0, 100.0, 320.0, 180.0).unwrap();
 
   let card = card_file(&f, &placed.id);
-  assert_eq!((card.note, card.file.as_deref(), card.zone.as_deref(), card.x), (None, Some(path.as_str()), Some("Z"), 100.0));
+  assert_eq!((card.kind, card.note, card.file.as_deref(), card.zone.as_deref(), card.x), (CardKind::Image, None, Some(path.as_str()), Some("Z"), 100.0));
   let view = s.index.viewport(WORLD, 0.0, None).unwrap().cards.into_iter().find(|c| c.id == placed.id).unwrap();
-  assert_eq!(view.file.as_deref(), Some(path.as_str()));
+  assert_eq!((view.kind.as_str(), view.file.as_deref()), ("image", Some(path.as_str())));
   // A second card may show the same file.
   assert!(s.place_file(&path, 300.0, 100.0, 320.0, 180.0).is_ok());
 
   s.clear_card(&placed.id).unwrap();
-  assert_eq!((card_file(&f, &placed.id).note, card_file(&f, &placed.id).file), (None, None));
+  let card = card_file(&f, &placed.id);
+  assert_eq!((card.kind, card.note, card.file), (CardKind::Note, None, None));
   // Undoing the placing takes the card away; the image stays.
   s.apply(placed.undo).unwrap();
   assert!(!f.exists(&format!(".canvas/cards/{}.json", placed.id)));

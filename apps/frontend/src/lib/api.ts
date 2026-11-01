@@ -48,9 +48,14 @@ export type ZoneView = {
 export type HAlign = 'left' | 'center' | 'right';
 export type VAlign = 'top' | 'center' | 'bottom';
 
+/** What a card shows: a note, on an index card or on a post-it, or in its place an image file of the
+ * vault or a web page. */
+export type CardKind = 'note' | 'postit' | 'image' | 'link';
+
 /** A card in absolute world coordinates, with what the index knows of its note. */
 export type CardView = {
 	id: string;
+	kind: CardKind;
 	note: string | null;
 	zone: string | null;
 	x: number;
@@ -65,9 +70,9 @@ export type CardView = {
 	excerpt: string | null;
 	/** False when `note` is set but its file is missing. */
 	resolved: boolean;
-	/** The vault file the card shows in place of a note, by its vault path: an image. Null for none. */
+	/** The vault file an image card shows, by its vault path. Null for none. */
 	file: string | null;
-	/** The web page the card shows in place of a note, by its address. Null for none. */
+	/** The web page a link card shows, by its address. Null for none. */
 	link: string | null;
 	/** What that page said of itself when it was pasted. Null for nothing. */
 	preview: LinkPreview | null;
@@ -181,10 +186,22 @@ export type Batch = { cards: string[]; undo: ItemState[] };
 /** What copying gathers, for the clipboard: the box around it in the world it was copied from, and
  * its items by the IDs they were copied from, their corners from the box's corner. An item's zone (a
  * zone's `parent`) is the copied zone around it, or null. Zones come parents first. A card brings
- * its note's text, null for none, and the vault file or web page it shows, if any. */
+ * its kind, left out for an index card, its note's text, null for none, and the vault file or web
+ * page it shows, if any. */
 export type Clip = Frame & {
 	zones: (Frame & { id: string; parent: string | null; name: string; color?: string })[];
-	cards: (Frame & { id: string; zone: string | null; halign?: HAlign; valign?: VAlign; color?: string; text: string | null; file?: string; link?: string; preview?: LinkPreview })[];
+	cards: (Frame & {
+		id: string;
+		kind?: Exclude<CardKind, 'note'>;
+		zone: string | null;
+		halign?: HAlign;
+		valign?: VAlign;
+		color?: string;
+		text: string | null;
+		file?: string;
+		link?: string;
+		preview?: LinkPreview;
+	})[];
 	drawings: (Frame & { id: string; zone: string | null; strokes: PenStroke[] })[];
 	edges: { from: string; to: string; label?: string; shape?: Shape; arrow?: Arrow; stroke?: Stroke }[];
 };

@@ -9,6 +9,7 @@ import { cover, rectAt } from './grid.ts';
 import { isWebLink } from './links.ts';
 import { children, edgesAmong } from './lookups.ts';
 import { bodyOf, newNote } from './notes.ts';
+import { cardKind } from './records.ts';
 import { newId } from './ulid.ts';
 import { holding } from './zones.ts';
 
@@ -69,16 +70,19 @@ export async function pasteItems(e: Edit, clip: Clip, x: number, y: number): Pro
 	const cards = new Map<string, string>();
 	for (const { id: was, text, ...card } of clip.cards) {
 		const [zone, cx, cy] = home(card.zone, card.x, card.y);
-		const note = text?.trim() ? await newNote(e, text) : null;
-		const id = newId();
-		if (zone === landing) ids.push(id);
+		const told = cardKind(card);
 		// A clip can come from anywhere: a file outside the vault's attachments is left out, and so is
-		// a link to anything but a web page, with its preview, and a preview's image outside them.
-		const file = card.file !== undefined && isAttachment(card.file) ? card.file : undefined;
-		const link = card.link !== undefined && isWebLink(card.link) ? card.link : undefined;
+		// a link to anything but a web page, with its preview, and a preview's image outside them. An
+		// image or link card left with nothing to show pastes as an empty index card.
+		const file = told === 'image' && card.file !== undefined && isAttachment(card.file) ? card.file : undefined;
+		const link = told === 'link' && card.link !== undefined && isWebLink(card.link) ? card.link : undefined;
 		const image = card.preview?.image !== undefined && isAttachment(card.preview.image) ? card.preview.image : undefined;
 		const preview = link && card.preview ? { ...card.preview, image } : undefined;
-		states.push(state('card', id, { ...card, note, zone, x: cx, y: cy, file, link, preview }));
+		const kind = (told === 'image' && !file) || (told === 'link' && !link) ? undefined : told;
+		const note = (kind === undefined || kind === 'postit') && text?.trim() ? await newNote(e, text) : null;
+		const id = newId();
+		if (zone === landing) ids.push(id);
+		states.push(state('card', id, { ...card, kind, note, zone, x: cx, y: cy, file, link, preview }));
 		cards.set(was, id);
 	}
 	for (const { id: _, ...drawing } of clip.drawings) {

@@ -5,6 +5,7 @@ import type {
 	Arrow,
 	BatchCard,
 	BatchEdge,
+	CardKind,
 	Clip,
 	EdgeStyle,
 	Erased,
@@ -81,7 +82,8 @@ export const openLink = (url: string) => local(() => links.openLink(url));
 export const linkPreview = (_url: string) => local((): LinkPreview | null => null);
 
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) => reading((e) => viewport(e, rect, minSize, cell));
-export const createCard = (x: number, y: number, w: number, h: number) => writing((e) => cards.createCard(e, x, y, w, h));
+export const createCard = (x: number, y: number, w: number, h: number, kind: CardKind = 'note', color: string | null = null) =>
+	writing((e) => cards.createCard(e, kind, color, x, y, w, h));
 export const placeNote = (path: string, x: number, y: number, w: number, h: number) => writing((e) => cards.placeNote(e, path, x, y, w, h));
 export const placeFile = (path: string, x: number, y: number, w: number, h: number) => writing((e) => cards.placeFile(e, path, x, y, w, h));
 export const writeImage = (name: string, bytes: ArrayBuffer) => writing((e) => attachments.writeImage(e, name, bytes));

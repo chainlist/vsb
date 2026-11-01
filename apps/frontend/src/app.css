@@ -14,6 +14,8 @@
 @import './lib/themes/cairn.css';
 @import './lib/themes/wilds.css';
 @import './lib/themes/board.css';
+/* The hand post-its are written in, in every theme. */
+@import '@fontsource-variable/caveat/wght.css';
 
 /* shadcn-svelte's colors, radii and shadows are the theme's tokens, so its components follow the
    vault's theme like everything else. */
@@ -83,6 +85,9 @@
 	--pin-edge: #3c434c;
 	--pin-dim: color-mix(in srgb, var(--pin) calc(var(--dim) * 100%), var(--paper));
 	--glint: rgb(255 255 255 / 0.85);
+	/* A post-it is written by hand in dark ink on its colored paper, the same in every theme. */
+	--font-hand: 'Caveat Variable', cursive;
+	--postit-ink: #2b2a26;
 }
 
 /* No grain on a theme's paper unless the theme lays one, with its tile's size at 100%

@@ -10,6 +10,7 @@
 	import Scan from '@lucide/svelte/icons/scan';
 	import SquareDashedMousePointer from '@lucide/svelte/icons/square-dashed-mouse-pointer';
 	import SquarePlus from '@lucide/svelte/icons/square-plus';
+	import StickyNotePlus from '@lucide/svelte/icons/sticky-note-plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Workflow from '@lucide/svelte/icons/workflow';
 	import type { Component } from 'svelte';
@@ -40,6 +41,7 @@
 			return [
 				[
 					{ label: 'Add card here', icon: SquarePlus, keys: 'Double-click', run: () => placeCard(at) },
+					{ label: 'Add post-it here', icon: StickyNotePlus, run: () => placeCard(at, 'postit') },
 					{ label: 'Paste here', icon: ClipboardPaste, keys: key(CANVAS_KEYS.paste), run: () => pasteAt(at).catch(failure.report) }
 				],
 				[
@@ -53,7 +55,7 @@
 		const card = lone ? cards[0] : undefined;
 		const zone = lone && zones.length === 1;
 		const item = lone ? [...cards, ...zones, ...edges][0] : undefined;
-		const link = card?.link ?? null;
+		const link = card?.kind === 'link' ? card.link : null;
 		return [
 			[
 				!!item && editable(item) && { label: card ? 'Edit' : zone ? 'Rename' : 'Edit label', icon: Pencil, keys: key(CANVAS_KEYS.edit), run: editSelected },

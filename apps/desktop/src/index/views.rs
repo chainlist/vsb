@@ -21,6 +21,8 @@ pub struct ZoneView {
 #[derive(Serialize, Debug, PartialEq)]
 pub struct CardView {
   pub id: String,
+  /// `note`, `postit`, `image` or `link`.
+  pub kind: String,
   pub note: Option<String>,
   pub zone: Option<String>,
   pub x: f64,
@@ -34,9 +36,9 @@ pub struct CardView {
   pub excerpt: Option<String>,
   /// False when `note` is set but no indexed file has that ID.
   pub resolved: bool,
-  /// The vault file the card shows in place of a note: an image.
+  /// The vault file an image card shows.
   pub file: Option<String>,
-  /// The web page the card shows in place of a note, by its address, and what it said of itself.
+  /// The web page a link card shows, by its address, and what it said of itself.
   pub link: Option<String>,
   pub preview: Option<Preview>,
 }

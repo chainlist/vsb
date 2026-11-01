@@ -1,6 +1,6 @@
 use super::{card_file, files, open, put_card, put_zone, Fixture, WORLD};
 use crate::clip::Clip;
-use crate::items::{self, Edge, Kind, Preview, Zone};
+use crate::items::{self, CardKind, Edge, Kind, Preview, Zone};
 use crate::note::NoteText;
 use crate::session::Session;
 use serde_json::json;
@@ -152,9 +152,9 @@ fn a_link_card_copies_with_its_link_and_preview_and_a_clip_brings_only_web_pages
   assert_eq!(view.preview.as_ref(), Some(&shown));
 
   let mut clip = s.copy_items(&ids(&["l"]), &[], &[]).unwrap();
-  assert_eq!((clip.cards[0].text.as_deref(), clip.cards[0].link.as_deref()), (None, Some("https://example.com/a")));
+  assert_eq!((clip.cards[0].kind, clip.cards[0].text.as_deref(), clip.cards[0].link.as_deref()), (CardKind::Link, None, Some("https://example.com/a")));
   let copy = card_file(&f, &s.paste_items(&clip, 500.0, 0.0).unwrap().ids[0]);
-  assert_eq!((copy.note, copy.link.as_deref(), copy.preview.as_ref()), (None, Some("https://example.com/a"), Some(&shown)));
+  assert_eq!((copy.kind, copy.note, copy.link.as_deref(), copy.preview.as_ref()), (CardKind::Link, None, Some("https://example.com/a"), Some(&shown)));
 
   // A preview's image outside the attachments is left out.
   clip.cards[0].preview.as_mut().unwrap().image = Some("../secret.png".into());
@@ -164,5 +164,39 @@ fn a_link_card_copies_with_its_link_and_preview_and_a_clip_brings_only_web_pages
   // Any other address is left out, with its preview: the copy is an empty card.
   clip.cards[0].link = Some("javascript:alert(1)".into());
   let copy = card_file(&f, &s.paste_items(&clip, 1000.0, 0.0).unwrap().ids[0]);
-  assert_eq!((copy.note, copy.link, copy.preview), (None, None, None));
+  assert_eq!((copy.kind, copy.note, copy.link, copy.preview), (CardKind::Note, None, None, None));
+}
+
+#[test]
+fn a_post_it_pastes_as_a_post_it_with_a_note_of_its_own() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let id = s.create_card(CardKind::Postit, Some("#f5d76e".into()), 0.0, 0.0, 200.0, 200.0).unwrap();
+  s.create_note_for_card(&id, "Ask Marie").unwrap();
+  let clip = s.copy_items(&ids(&[&id]), &[], &[]).unwrap();
+  assert_eq!((clip.cards[0].kind, clip.cards[0].text.as_deref()), (CardKind::Postit, Some("Ask Marie")));
+  let copy = card_file(&f, &s.paste_items(&clip, 500.0, 0.0).unwrap().ids[0]);
+  assert_eq!((copy.kind, copy.color.as_deref()), (CardKind::Postit, Some("#f5d76e")));
+  assert_ne!(copy.note, card_file(&f, &id).note);
+  assert_eq!(s.read_note(copy.note.as_deref().unwrap()).unwrap(), "Ask Marie");
+}
+
+#[test]
+fn a_clip_from_before_kinds_is_told_by_what_its_cards_show() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let card = |extra: serde_json::Value| {
+    let mut card = json!({ "id": "c", "zone": null, "x": 0.0, "y": 0.0, "w": 100.0, "h": 100.0 });
+    card.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
+    card
+  };
+  let clip = |c: serde_json::Value| -> Clip { serde_json::from_value(json!({ "x": 0.0, "y": 0.0, "w": 100.0, "h": 100.0, "cards": [c] })).unwrap() };
+  let pasted = |c| card_file(&f, &s.paste_items(&clip(c), 0.0, 0.0).unwrap().ids[0]);
+  assert_eq!(pasted(card(json!({ "file": "attachments/images/a.png" }))).kind, CardKind::Image);
+  // An image card naming a file outside the attachments shows nothing: it pastes as an empty index card.
+  let copy = pasted(card(json!({ "kind": "image", "file": "../secret.png" })));
+  assert_eq!((copy.kind, copy.file), (CardKind::Note, None));
+  // Text on a card that shows no note makes none.
+  let copy = pasted(card(json!({ "kind": "link", "link": "https://example.com", "text": "stray" })));
+  assert_eq!((copy.kind, copy.note), (CardKind::Link, None));
 }

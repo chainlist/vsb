@@ -1,6 +1,8 @@
 // The browser backend's card edits and undo: the desktop's layout and arrange tests.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { openDb } from '../src/lib/platform/browser/db.ts';
+import { request } from '../src/lib/platform/browser/idb.ts';
 import { api, cardAt, changed, edgeOf, file, files, fresh, noteCard, positions, put, WORLD, zoneAt } from './browser.mjs';
 
 const withZone = async () => {
@@ -176,4 +178,51 @@ test('the canvas lists its own cards and zones for making room', async () => {
 	await put(zoneAt('Z', null, 0, 0, 700, 260), cardAt('NAME', 'Z', 300, 60), cardAt('LOOSE', null, 900, 0));
 	const { nodes } = await api.zoneNodes(null);
 	assert.deepEqual(nodes.map((n) => [n.id, n.zone]), [['LOOSE', false], ['Z', true]]);
+});
+
+test('a post-it is a note card of its own kind and stays one', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 200, 200, 'postit', '#f5d76e');
+	assert.deepEqual(await file('card', id), { kind: 'postit', note: null, zone: null, x: 0, y: 0, w: 200, h: 200, color: '#f5d76e' });
+	await api.createNoteForCard(id, 'Ask Marie\nabout pricing');
+	const [view] = (await api.queryViewport(WORLD, 0, null)).cards;
+	assert.deepEqual([view.kind, view.title, view.color], ['postit', 'Ask Marie', '#f5d76e']);
+
+	// Cleared once its note is gone, it is an empty post-it.
+	await put(cardAt('P', null, 400, 0, { kind: 'postit', note: 'GONE' }));
+	await api.clearCard('P');
+	assert.deepEqual([(await file('card', 'P')).kind, (await file('card', 'P')).note], ['postit', null]);
+});
+
+test('only a card showing a note is created empty', async () => {
+	await fresh();
+	await assert.rejects(api.createCard(0, 0, 200, 200, 'image'));
+	await assert.rejects(api.createCard(0, 0, 200, 200, 'link'));
+	// An index card leaves its kind out.
+	assert.equal('kind' in (await file('card', await api.createCard(0, 0, 200, 100))), false);
+});
+
+test('a card written before kinds is told by what it shows', async () => {
+	await fresh();
+	await put(cardAt('I', null, 0, 0, { file: 'attachments/images/a.png' }), cardAt('L', null, 200, 0, { link: 'https://example.com' }));
+	assert.deepEqual([(await file('card', 'I')).kind, (await file('card', 'L')).kind], ['image', 'link']);
+	const kinds = Object.fromEntries((await api.queryViewport(WORLD, 0, null)).cards.map((c) => [c.id, c.kind]));
+	assert.deepEqual(kinds, { I: 'image', L: 'link' });
+});
+
+test('opening a version 5 vault gives each image and link card its kind', async () => {
+	const old = indexedDB.open('vsb-KINDS', 5);
+	old.onupgradeneeded = () => old.result.createObjectStore('cards', { keyPath: 'id' });
+	const v5 = await request(old);
+	const tx = v5.transaction('cards', 'readwrite');
+	const at = { note: null, zone: null, x: 0, y: 0, w: 200, h: 100 };
+	const record = (id, file) => ({ id, file, zk: '', ax: 0, ay: 0, root: '', g: [[0, 0, 0]] });
+	tx.objectStore('cards').put(record('I', { ...at, file: 'attachments/images/a.png' }));
+	tx.objectStore('cards').put(record('N', at));
+	await new Promise((resolve) => (tx.oncomplete = resolve));
+	v5.close();
+	const v6 = await openDb('KINDS');
+	const [image, note] = await Promise.all(['I', 'N'].map((id) => request(v6.transaction('cards').objectStore('cards').get(id))));
+	v6.close();
+	assert.deepEqual([image.file.kind, 'kind' in note.file], ['image', false]);
 });

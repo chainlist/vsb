@@ -2,7 +2,7 @@
 
 use super::{card_file, hour_ago, move_to, names, open, set_time, Fixture, WORLD};
 use crate::fsx;
-use crate::items::{self, Edge, HAlign, Kind, Shape, Zone};
+use crate::items::{self, CardKind, Edge, HAlign, Kind, Shape, Zone};
 use serde_json::json;
 use std::fs;
 
@@ -10,7 +10,7 @@ use std::fs;
 fn an_undo_on_a_card_changed_outside_reverts_only_what_it_changed() {
   let f = Fixture::new();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   let undo = s.move_cards(&[move_to(&id, 300.0, 40.0)]).unwrap();
   // A sync tool brings in a note and an alignment from another device.
   let theirs = json!({ "note": "N9", "zone": null, "x": 300, "y": 40, "w": 200, "h": 100, "halign": "center" });
@@ -26,8 +26,8 @@ fn an_undo_on_a_card_changed_outside_reverts_only_what_it_changed() {
 fn an_undo_that_clears_a_field_keeps_what_changed_outside() {
   let f = Fixture::new();
   let s = open(&f);
-  let a = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
-  let b = s.create_card(400.0, 0.0, 200.0, 100.0).unwrap();
+  let a = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
+  let b = s.create_card(CardKind::Note, None, 400.0, 0.0, 200.0, 100.0).unwrap();
   let edge = s.create_edge(&a, &b).unwrap().id;
   let undo = s.label_edge(&edge, "needs").unwrap();
   let rel = format!(".canvas/edges/{edge}.json");
@@ -55,7 +55,7 @@ fn moving_a_zone_renamed_outside_keeps_its_new_name() {
 fn undoing_the_delete_of_a_card_changed_outside_brings_back_the_outside_version() {
   let f = Fixture::new();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   f.write(&format!(".canvas/cards/{id}.json"), &json!({ "note": "N9", "zone": null, "x": 0, "y": 0, "w": 200, "h": 100 }).to_string());
   let undo = s.delete_cards(std::slice::from_ref(&id)).unwrap();
   assert!(!f.exists(&format!(".canvas/cards/{id}.json")));
@@ -67,7 +67,7 @@ fn undoing_the_delete_of_a_card_changed_outside_brings_back_the_outside_version(
 fn saving_a_note_changed_outside_keeps_it_and_puts_the_text_in_a_conflict_note() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Plan\nv1").unwrap();
   // Same size and an older time: only "differs" catches it.
   let theirs = format!("---\nid: {note}\n---\nPlan\nv9");
@@ -86,7 +86,7 @@ fn saving_a_note_changed_outside_keeps_it_and_puts_the_text_in_a_conflict_note()
 fn saving_a_note_deleted_outside_does_not_bring_it_back() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Plan\nv1").unwrap();
   fs::remove_file(f.dir.path().join("notes/Plan.md")).unwrap();
   assert!(!s.save_note(&note, "Plan\nv2").unwrap());
@@ -98,7 +98,7 @@ fn saving_a_note_deleted_outside_does_not_bring_it_back() {
 fn a_note_changed_outside_is_never_discarded() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "x").unwrap();
   assert!(s.save_note(&note, "").unwrap());
   f.write("notes/x.md", &format!("---\nid: {note}\ntags: [later]\n---\n"));
@@ -111,7 +111,7 @@ fn a_note_changed_outside_is_never_discarded() {
 fn a_note_changed_outside_before_editing_saves_normally() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Plan\nv1").unwrap();
   f.write("notes/Plan.md", &format!("---\nid: {note}\n---\nPlan\nfrom elsewhere"));
   assert_eq!(s.read_note(&note).unwrap(), "Plan\nfrom elsewhere");
@@ -123,7 +123,7 @@ fn a_note_changed_outside_before_editing_saves_normally() {
 fn the_apps_own_writes_are_not_taken_for_outside_changes() {
   let f = Fixture::new();
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let path = items::path(&f.vault, Kind::Card, &card);
   for x in [10.0, 20.0, 30.0] {
     s.move_cards(&[move_to(&card, x, 0.0)]).unwrap();

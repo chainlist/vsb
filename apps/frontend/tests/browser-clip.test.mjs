@@ -109,9 +109,9 @@ test('a link card copies with its link and preview, and a clip brings only web p
 	assert.deepEqual([view.note, view.link, view.preview], [null, 'https://example.com/a', preview]);
 
 	const clip = await api.copyItems(['l'], [], []);
-	assert.deepEqual([clip.cards[0].text, clip.cards[0].link], [null, 'https://example.com/a']);
+	assert.deepEqual([clip.cards[0].kind, clip.cards[0].text, clip.cards[0].link], ['link', null, 'https://example.com/a']);
 	const copy = await file('card', (await api.pasteItems(clip, 500, 0)).ids[0]);
-	assert.deepEqual([copy.note, copy.link, copy.preview], [null, 'https://example.com/a', preview]);
+	assert.deepEqual([copy.kind, copy.note, copy.link, copy.preview], ['link', null, 'https://example.com/a', preview]);
 
 	// A preview's image outside the attachments is left out.
 	clip.cards[0].preview = { ...preview, image: '../secret.png' };
@@ -121,8 +121,35 @@ test('a link card copies with its link and preview, and a clip brings only web p
 	// Any other address is left out, with its preview: the copy is an empty card. Nor is one opened.
 	clip.cards[0].link = 'javascript:alert(1)';
 	const empty = await file('card', (await api.pasteItems(clip, 1000, 0)).ids[0]);
-	assert.deepEqual([empty.note, 'link' in empty, 'preview' in empty], [null, false, false]);
+	assert.deepEqual([empty.note, 'kind' in empty, 'link' in empty, 'preview' in empty], [null, false, false, false]);
 	await assert.rejects(api.openLink('javascript:alert(1)'), (e) => e === 'not a web link');
 	// The browser reads no other site's page.
 	assert.equal(await api.linkPreview('https://example.com/a'), null);
+});
+
+test('a post-it pastes as a post-it with a note of its own', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 200, 200, 'postit', '#f5d76e');
+	const note = await api.createNoteForCard(id, 'Ask Marie');
+	const clip = await api.copyItems([id], [], []);
+	assert.deepEqual([clip.cards[0].kind, clip.cards[0].text], ['postit', 'Ask Marie']);
+	const copy = await file('card', (await api.pasteItems(clip, 500, 0)).ids[0]);
+	assert.deepEqual([copy.kind, copy.color], ['postit', '#f5d76e']);
+	assert.notEqual(copy.note, note);
+	assert.equal(await api.readNote(copy.note), 'Ask Marie');
+});
+
+test('a clip from before kinds is told by what its cards show', async () => {
+	await fresh();
+	const pasted = async (extra) => {
+		const card = { id: 'c', zone: null, x: 0, y: 0, w: 100, h: 100, text: null, ...extra };
+		return file('card', (await api.pasteItems({ x: 0, y: 0, w: 100, h: 100, zones: [], cards: [card], drawings: [], edges: [] }, 0, 0)).ids[0]);
+	};
+	assert.equal((await pasted({ file: 'attachments/images/a.png' })).kind, 'image');
+	// An image card naming a file outside the attachments shows nothing: it pastes as an empty index card.
+	const outside = await pasted({ kind: 'image', file: '../secret.png' });
+	assert.deepEqual(['kind' in outside, 'file' in outside], [false, false]);
+	// Text on a card that shows no note makes none.
+	const link = await pasted({ kind: 'link', link: 'https://example.com', text: 'stray' });
+	assert.deepEqual([link.kind, link.note], ['link', null]);
 });

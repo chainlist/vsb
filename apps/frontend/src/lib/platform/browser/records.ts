@@ -1,7 +1,7 @@
 // What the browser keeps of each item. The `file` of a zone, card, edge or drawing is what the desktop writes
 // to its JSON file, defaults left out, so item states, undo and a later export are the same on both
 // platforms. The rest is derived on every write, as the desktop's index derives it.
-import type { Arrow, Frame, HAlign, LinkPreview, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
+import type { Arrow, CardKind, Frame, HAlign, LinkPreview, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
 import type { Box } from './grid.ts';
 import type { Words } from './words.ts';
 
@@ -10,6 +10,8 @@ export type Kind = 'zone' | 'card' | 'edge' | 'drawing';
 export type ZoneFile = { name: string; parent: string | null; x: number; y: number; w: number; h: number; color?: string };
 
 export type CardFile = {
+	/** Left out for an index card. */
+	kind?: Exclude<CardKind, 'note'>;
 	note: string | null;
 	zone: string | null;
 	x: number;
@@ -19,9 +21,9 @@ export type CardFile = {
 	halign?: HAlign;
 	valign?: VAlign;
 	color?: string;
-	/** A file of the vault the card shows in place of a note, by its vault path: an image. */
+	/** The file of the vault an image card shows, by its vault path. */
 	file?: string;
-	/** A web page the card shows in place of a note, by its address, and what it said of itself. */
+	/** The web page a link card shows, by its address, and what it said of itself. */
 	link?: string;
 	preview?: LinkPreview;
 };
@@ -134,6 +136,14 @@ function linkPreview(v: unknown): LinkPreview | undefined {
 	return kept({ title: maybe(o.title) ?? undefined, description: maybe(o.description) ?? undefined, image: maybe(o.image) ?? undefined });
 }
 
+/** A card's kind, left out for an index card. A card written before cards had one is told by what it
+ * shows: an image card by its `file`, a link card by its `link`. An index card leaves its kind out,
+ * so it is never written with either. */
+export function cardKind(v: Record<string, unknown>): CardFile['kind'] {
+	const kind = choice(v.kind, ['note', 'postit', 'image', 'link'], 'note', 'kind') as CardFile['kind'];
+	return kind ?? (typeof v.file === 'string' ? 'image' : typeof v.link === 'string' ? 'link' : undefined);
+}
+
 /** A state's value as the file it stands for, read as the desktop reads it. */
 export function fileOf(kind: Kind, value: unknown): File {
 	const v = (value ?? {}) as Record<string, unknown>;
@@ -156,6 +166,7 @@ export function fileOf(kind: Kind, value: unknown): File {
 	}
 	if (kind === 'zone') return kept({ name: maybe(v.name) ?? '', parent: maybe(v.parent), ...at, color: maybe(v.color) ?? undefined });
 	return kept({
+		kind: cardKind(v),
 		note: maybe(v.note),
 		zone: maybe(v.zone),
 		...at,

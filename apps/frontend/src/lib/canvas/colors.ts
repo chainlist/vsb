@@ -11,6 +11,9 @@ export const COLORS: [string | null, string][] = [
 	['#7cc49a', 'Green']
 ];
 
+/** The color a new post-it takes: the highlighters' yellow, a sticky note's own. */
+export const POSTIT_COLOR = '#f5d76e';
+
 /** The value all of these share, or undefined when they differ or there are none. */
 export function shared<T>(values: T[]): T | undefined {
 	return values.length && values.every((v) => v === values[0]) ? values[0] : undefined;

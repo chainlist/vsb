@@ -6,7 +6,7 @@
 use crate::attachments;
 use crate::error::Result;
 use crate::index::Rect;
-use crate::items::{is_default, Card, Drawing, Edge, HAlign, Kind, Preview, VAlign, Zone};
+use crate::items::{is_default, Card, CardKind, Drawing, Edge, HAlign, Kind, Preview, VAlign, Zone};
 use crate::links;
 use crate::session::Session;
 use crate::states::ItemState;
@@ -26,10 +26,13 @@ pub struct Clipped<T> {
 }
 
 /// A card in a clip, as a zone is, with its note's text in place of its note: None for an empty
-/// card, or one whose note is missing.
+/// card, or one whose note is missing. A clip from before cards had a kind tells it as a card file
+/// from then does.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClipCard {
   pub id: String,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub kind: CardKind,
   pub zone: Option<String>,
   pub x: f64,
   pub y: f64,
@@ -147,21 +150,28 @@ impl Session {
     let mut cards = HashMap::new();
     for c in &clip.cards {
       let (zone, cx, cy) = home(&c.zone, c.x, c.y);
+      let kind = c.kind.told(&c.file, &c.link);
+      // A clip can come from anywhere: a file outside the vault's attachments is left out, and so is
+      // a link to anything but a web page, with its preview, and a preview's image outside them. An
+      // image or link card left with nothing to show pastes as an empty index card.
+      let file = c.file.clone().filter(|f| kind == CardKind::Image && attachments::check(f).is_ok());
+      let link = c.link.clone().filter(|l| kind == CardKind::Link && links::check(l).is_ok());
+      let preview = c.preview.clone().filter(|_| link.is_some()).map(|p| Preview { image: p.image.filter(|i| attachments::check(i).is_ok()), ..p });
+      let kind = match kind {
+        CardKind::Image if file.is_none() => CardKind::Note,
+        CardKind::Link if link.is_none() => CardKind::Note,
+        kind => kind,
+      };
       let note = match c.text.as_deref() {
-        Some(text) if !text.trim().is_empty() => Some(self.new_note(text)?),
+        Some(text) if kind.shows_note() && !text.trim().is_empty() => Some(self.new_note(text)?),
         _ => None,
       };
       let id = crate::new_id();
       if zone == landing {
         ids.push(id.clone());
       }
-      // A clip can come from anywhere: a file outside the vault's attachments is left out, and so is
-      // a link to anything but a web page, with its preview, and a preview's image outside them.
-      let file = c.file.clone().filter(|f| attachments::check(f).is_ok());
-      let link = c.link.clone().filter(|l| links::check(l).is_ok());
-      let preview = c.preview.clone().filter(|_| link.is_some()).map(|p| Preview { image: p.image.filter(|i| attachments::check(i).is_ok()), ..p });
       let (halign, valign, color) = (c.halign, c.valign, c.color.clone());
-      let card = Card { note, zone, x: cx, y: cy, w: c.w, h: c.h, halign, valign, color, file, link, preview };
+      let card = Card { kind, note, zone, x: cx, y: cy, w: c.w, h: c.h, halign, valign, color, file, link, preview };
       states.push(ItemState::of(&id, &card)?);
       cards.insert(c.id.as_str(), id);
     }
@@ -202,9 +212,9 @@ impl Session {
           Some(note) if self.index.note_path(note)?.is_some() => Some(self.read_note(note)?),
           _ => None,
         };
-        let (halign, valign, color, file, link, preview) = (c.halign, c.valign, c.color, c.file, c.link, c.preview);
+        let (kind, halign, valign, color, file, link, preview) = (c.kind, c.halign, c.valign, c.color, c.file, c.link, c.preview);
         let (x, y) = (ox + c.x, oy + c.y);
-        clip.cards.push(ClipCard { id: id.into(), zone: within, x, y, w: c.w, h: c.h, halign, valign, color, text, file, link, preview });
+        clip.cards.push(ClipCard { id: id.into(), kind, zone: within, x, y, w: c.w, h: c.h, halign, valign, color, text, file, link, preview });
       }
       Kind::Drawing => {
         let d: Drawing = self.read(id)?;

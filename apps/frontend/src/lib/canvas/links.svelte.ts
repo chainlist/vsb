@@ -54,6 +54,6 @@ export async function linkClip(link: string, at: { x: number; y: number }): Prom
 	reading.pages = reading.pages.filter((p) => p.id !== id);
 	if (canvas !== opened) return null;
 	const { w, h } = size ?? { w: W, h: preview?.image ? TALL : SHORT };
-	const card = { id: 'link', zone: null, x: 0, y: 0, w, h, text: null, link, ...(preview && { preview }) };
+	const card = { id: 'link', kind: 'link' as const, zone: null, x: 0, y: 0, w, h, text: null, link, ...(preview && { preview }) };
 	return { x: 0, y: 0, w, h, zones: [], cards: [card], drawings: [], edges: [] };
 }

@@ -6,6 +6,7 @@ import type {
 	BatchCard,
 	BatchEdge,
 	BatchScope,
+	CardKind,
 	Clip,
 	Created,
 	EdgeStyle,
@@ -125,9 +126,10 @@ export const linkPreview = (url: string) => invoke<LinkPreview | null>('link_pre
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) =>
 	invoke<Viewport>('query_viewport', { rect, minSize, cell });
 
-/** Places an empty card on a world rectangle and returns its ID. */
-export const createCard = (x: number, y: number, w: number, h: number) =>
-	invoke<string>('create_card', { x, y, w, h });
+/** Places an empty card on a world rectangle, an index card or a post-it, in `color` (null for the
+ * theme's plain stock), and returns its ID. */
+export const createCard = (x: number, y: number, w: number, h: number, kind: CardKind = 'note', color: string | null = null) =>
+	invoke<string>('create_card', { kind, color, x, y, w, h });
 
 /** Places a card for the note at vault path `path` on a world rectangle, and gives the note its ID
  * if it has none. A note that already has its card gets no other: that card comes back, with

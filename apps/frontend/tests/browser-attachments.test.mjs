@@ -23,15 +23,15 @@ test('an image card shows its file until it is cleared', async () => {
 	const placed = await api.placeFile(path, 100, 100, 320, 180);
 
 	const card = await file('card', placed.id);
-	assert.deepEqual([card.note, card.file, card.zone, card.x], [null, path, 'Z', 100]);
+	assert.deepEqual([card.kind, card.note, card.file, card.zone, card.x], ['image', null, path, 'Z', 100]);
 	const view = (await api.queryViewport(WORLD, 0, null)).cards.find((c) => c.id === placed.id);
-	assert.equal(view.file, path);
+	assert.deepEqual([view.kind, view.file], ['image', path]);
 	// A second card may show the same file.
 	await api.placeFile(path, 300, 100, 320, 180);
 
 	await api.clearCard(placed.id);
 	const cleared = await file('card', placed.id);
-	assert.deepEqual([cleared.note, cleared.file], [null, undefined]);
+	assert.deepEqual([cleared.kind, cleared.note, cleared.file], [undefined, null, undefined]);
 	// Undoing the placing takes the card away; the image stays.
 	await api.applyStates(placed.undo);
 	assert.equal(await file('card', placed.id), undefined);

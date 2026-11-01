@@ -27,14 +27,16 @@ import { videoOf } from './video.js';
 export const MIN = { w: 60, h: 40 };
 /** Size of a newly placed card, in world units: 12 by 7 squares. */
 export const NEW_CARD = { w: 240, h: 140 };
+/** Size of a newly placed post-it, in world units: 10 by 10 squares. */
+export const NEW_POSTIT = { w: 200, h: 200 };
 /** Width of a resize handle on a side or corner, in screen pixels, half of it outside the item. */
 export const GRIP = 10;
 /** How near, in screen pixels, a side or middle is pulled onto one of a card around it. */
 const REACH = 6;
 
-/** Where a new card lies, centered on a world point. */
-export function newCardAt(p: { x: number; y: number }) {
-	return { x: Math.round(p.x - NEW_CARD.w / 2), y: Math.round(p.y - NEW_CARD.h / 2), ...NEW_CARD };
+/** Where a new card of this size lies, centered on a world point. */
+export function newCardAt(p: { x: number; y: number }, size = NEW_CARD) {
+	return { x: Math.round(p.x - size.w / 2), y: Math.round(p.y - size.h / 2), ...size };
 }
 
 type Item = CardView | ZoneView;
@@ -132,7 +134,7 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 	if (kind === 'zone') zoneContents(item.id).then((r) => (cover = r));
 	const still = around(new Set([item.id]));
 	// A YouTube video's width over its height: 16:9, or a Short's 9:16. Null for anything else.
-	const video = 'link' in item && item.link !== null ? videoOf(item.link) : null;
+	const video = 'kind' in item && item.kind === 'link' && item.link !== null ? videoOf(item.link) : null;
 	const ratio = video ? (video.upright ? 9 / 16 : 16 / 9) : null;
 	// A pulled side within reach of a side or the middle of a card around lands on it, or else on the grid.
 	const land = (v: number, axis: Axis) => v + (pull([v], still, axis, REACH / camera.zoom) ?? toGrid(v) - v);
@@ -150,7 +152,7 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 			item.w = stretch(from.w, px, bx, MIN.w);
 			item.h = stretch(from.h, py, by, MIN.h);
 			// An image keeps its shape, led by the side pulled further.
-			if ('file' in item && item.file !== null) {
+			if ('kind' in item && item.kind === 'image') {
 				const scale = Math.max(px ? item.w / from.w : 0, py ? item.h / from.h : 0, MIN.w / from.w, MIN.h / from.h);
 				[item.w, item.h] = [Math.round(from.w * scale), Math.round(from.h * scale)];
 			}

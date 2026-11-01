@@ -14,7 +14,7 @@ export type VaultFile = { format: number; id: string; theme?: string; paper?: st
 export const FORMAT = 1;
 
 export function openDb(vault: string) {
-	const open = indexedDB.open(`vsb-${vault}`, 5);
+	const open = indexedDB.open(`vsb-${vault}`, 6);
 	open.onupgradeneeded = ({ oldVersion }) => {
 		if (oldVersion === 0) create(open.result);
 		// Version 2: a zone keeps the cards it holds, where version 1 kept how many and their box.
@@ -25,6 +25,8 @@ export function openDb(vault: string) {
 		if (oldVersion === 3) void reshape(open.transaction!);
 		// Version 5: attachments.
 		if (oldVersion > 0 && oldVersion < 5) attachments(open.result);
+		// Version 6: each card says what kind it is.
+		if (oldVersion > 0 && oldVersion < 6) void kinds(open.transaction!);
 	};
 	return request(open);
 }
@@ -69,6 +71,12 @@ function drawings(db: IDBDatabase) {
 async function reshape(tx: IDBTransaction) {
 	const store = tx.objectStore('drawings');
 	for (const r of (await request(store.getAll())) as DrawingRecord[]) store.put({ ...r, file: fileOf('drawing', r.file) });
+}
+
+/** Gives each image and link card of a vault from before version 6 its kind, told by what it shows. */
+async function kinds(tx: IDBTransaction) {
+	const store = tx.objectStore('cards');
+	for (const r of (await request(store.getAll())) as CardRecord[]) store.put({ ...r, file: fileOf('card', r.file) });
 }
 
 /** Gives each zone of a version 1 vault the cards it holds. */

@@ -1,7 +1,7 @@
 use super::{names, Fixture};
 use crate::device::{self, Eraser, Pen, Wheel};
 use crate::fsx::{atomic_write, files};
-use crate::items::{self, Arrow, Card, Edge, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign, Zone};
+use crate::items::{self, Arrow, Card, CardKind, Edge, EdgeStyle, HAlign, Kind, Shape, Stroke, VAlign, Zone};
 use crate::vault::Vault;
 use std::fs;
 use tempfile::TempDir;
@@ -118,7 +118,7 @@ fn open_refuses_a_folder_that_is_not_a_vault() {
 #[test]
 fn card_file_leaves_out_default_alignment() {
   let f = Fixture::new();
-  let mut card = Card { note: None, zone: None, x: 1.0, y: 2.0, w: 3.0, h: 4.0, halign: HAlign::Left, valign: VAlign::Top, color: None, file: None, link: None, preview: None };
+  let mut card = Card { x: 1.0, y: 2.0, w: 3.0, h: 4.0, ..Card::default() };
   let path = items::write(&f.vault, "C1", &card).unwrap();
   let json: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
   assert_eq!(json, serde_json::json!({ "note": null, "zone": null, "x": 1.0, "y": 2.0, "w": 3.0, "h": 4.0 }));
@@ -129,6 +129,25 @@ fn card_file_leaves_out_default_alignment() {
   assert_eq!((json["halign"].as_str(), json["valign"].as_str()), (Some("center"), Some("bottom")));
   assert_eq!(items::read::<Card>(&path).unwrap(), card);
   assert_eq!(path, items::path(&f.vault, Kind::Card, "C1"));
+}
+
+#[test]
+fn a_card_file_from_before_kinds_is_told_by_what_it_shows_and_gains_its_kind() {
+  let f = Fixture::new();
+  let at = r#""note": null, "zone": null, "x": 0, "y": 0, "w": 200, "h": 100"#;
+  f.write(".canvas/cards/I.json", &format!(r#"{{ {at}, "file": "attachments/images/a.png" }}"#));
+  f.write(".canvas/cards/L.json", &format!(r#"{{ {at}, "link": "https://example.com" }}"#));
+  f.write(".canvas/cards/N.json", &format!("{{ {at} }}"));
+  f.write(".canvas/cards/P.json", &format!(r##"{{ "kind": "postit", {at}, "color": "#f5d76e" }}"##));
+  let read = |id| items::read::<Card>(&items::path(&f.vault, Kind::Card, id)).unwrap();
+  let kinds = ["I", "L", "N", "P"].map(|id| read(id).kind);
+  assert_eq!(kinds, [CardKind::Image, CardKind::Link, CardKind::Note, CardKind::Postit]);
+  // Written again, each but the index card says what kind it is.
+  for (id, kind) in [("I", Some("image")), ("L", Some("link")), ("N", None), ("P", Some("postit"))] {
+    let path = items::write(&f.vault, id, &read(id)).unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(json.get("kind").and_then(|k| k.as_str()), kind, "{id}");
+  }
 }
 
 #[test]

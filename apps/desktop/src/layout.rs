@@ -4,7 +4,7 @@
 use crate::attachments;
 use crate::error::{msg, Result};
 use crate::index::Rect;
-use crate::items::{Card, Drawing, HAlign, Kind, VAlign, Zone};
+use crate::items::{Card, CardKind, Drawing, HAlign, Kind, VAlign, Zone};
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 use serde::Deserialize;
@@ -25,9 +25,14 @@ impl Session {
     self.index.zone_around(Rect::of(x + w / 2.0, y + h / 2.0, 0.0, 0.0), &[])
   }
 
-  /// Places an empty card on a world rectangle. It joins the innermost zone under its center.
-  pub fn create_card(&self, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
-    Ok(self.place(None, None, x, y, w, h)?.id)
+  /// Places an empty card on a world rectangle, an index card or a post-it, in `color` (None for the
+  /// theme's plain stock). It joins the innermost zone under its center.
+  pub fn create_card(&self, kind: CardKind, color: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
+    if !kind.shows_note() {
+      return msg("an image or link card is placed with what it shows");
+    }
+    let card = Card { kind, color, ..Card::default() };
+    Ok(self.place(card, x, y, w, h)?.id)
   }
 
   /// Places a card showing the vault's attachment at vault path `path`, like an empty card. Several
@@ -37,7 +42,7 @@ impl Session {
     if !self.vault.abs(path).is_file() {
       return msg("file not found");
     }
-    self.place(None, Some(path.to_string()), x, y, w, h)
+    self.place(Card { kind: CardKind::Image, file: Some(path.to_string()), ..Card::default() }, x, y, w, h)
   }
 
   /// Places a card for the note at vault path `path`, like an empty card, and gives the note its
@@ -48,12 +53,13 @@ impl Session {
     if let Some(id) = self.index.card_of_note(&note)? {
       return Ok(Created { id, undo: Vec::new() });
     }
-    self.place(Some(note), None, x, y, w, h)
+    self.place(Card { note: Some(note), ..Card::default() }, x, y, w, h)
   }
 
-  fn place(&self, note: Option<String>, file: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
+  /// Places `card` on a world rectangle, in the innermost zone under its center.
+  fn place(&self, card: Card, x: f64, y: f64, w: f64, h: f64) -> Result<Created> {
     let (zone, ox, oy) = self.landing(x, y, w, h)?;
-    let card = Card { note, zone, x: x - ox, y: y - oy, w, h, halign: HAlign::default(), valign: VAlign::default(), color: None, file, link: None, preview: None };
+    let card = Card { zone, x: x - ox, y: y - oy, w, h, ..card };
     let id = crate::new_id();
     let undo = self.apply(vec![ItemState::of(&id, &card)?])?;
     Ok(Created { id, undo })
@@ -155,11 +161,15 @@ impl Session {
     })
   }
 
-  /// Turns an unresolved card, whose note or file is missing, into an empty one.
+  /// Turns an unresolved card, whose note or file is missing, into an empty one: a post-it stays one,
+  /// an image card becomes an index card.
   pub fn clear_card(&self, id: &str) -> Result<Vec<ItemState>> {
     self.edit::<Card>(&[id], |_, card| {
       card.note = None;
       card.file = None;
+      if card.kind == CardKind::Image {
+        card.kind = CardKind::Note;
+      }
       Ok(())
     })
   }

@@ -4,8 +4,11 @@
 	import { page } from '$app/state';
 	import PenLine from '@lucide/svelte/icons/pen-line';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
+	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import Workflow from '@lucide/svelte/icons/workflow';
+	import { placeCard } from '#lib/canvas/actions.js';
 	import { batchDialog, BUILDER_KEYS } from '#lib/canvas/batchDialog.svelte.js';
+	import { camera } from '#lib/canvas/camera.svelte.js';
 	import { DRAWING_KEYS, ink } from '#lib/canvas/pen.svelte.js';
 	import { bindKeys, keyName, type KeyHelp } from '#lib/keys.js';
 	import { PANEL_KEYS, PANELS } from '#lib/panel/panels.js';
@@ -33,7 +36,7 @@
 	);
 </script>
 
-<!-- Down the left edge: the zone list, the panels, the builder and pen mode, by their icons alone. -->
+<!-- Down the left edge: the zone list, the panels, the builder, pen mode and a new post-it, by their icons alone. -->
 <nav class="rail index-card chrome" aria-label="Tools" data-beside-zones>
 	<!-- Not a route like the panels: the zone list stays open beside them. -->
 	<Tip label="Zones" keys={keys(PANEL_KEYS.zones)}>
@@ -70,6 +73,14 @@
 		{#snippet children(props)}
 			<button {...props} aria-pressed={ink.on} onclick={() => ink.toggle()}>
 				<PenLine size={ICON} />
+			</button>
+		{/snippet}
+	</Tip>
+	<!-- In the middle of the canvas, open for typing. -->
+	<Tip label="Post-it">
+		{#snippet children(props)}
+			<button {...props} onclick={() => placeCard(camera.toWorld(camera.width / 2, camera.height / 2), 'postit')}>
+				<StickyNote size={ICON} />
 			</button>
 		{/snippet}
 	</Tip>

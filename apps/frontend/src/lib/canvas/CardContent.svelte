@@ -17,7 +17,7 @@
 
 	/** The YouTube video the card's link is, if any; and whether its player has been asked for, which
 	 * lasts while the card stays drawn. */
-	const video = $derived(card.link ? videoOf(card.link) : null);
+	const video = $derived(card.kind === 'link' && card.link ? videoOf(card.link) : null);
 	let playing = $state(false);
 	const selected = $derived(selection.has(card.id));
 
@@ -33,17 +33,17 @@
 
 {#if missing}
 	<strong class="notice icon-label">
-		{#if card.file}<ImageOff /> Image{:else}<FileQuestionMark /> Note{/if} not found
+		{#if card.kind === 'image'}<ImageOff /> Image{:else}<FileQuestionMark /> Note{/if} not found
 	</strong>
 	<span class="hint">Its file is missing, or not synced to this device yet.</span>
 	<button class="clear icon-label" title="Turn it into an empty card" onclick={() => clear(card)}><Eraser size={14} /> Clear</button>
-{:else if card.file}
+{:else if card.kind === 'image' && card.file}
 	{#await imageUrl(card.file) then url}
 		<img class="image" src={url} alt="" draggable="false" />
 	{:catch}
 		<!-- Its file is missing: the card says so (missing). -->
 	{/await}
-{:else if card.link && video}
+{:else if video}
 	<div class="player">
 		{#if playing}
 			<iframe
@@ -65,7 +65,7 @@
 			<button class="play" title="Play the video" aria-label="Play the video" onclick={() => (playing = true)}><Play size={24} /></button>
 		{/if}
 	</div>
-{:else if card.link}
+{:else if card.kind === 'link' && card.link}
 	{@const page = card.preview}
 	{#if page?.image}
 		{#await imageUrl(page.image) then url}

@@ -1,6 +1,6 @@
 use super::{open, Fixture};
 use crate::index::{Entry, Rect};
-use crate::items::Kind;
+use crate::items::{CardKind, Kind};
 use crate::session::Session;
 
 /// What a search finds: zone names and note titles, in order, with whether each note is placed.
@@ -43,7 +43,7 @@ fn search_follows_saves_and_rescans_and_tells_placed_notes() {
   let f = Fixture::new();
   f.write("notes/loose.md", "Loose alpha");
   let s = open(&f);
-  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let card = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 80.0).unwrap();
   let note = s.create_note_for_card(&card, "Draft\nalpha").unwrap();
   assert_eq!(found(&s, "alpha"), [("Loose alpha".to_string(), false), ("Draft".to_string(), true)]);
   s.save_note(&note, "Draft\nbeta").unwrap();

@@ -7,7 +7,7 @@ use crate::device::{self, Pen, Wheel};
 use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
-use crate::items::{Arrow, EdgeStyle, HAlign, Kind, Preview, Shape, Stroke, VAlign};
+use crate::items::{Arrow, CardKind, EdgeStyle, HAlign, Kind, Preview, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::links;
 use crate::states::{Created, ItemState};
@@ -194,8 +194,16 @@ pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f6
 }
 
 #[tauri::command]
-pub async fn create_card(state: State<'_, AppState>, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
-  state.with(|s| s.create_card(x, y, w, h))
+pub async fn create_card(
+  state: State<'_, AppState>,
+  kind: CardKind,
+  color: Option<String>,
+  x: f64,
+  y: f64,
+  w: f64,
+  h: f64,
+) -> Result<String> {
+  state.with(|s| s.create_card(kind, color, x, y, w, h))
 }
 
 #[tauri::command]

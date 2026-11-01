@@ -1,5 +1,5 @@
 use super::{card_file, move_to, open, Fixture, WORLD};
-use crate::items::{HAlign, Kind, VAlign};
+use crate::items::{CardKind, HAlign, Kind, VAlign};
 use serde_json::Value;
 use std::fs;
 
@@ -17,7 +17,7 @@ fn with_zone() -> Fixture {
 fn dropping_into_a_zone_joins_it_and_dropping_outside_leaves_it() {
   let f = with_zone();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   s.move_cards(&[move_to(&id, 1100.0, 50.0)]).unwrap();
   let c = card_file(&f, &id);
   assert_eq!((c.zone.as_deref(), c.x, c.y), (Some("Z"), 100.0, 50.0));
@@ -32,7 +32,7 @@ fn dropping_into_a_zone_joins_it_and_dropping_outside_leaves_it() {
 fn applying_the_returned_states_undoes_and_redoes_an_edit() {
   let f = with_zone();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   let rel = format!(".canvas/cards/{id}.json");
   let original = raw(&f, &rel);
   let undo = s.move_cards(&[move_to(&id, 1100.0, 50.0)]).unwrap();
@@ -48,7 +48,7 @@ fn applying_the_returned_states_undoes_and_redoes_an_edit() {
 fn undoing_a_placement_removes_the_card() {
   let f = Fixture::new();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   let redo = s.apply(vec![crate::states::ItemState { kind: Kind::Card, id: id.clone(), value: None }]).unwrap();
   assert!(!f.exists(&format!(".canvas/cards/{id}.json")));
   assert!(s.index.viewport(WORLD, 0.0, None).unwrap().cards.is_empty());
@@ -60,8 +60,8 @@ fn undoing_a_placement_removes_the_card() {
 fn deleting_a_card_removes_its_edges_and_keeps_its_note() {
   let f = Fixture::new();
   let s = open(&f);
-  let a = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
-  let b = s.create_card(400.0, 0.0, 200.0, 100.0).unwrap();
+  let a = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
+  let b = s.create_card(CardKind::Note, None, 400.0, 0.0, 200.0, 100.0).unwrap();
   s.create_note_for_card(&a, "Kept").unwrap();
   f.write(".canvas/edges/E.json", &format!(r#"{{ "from": "{a}", "to": "{b}" }}"#));
   let s = open(&f);
@@ -81,7 +81,7 @@ fn deleting_a_card_removes_its_edges_and_keeps_its_note() {
 fn resizing_from_the_bottom_right_keeps_position_and_zone() {
   let f = with_zone();
   let s = open(&f);
-  let id = s.create_card(1100.0, 100.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 1100.0, 100.0, 200.0, 100.0).unwrap();
   s.resize_card(&id, 1100.0, 100.0, 320.0, 180.0).unwrap();
   let c = card_file(&f, &id);
   assert_eq!((c.zone.as_deref(), c.x, c.y, c.w, c.h), (Some("Z"), 100.0, 100.0, 320.0, 180.0));
@@ -91,7 +91,7 @@ fn resizing_from_the_bottom_right_keeps_position_and_zone() {
 fn resizing_from_the_top_left_moves_the_corner_but_not_the_zone() {
   let f = with_zone();
   let s = open(&f);
-  let id = s.create_card(1100.0, 100.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 1100.0, 100.0, 200.0, 100.0).unwrap();
   // The new corner lies outside the zone; the card still belongs to it.
   s.resize_card(&id, 950.0, 80.0, 350.0, 120.0).unwrap();
   let c = card_file(&f, &id);
@@ -104,7 +104,7 @@ fn resizing_from_the_top_left_moves_the_corner_but_not_the_zone() {
 fn aligning_writes_alignment_and_default_drops_it_again() {
   let f = Fixture::new();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   let rel = format!(".canvas/cards/{id}.json");
   s.align_cards(std::slice::from_ref(&id), HAlign::Center, VAlign::Bottom).unwrap();
   assert_eq!((raw(&f, &rel)["halign"].as_str(), raw(&f, &rel)["valign"].as_str()), (Some("center"), Some("bottom")));
@@ -125,11 +125,46 @@ fn clearing_an_unresolved_card_makes_it_empty() {
 }
 
 #[test]
+fn a_post_it_is_a_note_card_of_its_own_kind_and_stays_one() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let id = s.create_card(CardKind::Postit, Some("#f5d76e".into()), 0.0, 0.0, 200.0, 200.0).unwrap();
+  let rel = format!(".canvas/cards/{id}.json");
+  assert_eq!((raw(&f, &rel)["kind"].as_str(), raw(&f, &rel)["color"].as_str()), (Some("postit"), Some("#f5d76e")));
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
+  assert_eq!((view.cards[0].kind.as_str(), view.cards[0].color.as_deref()), ("postit", Some("#f5d76e")));
+
+  // Its text is a note, as an index card's.
+  s.create_note_for_card(&id, "Ask Marie\nabout pricing").unwrap();
+  let card = card_file(&f, &id);
+  assert_eq!(card.kind, CardKind::Postit);
+  let view = s.index.viewport(WORLD, 0.0, None).unwrap();
+  assert_eq!((view.cards[0].kind.as_str(), view.cards[0].title.as_deref()), ("postit", Some("Ask Marie")));
+
+  // Cleared once its note is gone, it is an empty post-it.
+  f.write(&rel, &raw(&f, &rel).to_string().replace(card.note.as_deref().unwrap(), "GONE"));
+  let s = open(&f);
+  s.clear_card(&id).unwrap();
+  assert_eq!((card_file(&f, &id).kind, card_file(&f, &id).note), (CardKind::Postit, None));
+}
+
+#[test]
+fn only_a_card_showing_a_note_is_created_empty() {
+  let f = Fixture::new();
+  let s = open(&f);
+  assert!(s.create_card(CardKind::Image, None, 0.0, 0.0, 200.0, 200.0).is_err());
+  assert!(s.create_card(CardKind::Link, None, 0.0, 0.0, 200.0, 200.0).is_err());
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
+  // An index card leaves its kind out.
+  assert_eq!(raw(&f, &format!(".canvas/cards/{id}.json")).get("kind"), None);
+}
+
+#[test]
 fn deleting_both_ends_of_an_edge_and_undoing_restores_all_three() {
   let f = Fixture::new();
   let s = open(&f);
-  let a = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
-  let b = s.create_card(400.0, 0.0, 200.0, 100.0).unwrap();
+  let a = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
+  let b = s.create_card(CardKind::Note, None, 400.0, 0.0, 200.0, 100.0).unwrap();
   f.write(".canvas/edges/E.json", &format!(r#"{{ "from": "{a}", "to": "{b}" }}"#));
   let s = open(&f);
   let undo = s.delete_cards(&[a.clone(), b.clone()]).unwrap();
@@ -144,7 +179,7 @@ fn deleting_both_ends_of_an_edge_and_undoing_restores_all_three() {
 fn a_card_and_a_zone_take_one_color_in_one_step_and_lose_it_again() {
   let f = with_zone();
   let s = open(&f);
-  let id = s.create_card(0.0, 0.0, 200.0, 100.0).unwrap();
+  let id = s.create_card(CardKind::Note, None, 0.0, 0.0, 200.0, 100.0).unwrap();
   let rel = format!(".canvas/cards/{id}.json");
   assert!(raw(&f, &rel).get("color").is_none(), "no color, no field");
 

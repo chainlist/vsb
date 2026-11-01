@@ -29,15 +29,35 @@ import {
 	type ZoneView
 } from '#lib/api.js';
 import { camera } from './camera.svelte.js';
-import { newCardAt } from './gestures.js';
+import { POSTIT_COLOR } from './colors.js';
+import { NEW_CARD, NEW_POSTIT, newCardAt } from './gestures.js';
 import { history } from './history.js';
 import { cover, inside, items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
+/** Whether a card shows a note: an index card or a post-it. An image or link card shows something
+ * else in its place, with no text to edit or align. */
+export const showsNote = (card: CardView) => card.kind === 'note' || card.kind === 'postit';
+
+/** How far a card leans, in degrees: a post-it from half a degree to two either way, told by its ID
+ * so it leans the same each time it is drawn and on every device; any other card stands straight. */
+export function tilt(card: CardView) {
+	if (card.kind !== 'postit') return 0;
+	// FNV-1a, then MurmurHash3's mix: IDs made together differ only at their end, and without the mix
+	// a pasted post-it would lean as its original does.
+	let h = 2166136261;
+	for (const c of card.id) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+	h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+	h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+	h ^= h >>> 16;
+	const lean = 0.5 + ((h >>> 0) % 1500) / 1000;
+	return h < 0 ? -lean : lean;
+}
+
 /** Whether an item has something to edit. A card whose note is missing has nothing, nor has a card
  * showing an image or a web page. */
 export const editable = (item: CardView | ZoneView | EdgeView) =>
-	!('note' in item && ((item.note !== null && !item.resolved) || item.file !== null || item.link !== null));
+	!('note' in item && (!showsNote(item) || (item.note !== null && !item.resolved)));
 
 /** Opens the card's editor, the zone's name or the edge's label. */
 export function edit(item: CardView | ZoneView | EdgeView) {
@@ -96,7 +116,7 @@ export function zoneSelected() {
 
 /** Aligns the text of the selected cards; a card showing an image or a web page has none. */
 export function alignSelected(halign: HAlign, valign: VAlign) {
-	const ids = selection.cards.filter((c) => c.file === null && c.link === null).map((c) => c.id);
+	const ids = selection.cards.filter(showsNote).map((c) => c.id);
 	return history.edit(() => alignCards(ids, halign, valign));
 }
 
@@ -163,13 +183,14 @@ export async function fitAll() {
 	if (contents) camera.glide(contents);
 }
 
-/** Places an empty card centered on a world point and opens it. Zoomed out, it would be hidden in a
- * cluster: it is framed, zoomed in until it shows. */
-export function placeCard(at: { x: number; y: number }) {
-	const { x, y, w, h } = newCardAt(at);
+/** Places an empty card centered on a world point and opens it: an index card, or a post-it, square
+ * and yellow. Zoomed out, it would be hidden in a cluster: it is framed, zoomed in until it shows. */
+export function placeCard(at: { x: number; y: number }, kind: 'note' | 'postit' = 'note') {
+	const postit = kind === 'postit';
+	const { x, y, w, h } = newCardAt(at, postit ? NEW_POSTIT : NEW_CARD);
 	const hidden = items.collapsed;
 	return history.edit(async () => {
-		const id = await createCard(x, y, w, h);
+		const id = await createCard(x, y, w, h, kind, postit ? POSTIT_COLOR : null);
 		if (hidden) camera.glide(cover([{ x, y, w, h }]), OPEN_ZOOM);
 		selection.only(id);
 		selection.editing = id;
