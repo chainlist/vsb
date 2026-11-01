@@ -101,10 +101,11 @@ apps/frontend/src/routes/
       +layout.svelte          # the panel shell, a sheet shared by the tray and search
       unplaced/+page.svelte   # Unplaced tray
       search/+page.svelte     # search
+    onboarding/+page.svelte   # what kind of board: a theme and new edges together, then each on its own
     settings/
       +layout.svelte          # settings: a modal over the canvas, one tab per child route
       +page.ts                # opens the first tab
-      appearance/+page.svelte # the vault's theme, the device's interface size
+      appearance/+page.svelte # the kind of board, the vault's theme, the device's interface size
       canvas/+page.svelte     # snapping, the style for new edges, the device's mouse wheel
       keyboard/+page.svelte   # every key and gesture, read-only
       vault/+page.svelte      # the vault's name and where it lives
@@ -198,6 +199,7 @@ Rarely written. Holds:
   - `paper`: how its canvas is marked, `dots`, `grid`, `cross` or `empty` (see [Appearance](#appearance)); left out until picked, for the theme's own
   - `snap`: `false` when moved and resized cards and zones do not snap to the grid (on by default)
   - `newEdges`: the style every edge the app creates gets (see [Edges](#edges)), each part (`shape`, `arrow`, `stroke`) left out at its default as in an edge file, and the whole of it while all are: `"newEdges": { "shape": "angled", "stroke": "dashed" }`
+  - `onboarded`: `true` once the vault has been through its [onboarding](#onboarding), so it shows only once; left out until then
 
 ### Note: `notes/**/*.md`
 
@@ -717,7 +719,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 
 - **Settings is a modal** at `vault/[vaultId]/settings/`: the shared dialog, a centered sheet over the canvas, which stays mounted and visible behind the theme's dialog wash. It is sized as Obsidian's settings are: 90% of the window wide and 85% tall, at most 1100 by 1000 pixels at the interface size, whichever tab is open; a long tab scrolls. Each tab is a child route, so a tab can be linked to: Appearance, Canvas, Keyboard and Vault. The focus stays inside, and the canvas's keys are off while it is open. Escape, Close or a click on the wash goes back to the canvas.
   - **Mod+, opens it** (Ctrl+, or Cmd+, on macOS) from anywhere in a vault, also while typing, on its first tab; the same key again closes it, as the rail's keys open and close the panels.
-  - **Appearance:** the vault's theme and paper, and the device's interface size, below.
+  - **Appearance:** the kind of board (Choose a kind of board opens the [onboarding](#onboarding) again), the vault's theme and paper, and the device's interface size, below.
   - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
   - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, drawing, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Shift+drag, Mod+drag and Alt while dragging.
   - **Vault:** the vault's name and where it lives, in its backend's words. On the desktop, its folder's path and Show in folder, which opens the folder around it in Explorer or Finder with the vault selected (the opener plugin's Rust function, called by a command of the app's own; the plugin is not registered, so its commands stay out of the page's reach). In the browser, that it is kept in this browser and whether the browser agreed to keep it (see [Persistence](#persistence)).
@@ -744,6 +746,13 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - It works through CSS `zoom` on each piece of chrome, never through the WebView's own zoom, which would scale the canvas too and fight the pinch. `zoom` scales viewport units along with everything else, so chrome sizes itself against the window with percentages instead.
 - Zone and card colors live in their files, so they are the same in every theme. The default zone gray, for a zone with no color, and the plain card stock, for a card with none, come from the theme.
 - Later: a dark mode (Orbit, Cairn and Outer Wilds are dark themes of their own, not that feature).
+
+### Onboarding
+
+- **A vault opens on its onboarding until it has been through it:** a new vault, and once each vault from before onboarding. It is a modal over the canvas at `vault/[vaultId]/onboarding`, as Settings is, and the canvas's keys are off while it is open.
+- **First, what kind of board it is:** Engineering, the Studio theme with curved edges, or Investigation, the Investigation board theme with thread. Each shows two cards on its theme's paper, joined as its edges would join them. Picking one applies its theme and its style for new edges at once, as Settings does, and writes both to `vault.json`: the canvas behind shows it. The board the vault's theme and new edges' shape already match is checked; with none, Next waits for a pick. A note under them says the theme and the default edges can be changed separately later, in Settings.
+- **Then either one, on its own:** the themes as Appearance shows them and the style for new edges as Canvas shows it, the board's picks checked. Back returns to the boards; Done closes.
+- **However it closes,** Done, Escape, Close or a click on the wash, `vault.json` notes it as done (`onboarded`) and the canvas shows.
 
 ## Sync
 
