@@ -96,6 +96,27 @@ impl Session {
     self.index.remove_note(&self.vault.rel(&path))
   }
 
+  /// Deletes the file of the note at vault path `rel`, which no card shows, as the Unplaced tray
+  /// lists it. There is no undo. A file changed outside the app is never deleted: the index takes
+  /// the version on disk, and the tray shows it again.
+  pub fn delete_note(&self, rel: &str) -> Result<()> {
+    // Only a note the index knows, never any path.
+    if self.index.note_stamp(rel)?.is_none() {
+      return msg("note not found");
+    }
+    let path = self.vault.abs(rel);
+    if self.changed_outside(&path)? {
+      return if path.exists() { msg("the note changed outside the app, so it was kept") } else { Ok(()) };
+    }
+    if let Some(id) = NoteText::read(&path)?.id() {
+      if self.index.card_of_note(&id)?.is_some() {
+        return msg("the note has a card");
+      }
+    }
+    fs::remove_file(&path)?;
+    self.index.remove_note(rel)
+  }
+
   /// The ULID of the note at vault path `rel`, written into its frontmatter first if it has none:
   /// a note gets its ID with its first card, never just because the app saw it.
   pub(crate) fn note_id(&self, rel: &str) -> Result<String> {

@@ -465,6 +465,11 @@ pub async fn discard_note(state: State<'_, AppState>, card_id: String, note_id: 
 }
 
 #[tauri::command]
+pub async fn delete_note(state: State<'_, AppState>, path: String) -> Result<()> {
+  state.with(|s| s.delete_note(&path))
+}
+
+#[tauri::command]
 pub async fn rename_note(state: State<'_, AppState>, id: String) -> Result<()> {
   state.with(|s| s.rename_note(&id))
 }

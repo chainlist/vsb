@@ -49,6 +49,23 @@ test('discarding empties the card, then deletes the note', async () => {
 	assert.deepEqual(await api.unplacedNotes(0, 50), []);
 });
 
+test('deleting an unplaced note drops it for good; a note with a card is kept', async () => {
+	await fresh();
+	await noteCard('Kept');
+	const gone = await noteCard('Gone', 300, 0);
+	const undo = await api.deleteCards([gone.card]);
+	await assert.rejects(api.deleteNote('notes/Kept.md'), /has a card/);
+	await assert.rejects(api.deleteNote('notes/Missing.md'), /note not found/);
+	await api.deleteNote('notes/Gone.md');
+	assert.deepEqual(await api.unplacedNotes(0, 50), []);
+	assert.deepEqual(await api.search('gone', 0, 50), []);
+	await assert.rejects(api.readNote(gone.note), /note not found/);
+	// Undoing the delete of its card brings the card back, its note not found.
+	await api.applyStates(undo);
+	const view = (await api.queryViewport(WORLD, 0, null)).cards.find((c) => c.id === gone.card);
+	assert.deepEqual([view.note, view.resolved], [gone.note, false]);
+});
+
 test('renaming follows the title, keeps a clash name and takes a change of case', async () => {
 	await fresh();
 	const { note } = await noteCard('Draft');

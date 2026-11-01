@@ -1,21 +1,53 @@
 <script lang="ts">
 	import Locate from '@lucide/svelte/icons/locate';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { Portal } from 'bits-ui';
-	import type { Entry } from '#lib/api.js';
+	import { deleteNote, type Entry } from '#lib/api.js';
 	import { show } from '#lib/canvas/actions.js';
 	import { camera } from '#lib/canvas/camera.svelte.js';
 	import { NEW_CARD } from '#lib/canvas/gestures.js';
+	import { items } from '#lib/canvas/items.svelte.js';
+	import Tip from '#lib/chrome/Tip.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { failure } from '#lib/failure.svelte.js';
+	import { bindKeys } from '#lib/keys.js';
 	import { markdownText } from '#lib/markdown.js';
 	import { ghost, startDrag } from './noteDrag.svelte.js';
 	import { Paged } from './paged.svelte.js';
 
-	let { load, empty }: { load: (offset: number, limit: number) => Promise<Entry[]>; empty: string } = $props();
+	let {
+		load,
+		empty,
+		deletable = false
+	}: {
+		load: (offset: number, limit: number) => Promise<Entry[]>;
+		empty: string;
+		/** Whether each note has a delete button, as the Unplaced tray's do. */
+		deletable?: boolean;
+	} = $props();
 
 	// The pages scrolled to, never every note.
 	const list = new Paged(() => load);
 
 	const key = (e: Entry) => (e.kind === 'note' ? `note:${e.path}` : `zone:${e.id}`);
+
+	/** The note a delete asks about, kept while the dialog closes so its title stays. */
+	let doomed = $state<Extract<Entry, { kind: 'note' }> | null>(null);
+	let confirming = $state(false);
+
+	// The canvas's keys are off while the dialog asks: Enter or Delete there never reach it.
+	$effect(() => {
+		if (confirming) return bindKeys([], { modal: true });
+	});
+
+	function remove() {
+		confirming = false;
+		deleteNote(doomed!.path)
+			.catch(failure.report)
+			.finally(() => items.changed());
+	}
 </script>
 
 <div class="list">
@@ -32,6 +64,7 @@
 					<button
 						class="entry note"
 						class:placed={entry.card}
+						class:deletable
 						title={entry.card ? 'Show on the canvas' : 'Drag onto the canvas'}
 						onpointerdown={(e) => startDrag(e, entry)}
 						onclick={() => entry.card && show('card', entry.card)}
@@ -44,6 +77,22 @@
 							<span class="where icon-label"><Locate size={14} /> On the canvas</span>
 						{/if}
 					</button>
+					{#if deletable}
+						<Tip label="Delete note" side="left">
+							{#snippet children(props)}
+								<button
+									{...props}
+									class="delete"
+									onclick={() => {
+										doomed = entry;
+										confirming = true;
+									}}
+								>
+									<Trash2 size={16} />
+								</button>
+							{/snippet}
+						</Tip>
+					{/if}
 				{/if}
 			</li>
 		{/each}
@@ -55,6 +104,23 @@
 		<p class="status">{empty}</p>
 	{/if}
 </div>
+
+<Dialog.Root bind:open={confirming}>
+	<Dialog.Content class="chrome sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Delete “{doomed?.title || 'Untitled'}”?</Dialog.Title>
+			<Dialog.Description>The note is deleted for good. This cannot be undone.</Dialog.Description>
+		</Dialog.Header>
+		<Dialog.Footer>
+			<Dialog.Close>
+				{#snippet child({ props })}
+					<Button variant="outline" {...props}>Cancel</Button>
+				{/snippet}
+			</Dialog.Close>
+			<Button variant="destructive" onclick={remove}>Delete</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 {#if ghost.note}
 	<!-- The card as it will land: its size in the world, at the canvas's zoom. Out of the panel's
@@ -87,6 +153,10 @@
 		list-style: none;
 	}
 
+	li {
+		position: relative;
+	}
+
 	li + li {
 		border-top: 1px solid var(--border);
 	}
@@ -114,6 +184,35 @@
 
 	.note:not(.placed) {
 		cursor: grab;
+	}
+
+	/* Room for the delete button, top right. */
+	.deletable {
+		padding-right: 44px;
+	}
+
+	.delete {
+		position: absolute;
+		top: 8px;
+		right: 10px;
+		display: flex;
+		padding: 5px;
+		border: none;
+		border-radius: var(--radius-control);
+		background: none;
+		color: var(--danger);
+		cursor: pointer;
+	}
+
+	.delete:hover {
+		background: var(--danger-paper);
+	}
+
+	/* With a mouse, shown on the line under it or holding the keyboard. */
+	@media (hover: hover) {
+		li:not(:hover, :focus-within) .delete {
+			opacity: 0;
+		}
 	}
 
 	strong {

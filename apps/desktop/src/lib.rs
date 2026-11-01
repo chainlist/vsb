@@ -138,6 +138,7 @@ pub fn run() {
       commands::create_note_for_card,
       commands::save_note,
       commands::discard_note,
+      commands::delete_note,
       commands::rename_note,
     ])
     .setup(|app| {

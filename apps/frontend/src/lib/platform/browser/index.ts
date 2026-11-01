@@ -138,6 +138,7 @@ export const readNote = (id: string) => reading((e) => notes.readNote(e, id));
 export const createNoteForCard = (cardId: string, body: string) => writing((e) => notes.createNoteForCard(e, cardId, body));
 export const saveNote = (id: string, body: string) => writing((e) => notes.saveNote(e, id, body));
 export const discardNote = (cardId: string, noteId: string) => writing((e) => notes.discardNote(e, cardId, noteId));
+export const deleteNote = (path: string) => writing((e) => notes.deleteNote(e, path));
 export const renameNote = (id: string) => writing((e) => notes.renameNote(e, id));
 
 /** The browser answers every command the desktop does, with the same signature: this fails to type

@@ -83,6 +83,13 @@ export async function discardNote(e: Edit, cardId: string, id: string) {
 	await keep(e, id, n, undefined);
 }
 
+/** Deletes the note at `path`, which no card shows, as the Unplaced tray lists it. There is no undo. */
+export async function deleteNote(e: Edit, path: string) {
+	const n = await note(e, await noteAt(e, path));
+	if (n.placed > 0) throw new Error('the note has a card');
+	await keep(e, n.id, n, undefined);
+}
+
 /** Renames the note after its title, if the title changed. */
 export async function renameNote(e: Edit, id: string) {
 	const n = await note(e, id);

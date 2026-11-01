@@ -300,5 +300,9 @@ export const saveNote = (id: string, body: string) => invoke<boolean>('save_note
 export const discardNote = (cardId: string, noteId: string) =>
 	invoke<void>('discard_note', { cardId, noteId });
 
+/** Deletes the file of the note at vault path `path`, which no card shows. There is no undo. A file
+ * changed outside the app is kept. */
+export const deleteNote = (path: string) => invoke<void>('delete_note', { path });
+
 /** Renames the note's file after its title, if the title changed. */
 export const renameNote = (id: string) => invoke<void>('rename_note', { id });

@@ -77,6 +77,65 @@ fn a_note_with_its_card_gets_no_second_one() {
 }
 
 #[test]
+fn deleting_an_unplaced_note_deletes_its_file() {
+  let f = Fixture::new();
+  f.write("notes/orphan.md", "---\nid: N1\n---\nOrphan");
+  f.write("notes/new.md", "New idea");
+  let s = open(&f);
+  s.delete_note("notes/orphan.md").unwrap();
+  s.delete_note("notes/new.md").unwrap();
+  assert!(!f.exists("notes/orphan.md") && !f.exists("notes/new.md"));
+  assert!(tray(&s).is_empty());
+  assert!(s.index.search("orphan", 0, 50).unwrap().is_empty(), "nor found by search");
+}
+
+#[test]
+fn a_note_with_a_card_or_one_the_index_does_not_know_is_never_deleted() {
+  let f = Fixture::new();
+  f.write("notes/placed.md", "---\nid: N1\n---\nPlaced");
+  f.write(".canvas/cards/C1.json", r#"{ "note": "N1", "zone": null, "x": 0, "y": 0, "w": 100, "h": 50 }"#);
+  f.write("outside.md", "Not a note");
+  let s = open(&f);
+  assert!(s.delete_note("notes/placed.md").is_err());
+  for path in ["notes/missing.md", "outside.md", "notes/../outside.md"] {
+    assert!(s.delete_note(path).is_err(), "{path}");
+  }
+  assert!(f.exists("notes/placed.md") && f.exists("outside.md"));
+}
+
+#[test]
+fn a_note_changed_outside_the_app_is_kept_and_shown_as_it_is_now() {
+  let f = Fixture::new();
+  f.write("notes/a.md", "A");
+  f.write("notes/b.md", "B");
+  let s = open(&f);
+  f.write("notes/a.md", "A, edited on another device");
+  set_time(&f, "notes/a.md", hour_ago());
+  assert!(s.delete_note("notes/a.md").is_err());
+  assert_eq!(f.read("notes/a.md"), "A, edited on another device");
+  let titles: Vec<String> = s.index.unplaced(0, 50).unwrap().into_iter().map(|e| if let Entry::Note { title, .. } = e { title } else { panic!() }).collect();
+  assert!(titles.contains(&"A, edited on another device".to_string()));
+
+  fs::remove_file(f.dir.path().join("notes/b.md")).unwrap();
+  s.delete_note("notes/b.md").unwrap();
+  assert_eq!(tray(&s), ["notes/a.md"], "a file already gone leaves the tray");
+}
+
+#[test]
+fn undoing_the_delete_of_its_card_after_leaves_the_card_unresolved() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let card = s.create_card(0.0, 0.0, 200.0, 80.0).unwrap();
+  let note = s.create_note_for_card(&card, "Plan").unwrap();
+  let undo = s.delete_cards(&[card.clone()]).unwrap();
+  s.delete_note("notes/Plan.md").unwrap();
+  s.apply(undo).unwrap();
+  assert_eq!(card_file(&f, &card).note, Some(note.clone()));
+  assert_eq!(s.index.note_path(&note).unwrap(), None, "its note is not found");
+  assert!(tray(&s).is_empty());
+}
+
+#[test]
 fn only_a_note_the_index_knows_and_that_is_still_there_is_placed() {
   let f = Fixture::new();
   f.write("notes/gone.md", "Gone");
