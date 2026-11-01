@@ -6,19 +6,21 @@ import { type Box, boxOf, touches, union } from './grid.ts';
 import { request } from './idb.ts';
 import { tray, type CardFile, type CardRecord, type ClusterRecord, type BundleRecord, type EdgeRecord, type NoteRecord } from './records.ts';
 
-type Entry = { key: IDBValidKey; count: number; ha: number; hb: number; adds: Box[]; removes: Box[] };
+type Entry = { key: IDBValidKey; count: number; ha: number; hb: number; th: number; adds: Box[]; removes: Box[] };
 
 export class Tally {
 	readonly entries = new Map<string, Entry>();
 
-	/** One item in (1) or out (-1) of `key`, with its box and, for a bundle, the arrowheads it brings. */
-	change(key: IDBValidKey, box: Box, sign: 1 | -1, ha = 0, hb = 0) {
+	/** One item in (1) or out (-1) of `key`, with its box and, for a bundle, the arrowheads it brings
+	 * and whether it is a thread. */
+	change(key: IDBValidKey, box: Box, sign: 1 | -1, ha = 0, hb = 0, th = 0) {
 		const id = JSON.stringify(key);
 		let e = this.entries.get(id);
-		if (!e) this.entries.set(id, (e = { key, count: 0, ha: 0, hb: 0, adds: [], removes: [] }));
+		if (!e) this.entries.set(id, (e = { key, count: 0, ha: 0, hb: 0, th: 0, adds: [], removes: [] }));
 		e.count += sign;
 		e.ha += sign * ha;
 		e.hb += sign * hb;
+		e.th += sign * th;
 		(sign > 0 ? e.adds : e.removes).push(box);
 	}
 }
@@ -34,15 +36,17 @@ export const end = (f: Frame, root: string, cell: number) =>
 /** An edge's box: around both its cards. */
 export const bounds = (ends: [Frame, Frame]) => union(boxOf(ends[0]), boxOf(ends[1]));
 
-/** Counts an edge in or out of its bundle at each cell size, with the arrowheads it brings to each end. */
+/** Counts an edge in or out of its bundle at each cell size, with the arrowheads it brings to each end
+ * and whether it is a thread. */
 export function bundled(edge: EdgeRecord, bundles: Tally, sign: 1 | -1) {
 	if (!edge.ends || !edge.bk) return;
 	// A thread has no arrowheads, whatever its file says.
-	const arrow = edge.file.shape === 'thread' ? 'none' : (edge.file.arrow ?? 'to');
+	const thread = edge.file.shape === 'thread';
+	const arrow = thread ? 'none' : (edge.file.arrow ?? 'to');
 	const [atFrom, atTo] = [+(arrow === 'both'), +(arrow !== 'none')];
 	for (const key of edge.bk) {
 		const fromFirst = end(edge.ends[0], edge.roots[0], key[0] as number) === key[1];
-		bundles.change(key, bounds(edge.ends), sign, fromFirst ? atFrom : atTo, fromFirst ? atTo : atFrom);
+		bundles.change(key, bounds(edge.ends), sign, fromFirst ? atFrom : atTo, fromFirst ? atTo : atFrom, +thread);
 	}
 }
 
@@ -67,16 +71,16 @@ export async function flush(tx: IDBTransaction, t: Tallies) {
 	const edges = tx.objectStore('edges');
 	await update<BundleRecord>(tx.objectStore('bundles'), t.bundles, async (e, was) => {
 		const [cell, a, b] = e.key as [number, string, string];
-		let { count, ha, hb, adds } = e;
+		let { count, ha, hb, th, adds } = e;
 		let box = cover([...(was ? [was.box] : []), ...adds]);
-		[count, ha, hb] = [count + (was?.count ?? 0), ha + (was?.ha ?? 0), hb + (was?.hb ?? 0)];
+		[count, ha, hb, th] = [count + (was?.count ?? 0), ha + (was?.ha ?? 0), hb + (was?.hb ?? 0), th + (was?.th ?? 0)];
 		if (shrinks(e, was?.box ?? null)) {
 			const again = new Tally();
 			for (const edge of (await request(edges.index('bk').getAll(e.key))) as EdgeRecord[]) bundled(edge, again, 1);
 			const all = again.entries.get(JSON.stringify(e.key));
-			[count, ha, hb, box] = all ? [all.count, all.ha, all.hb, cover(all.adds)] : [0, 0, 0, null];
+			[count, ha, hb, th, box] = all ? [all.count, all.ha, all.hb, all.th, cover(all.adds)] : [0, 0, 0, 0, null];
 		}
-		return { cell, a, b, count, ha, hb, box: box! };
+		return { cell, a, b, count, ha, hb, th, box: box! };
 	});
 
 	const notes = tx.objectStore('notes');

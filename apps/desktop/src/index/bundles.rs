@@ -24,7 +24,7 @@ impl Index {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
        SELECT CASE e.shape WHEN 'thread' THEN 'none' ELSE e.arrow END, fz.root, floor((f.x + f.w / 2) / ?5), floor((f.y + f.h / 2) / ?5),
-         tz.root, floor((t.x + t.w / 2) / ?5), floor((t.y + t.h / 2) / ?5)
+         tz.root, floor((t.x + t.w / 2) / ?5), floor((t.y + t.h / 2) / ?5), e.shape = 'thread'
        FROM edge_bounds b JOIN edges e ON e.key = b.key
        JOIN cards f ON f.id = e.from_card LEFT JOIN zabs fz ON fz.id = f.zone
        JOIN cards t ON t.id = e.to_card LEFT JOIN zabs tz ON tz.id = t.zone
@@ -36,11 +36,12 @@ impl Index {
         None => End::Cell(r.get::<_, f64>(at + 1)? as i64, r.get::<_, f64>(at + 2)? as i64),
       })
     };
-    // Per pair of ends, in order: how many edges, and whether any points at the first, the second.
-    let mut pairs = BTreeMap::<(End, End), (i64, bool, bool)>::new();
+    // Per pair of ends, in order: how many edges, whether any points at the first, the second, and
+    // how many are threads.
+    let mut pairs = BTreeMap::<(End, End), (i64, bool, bool, i64)>::new();
     let args = params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, cell];
-    for row in stmt.query_map(args, |r| Ok((r.get::<_, String>(0)?, end(r, 1)?, end(r, 4)?)))? {
-      let (arrow, from, to) = row?;
+    for row in stmt.query_map(args, |r| Ok((r.get::<_, String>(0)?, end(r, 1)?, end(r, 4)?, r.get::<_, bool>(7)?)))? {
+      let (arrow, from, to, thread) = row?;
       if from == to {
         continue;
       }
@@ -50,10 +51,11 @@ impl Index {
       pair.0 += 1;
       pair.1 |= heads.0;
       pair.2 |= heads.1;
+      pair.3 += thread as i64;
     }
     pairs
       .into_iter()
-      .map(|((a, b), (count, at_a, at_b))| {
+      .map(|((a, b), (count, at_a, at_b, threads))| {
         // A lone arrowhead goes on the second end, as an edge's goes on `to`.
         let (from, to, arrow) = match (at_a, at_b) {
           (true, true) => (a, b, "both"),
@@ -61,7 +63,7 @@ impl Index {
           (false, true) => (a, b, "to"),
           (false, false) => (a, b, "none"),
         };
-        Ok(BundleView { ends: [self.end(from, cell)?, self.end(to, cell)?], count, arrow: arrow.into() })
+        Ok(BundleView { ends: [self.end(from, cell)?, self.end(to, cell)?], count, arrow: arrow.into(), thread: threads == count })
       })
       .collect()
   }

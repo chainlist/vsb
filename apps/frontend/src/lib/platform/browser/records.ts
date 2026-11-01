@@ -94,9 +94,10 @@ export type NoteRecord = Words & {
 /** A note with its place in the Unplaced tray: there while no card shows it. */
 export const tray = (n: NoteRecord): NoteRecord => ({ ...n, loose: n.placed > 0 ? undefined : [-n.mtime, n.id] });
 
-/** Clusters and bundles: counts and boxes kept per cell size, never the cards themselves. */
+/** Clusters and bundles: counts and boxes kept per cell size, never the cards themselves. A bundle
+ * counts its threads in `th`, left out by builds from before threads, whose bundles hold none. */
 export type ClusterRecord = { cell: number; cx: number; cy: number; count: number; box: Box };
-export type BundleRecord = { cell: number; a: string; b: string; count: number; ha: number; hb: number; box: Box };
+export type BundleRecord = { cell: number; a: string; b: string; count: number; ha: number; hb: number; th?: number; box: Box };
 
 const number = (v: unknown, field: string) => {
 	if (typeof v !== 'number') throw new Error(`missing field \`${field}\``);

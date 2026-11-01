@@ -16,16 +16,16 @@
 		const zone = items.find(end.zone)?.item ?? end;
 		return asMarker(zone) ? markerAt(zone, zoneMarkers.get(end.zone)) : zone;
 	}
-	// Drawn curved and solid, whatever its edges' styles, its arrowheads keeping their size on screen.
-	const line = $derived(
-		route(box(bundle.ends[0]), box(bundle.ends[1]), { shape: 'curved', arrow: bundle.arrow }, 1 / camera.zoom)
-	);
+	// Drawn curved and solid, whatever its edges' styles, unless they are all threads: then as a thread.
+	// Its arrowheads, or its tacks, keep their size on screen.
+	const shape = $derived(bundle.thread ? 'thread' : 'curved');
+	const line = $derived(route(box(bundle.ends[0]), box(bundle.ends[1]), { shape, arrow: bundle.arrow }, 1 / camera.zoom));
 
 	// Clicking frames both ends, zoomed in until their edges show. A drag pans, as on the paper.
 	const press = (e: PointerEvent) => tap(e, () => camera.glide(cover(bundle.ends), OPEN_ZOOM));
 </script>
 
-<EdgeLine route={line} onpointerdown={press} />
+<EdgeLine route={line} {shape} px={1 / camera.zoom} onpointerdown={press} />
 {#if bundle.count > 1}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="line-label count" style:left="{line.mid.x}px" style:top="{line.mid.y}px" onpointerdown={press}>

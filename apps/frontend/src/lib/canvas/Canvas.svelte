@@ -188,7 +188,9 @@
 					{/if}
 				{/each}
 				{#each items.bundles as bundle}
-					<Bundle {bundle} />
+					{#if !bundle.thread}
+						<Bundle {bundle} />
+					{/if}
 				{/each}
 				{#if draft.link && newEdges.style.shape !== 'thread'}
 					<EdgeLine route={route(...draft.link, newEdges.style)} draft />
@@ -231,6 +233,12 @@
 				{/if}
 				{#each items.clusters as cluster (cluster.cell.join())}
 					<Cluster {cluster} />
+				{/each}
+				<!-- Zoomed out, a bundle of threads hangs in front of the zones and markers it is pinned to. -->
+				{#each items.bundles as bundle}
+					{#if bundle.thread}
+						<Bundle {bundle} />
+					{/if}
 				{/each}
 				{#if draft.box}
 					<div

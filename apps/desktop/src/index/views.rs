@@ -107,6 +107,8 @@ pub struct BundleView {
   pub count: i64,
   /// Where the line has arrowheads, as for an edge: at the end some edge points to, the second.
   pub arrow: String,
+  /// Whether every edge in it is a thread, so the line is drawn as one.
+  pub thread: bool,
 }
 
 /// The boxes of a collapsed zone's cards of one color: None for the theme's plain stock.

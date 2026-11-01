@@ -134,8 +134,9 @@ export type Cluster = Frame & { cell: [number, number]; count: number };
 /** One end of a bundle: an outermost zone and its box, or, with no zone, the box of a cluster. */
 export type BundleEnd = Frame & { zone: string | null };
 
-/** Zoomed out, the edges between two ends drawn as one line: how many, and where they point. */
-export type Bundle = { ends: [BundleEnd, BundleEnd]; count: number; arrow: Arrow };
+/** Zoomed out, the edges between two ends drawn as one line: how many, where they point, and
+ * whether they are all threads, so the line is drawn as one. */
+export type Bundle = { ends: [BundleEnd, BundleEnd]; count: number; arrow: Arrow; thread: boolean };
 
 /** Zoomed out, what a collapsed zone holds at any depth, in its coordinates from its top-left corner:
  * its cards' boxes by color (null for the theme's plain stock) and its inner zones' boxes, top to

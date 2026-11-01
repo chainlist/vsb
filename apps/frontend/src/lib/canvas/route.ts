@@ -142,10 +142,12 @@ function runsAcross(a: Frame, b: Frame) {
 /** A thread, from a pin at the middle of one card's top to one at the other's. It hangs as a string
  * does, along a parabola under the line between its pins, lower the further apart they are; one
  * pin straight above the other, it hangs straight. It leaves and reaches its cards the way a
- * curved line between them would, for Tab and for making room. */
-function thread(a: Frame, b: Frame): Route {
-	// Never past a card's middle: a thread being drawn hangs from the pointer itself.
-	const pin = (f: Frame) => ({ x: f.x + f.w / 2, y: f.y + Math.min(PIN_DEPTH, f.h / 2) });
+ * curved line between them would, for Tab and for making room. How far in its pins go is in pixels
+ * of `px` world units, as an arrowhead's size is. */
+function thread(a: Frame, b: Frame, px: number): Route {
+	// Never past an eighth of the way down, so a small marker's text stays clear and a thread being
+	// drawn hangs from the pointer itself.
+	const pin = (f: Frame) => ({ x: f.x + f.w / 2, y: f.y + Math.min(PIN_DEPTH * px, f.h / 8) });
 	const p = pin(a);
 	const q = pin(b);
 	const m = halfway(p, q);
@@ -161,7 +163,7 @@ function thread(a: Frame, b: Frame): Route {
  * A curved or angled line that would run through one of `obstacles` takes the other pair of sides
  * when that line misses them all. */
 export function route(a: Frame, b: Frame, style: Style, px = 1, obstacles: Frame[] = []): Route {
-	if (style.shape === 'thread') return thread(a, b);
+	if (style.shape === 'thread') return thread(a, b, px);
 	if (style.shape === 'straight') {
 		const ends = centers(a, b);
 		const { d } = ends;

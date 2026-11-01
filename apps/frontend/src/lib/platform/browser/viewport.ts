@@ -132,7 +132,7 @@ async function bundlesIn(e: Edit, rect: Rect, cell: number, clusters: Cluster[])
 		const ends = [endOf(from), endOf(to)];
 		if (!ends[0] || !ends[1]) continue;
 		const arrow = atFirst && atSecond ? 'both' : atFirst || atSecond ? 'to' : 'none';
-		bundles.push({ order: [first, second], bundle: { ends: ends as [BundleEnd, BundleEnd], count: b.count, arrow } });
+		bundles.push({ order: [first, second], bundle: { ends: ends as [BundleEnd, BundleEnd], count: b.count, arrow, thread: b.th === b.count } });
 	}
 	return bundles.sort((x, y) => (x.order[0] !== y.order[0] ? (before(x.order[0], y.order[0]) ? -1 : 1) : before(x.order[1], y.order[1]) ? -1 : 1)).map((b) => b.bundle);
 }

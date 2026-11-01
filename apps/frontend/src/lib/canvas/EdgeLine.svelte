@@ -5,6 +5,7 @@
 	let {
 		route,
 		shape = 'curved',
+		px = 1,
 		stroke = 'solid',
 		selected = false,
 		dimmed = false,
@@ -15,6 +16,9 @@
 	}: {
 		route: Route;
 		shape?: Shape;
+		/** World units per pixel a thread's tacks and shadow are sized in: 1 for an edge, which zooms with
+		 * its cards, or one screen pixel for a bundle, which does not. */
+		px?: number;
 		stroke?: Stroke;
 		selected?: boolean;
 		/** Faded, while the selected cards' links stand out. */
@@ -27,7 +31,7 @@
 		oncontextmenu?: (e: MouseEvent) => void;
 	} = $props();
 
-	/** The radius of a thread's thumbtack, in world units. */
+	/** The radius of a thread's thumbtack, in pixels of `px` world units. */
 	const PIN = 6.5;
 	/** Names this line's gradients apart from every other line's. */
 	const id = $props.id();
@@ -59,9 +63,9 @@
 		</defs>
 		<!-- A thread stands off the board between its tacks: its shadow falls a little below it. -->
 		<g class="shadow">
-			<path class="line" d={route.path} transform="translate(1.5 3)" />
+			<path class="line" d={route.path} transform="translate({1.5 * px} {3 * px})" />
 			{#each route.pins as pin, i (i)}
-				<ellipse cx={pin.x + 1} cy={pin.y + 1.6} rx={PIN * 1.2} ry={PIN * 1.1} fill="url(#{id}-shadow)" />
+				<ellipse transform="translate({pin.x} {pin.y}) scale({px})" cx="1" cy="1.6" rx={PIN * 1.2} ry={PIN * 1.1} fill="url(#{id}-shadow)" />
 			{/each}
 		</g>
 	{/if}
@@ -75,7 +79,7 @@
 	{/each}
 	<!-- A steel thumbtack over each end of the thread: a disc with a ring and a dimple at its middle. -->
 	{#each route.pins as pin, i (i)}
-		<g transform="translate({pin.x} {pin.y})">
+		<g transform="translate({pin.x} {pin.y}) scale({px})">
 			<circle class="tack" r={PIN} />
 			<circle class="lit" r={PIN} fill="url(#{id}-shade)" />
 			<circle class="lit" r={PIN} fill="url(#{id}-light)" />
