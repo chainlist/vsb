@@ -75,7 +75,7 @@ pub fn fetch(url: &str) -> Result<Page> {
 fn agent() -> ureq::Agent {
   // The system's own TLS and certificates, as a browser on it would use.
   let tls = TlsConfig::builder().provider(TlsProvider::NativeTls).root_certs(RootCerts::PlatformVerifier).build();
-  let user_agent = concat!("Mozilla/5.0 (compatible; VisualSecondBrain/", env!("CARGO_PKG_VERSION"), "; link preview)");
+  let user_agent = concat!("Mozilla/5.0 (compatible; Scree/", env!("CARGO_PKG_VERSION"), "; link preview)");
   ureq::Agent::config_builder().tls_config(tls).timeout_global(Some(TIMEOUT)).user_agent(user_agent).build().into()
 }
 

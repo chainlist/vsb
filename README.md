@@ -1,4 +1,4 @@
-# Visual Second Brain
+# Scree
 
 A local-first, canvas-based knowledge app. The design is in [specs.md](specs.md).
 

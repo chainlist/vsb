@@ -51,15 +51,15 @@ From the repo root, in PowerShell, with the vault written to `<vault>`:
 
 ```powershell
 # tauri.bench.json:
-# {"identifier": "com.visualsecondbrain.bench", "build": {"devUrl": "http://localhost:5174", "beforeDevCommand": "pnpm dev --port 5174"}}
-# %LOCALAPPDATA%\com.visualsecondbrain.bench\vaults.json lists <vault> by its ID.
+# {"identifier": "md.scree.bench", "build": {"devUrl": "http://localhost:5174", "beforeDevCommand": "pnpm dev --port 5174"}}
+# %LOCALAPPDATA%\md.scree.bench\vaults.json lists <vault> by its ID.
 $env:CARGO_TARGET_DIR = "<short temp folder>"   # the MSVC linker fails on long paths
 $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9224"
 pnpm tauri dev --release --config tauri.bench.json
 node tools/bench/run.mjs --port 9224 --label desktop-after-1 [--cold]
 ```
 
-`--cold` opens first on a missing index: delete `%LOCALAPPDATA%\com.visualsecondbrain.bench\<vault id>`
+`--cold` opens first on a missing index: delete `%LOCALAPPDATA%\md.scree.bench\<vault id>`
 with the app closed. "Before" runs put `main`'s `api.ts` back in the working tree for the run (the
 dev server reloads it), alternating with "after" runs, so a drift in the machine's load hits both.
 

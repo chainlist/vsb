@@ -19,7 +19,7 @@
 </script>
 
 <main class="page graph-paper chrome">
-	<h1>Visual Second Brain</h1>
+	<h1>Scree</h1>
 	<p class="lede">{vaultPicker.lede}</p>
 	<button class="button" onclick={choose}><FolderOpen /> {vaultPicker.action}</button>
 	{#if error}
