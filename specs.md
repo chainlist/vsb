@@ -319,7 +319,7 @@ Competitor scan
 5. On blur:
    - An empty card that is still empty stays an empty card.
    - A note created during this edit session that is now empty: the `.md` is deleted and the card goes back to `note: null`.
-   - A note that existed before this edit session is kept, even if empty. Deleting a note always takes an explicit action.
+   - A note that existed before this edit session is kept, even if empty. Deleting a note always takes an explicit action: [from the Unplaced tray](#unplaced-tray-and-search).
 
 ### Tab: a linked card
 
@@ -354,7 +354,7 @@ Notes with no card (never placed, created outside the app, or whose cards were a
 - search
 - dragging one onto the canvas, which creates its card and writes its ULID if it has none
 
-See [Unplaced tray and search](#unplaced-tray-and-search).
+The tray is also where one is deleted for good. See [Unplaced tray and search](#unplaced-tray-and-search).
 
 ### Images
 
@@ -467,6 +467,10 @@ See [Unplaced tray and search](#unplaced-tray-and-search).
 - **Opening and closing.** The [rail](#canvas-chrome) has an Unplaced and a Search button. Mod+U opens the tray and Mod+F opens search (Ctrl, Cmd on macOS), also while typing. The same key or button again, Close, or Escape while the focus is in the panel goes back to the canvas.
 - **One note list.** Each line shows the title and the excerpt from the index, the excerpt as plain text without Markdown marks. Lines are fetched 50 at a time as the list scrolls, never all at once. After any edit to the vault (an undo step, the end of a card edit), the lines shown are fetched again.
 - **The tray** lists the notes with no card, most recently changed first: notes never placed, created outside the app, or whose cards were all deleted, and `(conflict).md` copies.
+- **Deleting a note for good.** Each line of the tray has a delete button (trash) in its top-right corner, shown while the pointer is on the line or the keyboard is in it, and always on a touch screen; its tooltip says Delete note. Search has none.
+  - It asks first, in a dialog naming the note: "The note is deleted for good. This cannot be undone." Cancel has the focus; Delete deletes the note's `.md` (in the browser build, the note). The canvas's keys are off while it asks.
+  - It is no undo step. Undoing the delete of a card that showed the note brings the card back unresolved, "Note not found".
+  - The backend checks again that no card shows the note. As before every delete, a file changed outside the app is kept: the tray shows it as it is now, and a notice says it was kept. A file already gone just leaves the tray.
 - **Search** covers note text (titles and bodies) and zone names, through `notes_fts` and `zones_fts`. Every word typed must be there, each as the start of a word; case and accents are ignored. Matching zones come first, then notes, best match first. A note that has a card is marked "On the canvas".
 - **Clicking a result** with a place on the canvas, a placed note or a zone, frames and selects it: centered at 100%, or zoomed out until it fits but never below 40%, so the zones around it open. The panel stays open. Clicking an unplaced note does nothing; it is placed by dragging.
 - **Dragging a note onto the canvas** places its card where it is dropped. A ghost of the card, at the canvas's zoom, follows the pointer. The card has the size of a card placed by double-click, is centered on the drop point and joins the innermost zone under its center. A note without an ID gets its ULID first, then the card is written. The card is one undo step; undoing it keeps the ULID in the note, which goes back to the tray. Dropping back on the panel or the chrome places nothing.
