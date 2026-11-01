@@ -26,7 +26,17 @@
 	const shapes: [Shape, string, Glyph][] = [
 		['curved', 'Curved', Spline],
 		['straight', 'Straight', Slash],
-		['angled', 'Angled', AngledIcon]
+		['angled', 'Angled', AngledIcon],
+		// A string hanging between two pins.
+		[
+			'thread',
+			'Thread',
+			[
+				['path', { d: 'M6.5 8.5Q12 18 17.5 8.5' }],
+				['circle', { cx: '5', cy: '7', r: '2' }],
+				['circle', { cx: '19', cy: '7', r: '2' }]
+			]
+		]
 	];
 	const arrows: [Arrow, string, Glyph][] = [
 		['to', 'Arrow at the end', MoveRight],
@@ -51,5 +61,8 @@
 {/snippet}
 
 <StyleSelect label="Edge shape" options={shapes} current={style.shape} pick={pick.shape} look={icon} />
-<StyleSelect label="Edge arrows" options={arrows} current={style.arrow} pick={pick.arrow} look={icon} />
+<!-- Threads have no arrowheads. -->
+{#if style.shape !== 'thread'}
+	<StyleSelect label="Edge arrows" options={arrows} current={style.arrow} pick={pick.arrow} look={icon} />
+{/if}
 <StyleSelect label="Edge line" options={strokes} current={style.stroke} pick={pick.stroke} look={icon} />

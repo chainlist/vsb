@@ -141,7 +141,7 @@ export function fileOf(kind: Kind, value: unknown): File {
 			from: text(v.from, 'from'),
 			to: text(v.to, 'to'),
 			label: maybe(v.label) ?? undefined,
-			shape: choice(v.shape, ['curved', 'straight', 'angled'], 'curved', 'shape'),
+			shape: choice(v.shape, ['curved', 'straight', 'angled', 'thread'], 'curved', 'shape'),
 			arrow: choice(v.arrow, ['to', 'both', 'none'], 'to', 'arrow'),
 			stroke: choice(v.stroke, ['solid', 'dashed', 'dotted', 'double'], 'solid', 'stroke')
 		});

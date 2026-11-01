@@ -183,12 +183,14 @@
 					<Zone {zone} />
 				{/each}
 				{#each items.edges as edge (edge.id)}
-					<Edge {edge} />
+					{#if edge.shape !== 'thread'}
+						<Edge {edge} />
+					{/if}
 				{/each}
 				{#each items.bundles as bundle}
 					<Bundle {bundle} />
 				{/each}
-				{#if draft.link}
+				{#if draft.link && newEdges.style.shape !== 'thread'}
 					<EdgeLine route={route(...draft.link, newEdges.style)} draft />
 				{/if}
 				{#each items.cards as card (card.id)}
@@ -205,6 +207,15 @@
 						Reading {page.host}…
 					</div>
 				{/each}
+				<!-- Threads hang in front of the cards they are pinned to. -->
+				{#each items.edges as edge (edge.id)}
+					{#if edge.shape === 'thread'}
+						<Edge {edge} />
+					{/if}
+				{/each}
+				{#if draft.link && newEdges.style.shape === 'thread'}
+					<EdgeLine route={route(...draft.link, newEdges.style)} shape="thread" draft />
+				{/if}
 				{#each items.drawings as drawing (drawing.id)}
 					<Drawing {drawing} />
 				{/each}

@@ -13,6 +13,7 @@
 @import './lib/themes/orbit.css';
 @import './lib/themes/cairn.css';
 @import './lib/themes/wilds.css';
+@import './lib/themes/board.css';
 
 /* shadcn-svelte's colors, radii and shadows are the theme's tokens, so its components follow the
    vault's theme like everything else. */
@@ -74,7 +75,16 @@
 	   card appearing fades in over the same time. */
 	--dim: 0.35;
 	--edge-dim: color-mix(in srgb, var(--ink-soft) calc(var(--dim) * 100%), var(--paper));
+	--thread-dim: color-mix(in srgb, var(--thread) calc(var(--dim) * 100%), var(--paper));
 	--fade: 200ms;
+	/* Light caught on a thread's pin head, in every theme. */
+	--glint: rgb(255 255 255 / 0.55);
+}
+
+/* No grain on a theme's paper unless the theme lays one: a preview drawn in another theme would
+   otherwise take the vault's. Weaker than any theme's own tokens. */
+:where([data-theme]) {
+	--paper-grain: none;
 }
 
 /* How much of a card's text shows while it appears (Card.svelte animates it), registered so it
@@ -118,8 +128,10 @@ a {
 /* Graph paper, marked as data-paper says (#lib/theme.svelte.ts): on the root, the vault's pick or its
    theme's; on a preview, its own. Dots at the grid's crossings, ruled lines, small crosses at the
    crossings, or the paper alone. A theme gives each mark its colors, crosses taking the dots', and
-   its nodes, dots where ruled major lines cross. The canvas moves it through --cell (minor square),
-   --ox and --oy (offset) and --minor (opacity of the minor marks); elsewhere it lies still. */
+   its nodes, dots where ruled major lines cross, and may lay a grain under the marks
+   (--paper-grain), which moves with them but keeps its size. The canvas moves it through --cell
+   (minor square), --ox and --oy (offset) and --minor (opacity of the minor marks); elsewhere it
+   lies still. */
 .graph-paper {
 	--cell: 20px;
 	--ox: 0px;
@@ -142,13 +154,16 @@ a {
 .graph-paper[data-paper='dots'] {
 	background-image:
 		radial-gradient(circle at 2px 2px, var(--grid-dot-major) 1.1px, transparent 1.7px),
-		radial-gradient(circle at 2px 2px, var(--minor-dot) 0.7px, transparent 1.3px);
+		radial-gradient(circle at 2px 2px, var(--minor-dot) 0.7px, transparent 1.3px),
+		var(--paper-grain);
 	background-size:
 		var(--major) var(--major),
-		var(--cell) var(--cell);
+		var(--cell) var(--cell),
+		auto;
 	background-position:
 		var(--dot-ox) var(--dot-oy),
-		var(--dot-ox) var(--dot-oy);
+		var(--dot-ox) var(--dot-oy),
+		var(--ox) var(--oy);
 }
 
 :where([data-paper='grid']) .graph-paper,
@@ -158,19 +173,22 @@ a {
 		linear-gradient(90deg, var(--grid-line-major) 1px, transparent 1px),
 		linear-gradient(var(--minor-line) 1px, transparent 1px),
 		linear-gradient(90deg, var(--minor-line) 1px, transparent 1px),
-		radial-gradient(circle at 2px 2px, var(--grid-node) 1.1px, transparent 1.7px);
+		radial-gradient(circle at 2px 2px, var(--grid-node) 1.1px, transparent 1.7px),
+		var(--paper-grain);
 	background-size:
 		var(--major) var(--major),
 		var(--major) var(--major),
 		var(--cell) var(--cell),
 		var(--cell) var(--cell),
-		var(--major) var(--major);
+		var(--major) var(--major),
+		auto;
 	background-position:
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
 		var(--ox) var(--oy),
-		var(--dot-ox) var(--dot-oy);
+		var(--dot-ox) var(--dot-oy),
+		var(--ox) var(--oy);
 }
 
 /* Each arm a thin ellipse, centered on the crossing as a dot is. */
@@ -182,22 +200,26 @@ a {
 		radial-gradient(var(--major-arm) 0.7px at var(--at-major) var(--at-major), var(--grid-dot-major) 75%, transparent),
 		radial-gradient(0.7px var(--major-arm) at var(--at-major) var(--at-major), var(--grid-dot-major) 75%, transparent),
 		radial-gradient(var(--arm) 0.7px at var(--at) var(--at), var(--minor-dot) 75%, transparent),
-		radial-gradient(0.7px var(--arm) at var(--at) var(--at), var(--minor-dot) 75%, transparent);
+		radial-gradient(0.7px var(--arm) at var(--at) var(--at), var(--minor-dot) 75%, transparent),
+		var(--paper-grain);
 	background-size:
 		var(--major) var(--major),
 		var(--major) var(--major),
 		var(--cell) var(--cell),
-		var(--cell) var(--cell);
+		var(--cell) var(--cell),
+		auto;
 	background-position:
 		calc(var(--ox) - var(--major-arm) - 0.5px) calc(var(--oy) - var(--major-arm) - 0.5px),
 		calc(var(--ox) - var(--major-arm) - 0.5px) calc(var(--oy) - var(--major-arm) - 0.5px),
 		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px),
-		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px);
+		calc(var(--ox) - var(--arm) - 0.5px) calc(var(--oy) - var(--arm) - 0.5px),
+		var(--ox) var(--oy);
 }
 
 :where([data-paper='empty']) .graph-paper,
 .graph-paper[data-paper='empty'] {
-	background-image: none;
+	background-image: var(--paper-grain);
+	background-position: var(--ox) var(--oy);
 }
 
 /* An index card: white stock lifted off the paper, a rule under its heading. */

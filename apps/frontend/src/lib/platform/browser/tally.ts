@@ -37,7 +37,8 @@ export const bounds = (ends: [Frame, Frame]) => union(boxOf(ends[0]), boxOf(ends
 /** Counts an edge in or out of its bundle at each cell size, with the arrowheads it brings to each end. */
 export function bundled(edge: EdgeRecord, bundles: Tally, sign: 1 | -1) {
 	if (!edge.ends || !edge.bk) return;
-	const arrow = edge.file.arrow ?? 'to';
+	// A thread has no arrowheads, whatever its file says.
+	const arrow = edge.file.shape === 'thread' ? 'none' : (edge.file.arrow ?? 'to');
 	const [atFrom, atTo] = [+(arrow === 'both'), +(arrow !== 'none')];
 	for (const key of edge.bk) {
 		const fromFirst = end(edge.ends[0], edge.roots[0], key[0] as number) === key[1];

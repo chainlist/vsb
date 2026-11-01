@@ -49,3 +49,18 @@ test('straight lines stay between the centers', () => {
 	const straight = { shape: 'straight', arrow: 'to' };
 	assert.deepEqual(route(name, others, straight, 1, around(name, others)), route(name, others, straight));
 });
+
+test('a thread hangs between pins at the top of its cards, over whatever lies between', () => {
+	const thread = { shape: 'thread', arrow: 'to' };
+	const r = route(others, french, thread, 1, around(others, french));
+	assert.deepEqual(r.pins, [{ x: 120, y: 208 }, { x: 900, y: 208 }]);
+	assert.equal(start(r), '120,208');
+	assert.deepEqual(r.arrows, [], 'no arrowheads');
+	assert.equal(r.mid.x, 510);
+	assert.ok(r.mid.y > 208 + 60, `${r.path} sags below its pins`);
+	assert.deepEqual([r.out, r.into], [{ x: 1, y: 0 }, { x: 1, y: 0 }], 'it leaves as a curved line would');
+	// Straight down it hangs straight, along the line between the pins.
+	const below = route(name, card(380, 600), thread);
+	assert.match(below.path, /^M500,8 Q500,[\d.]+ 500,608$/);
+	assert.deepEqual(below.out, { x: 0, y: 1 });
+});

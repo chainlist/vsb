@@ -46,7 +46,8 @@ pub enum VAlign {
   Bottom,
 }
 
-/// How an edge runs between its cards.
+/// How an edge runs between its cards. A thread hangs between pins at the top of both cards, in
+/// front of them, and has no arrowheads.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Shape {
@@ -54,6 +55,7 @@ pub enum Shape {
   Curved,
   Straight,
   Angled,
+  Thread,
 }
 
 /// Where an edge has arrowheads: at its `to` card, at both cards, or at neither.
@@ -103,6 +105,7 @@ impl Shape {
       Shape::Curved => "curved",
       Shape::Straight => "straight",
       Shape::Angled => "angled",
+      Shape::Thread => "thread",
     }
   }
 }

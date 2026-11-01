@@ -100,6 +100,11 @@ fn edges_are_bundled_per_pair_of_outermost_zones() {
   let z1 = &v.bundles[0].ends[0];
   assert_eq!([z1.x, z1.y, z1.w, z1.h], [0.0, 0.0, 1000.0, 1000.0]);
   assert!(v.edges.is_empty());
+
+  // A thread brings no arrowheads, whatever its file says.
+  f.write(".canvas/edges/E4.json", r#"{ "from": "E", "to": "A", "shape": "thread" }"#);
+  scan(&f.vault, &index).unwrap();
+  assert_eq!(bundles(&zoomed_out(&index, WORLD, 1000.0))[1], pair("Z1", "Z3", 1, "none"));
 }
 
 #[test]

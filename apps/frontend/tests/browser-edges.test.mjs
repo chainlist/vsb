@@ -112,6 +112,14 @@ test('shape, arrow and stroke are written only when not the default', async () =
 	assert.deepEqual(await file('edge', 'OLD'), { from: 'A', to: 'B' });
 });
 
+test('a thread is a shape of its own', async () => {
+	await twoCards();
+	await put(edgeOf('E', 'A', 'B'));
+	await api.shapeEdges(['E'], 'thread');
+	assert.deepEqual(await file('edge', 'E'), { from: 'A', to: 'B', shape: 'thread' });
+	assert.equal((await api.queryViewport(WORLD, 0, null)).edges[0].shape, 'thread');
+});
+
 /** A zone holding Name above a row of three cards, Name joined to Space by a labeled, styled edge. */
 async function row() {
 	await fresh();

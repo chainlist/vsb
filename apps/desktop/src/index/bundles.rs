@@ -23,7 +23,7 @@ impl Index {
   pub fn bundles(&self, rect: Rect, cell: f64) -> Result<Vec<BundleView>> {
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
-       SELECT e.arrow, fz.root, floor((f.x + f.w / 2) / ?5), floor((f.y + f.h / 2) / ?5),
+       SELECT CASE e.shape WHEN 'thread' THEN 'none' ELSE e.arrow END, fz.root, floor((f.x + f.w / 2) / ?5), floor((f.y + f.h / 2) / ?5),
          tz.root, floor((t.x + t.w / 2) / ?5), floor((t.y + t.h / 2) / ?5)
        FROM edge_bounds b JOIN edges e ON e.key = b.key
        JOIN cards f ON f.id = e.from_card LEFT JOIN zabs fz ON fz.id = f.zone

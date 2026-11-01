@@ -190,6 +190,10 @@ test('bundles follow restyled, moved and deleted edges', async () => {
 	await put(zoneAt('Z1', null, 0, 0, 1000, 1000), zoneAt('Z2', null, 2000, 0, 1000, 1000), cardAt('A', 'Z1', 10, 10), cardAt('B', 'Z2', 10, 10), edgeOf('E', 'A', 'B'));
 	const at = async () => bundles(await api.queryViewport(WORLD, 0, 1024));
 	assert.deepEqual(await at(), [['Z1', 'Z2', 1, 'to']]);
+	await api.shapeEdges(['E'], 'thread');
+	assert.deepEqual(await at(), [['Z1', 'Z2', 1, 'none']], 'a thread brings no arrowheads');
+	await api.shapeEdges(['E'], 'curved');
+	assert.deepEqual(await at(), [['Z1', 'Z2', 1, 'to']]);
 	await api.arrowEdges(['E'], 'none');
 	assert.deepEqual(await at(), [['Z1', 'Z2', 1, 'none']]);
 	// Moved into Z2, both ends are one: no bundle.

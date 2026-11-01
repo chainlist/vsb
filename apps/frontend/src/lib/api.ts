@@ -80,8 +80,9 @@ export type LinkPreview = { title?: string; description?: string; image?: string
 /** An item's box in absolute world coordinates. */
 export type Frame = { x: number; y: number; w: number; h: number };
 
-/** How an edge runs between its cards. */
-export type Shape = 'curved' | 'straight' | 'angled';
+/** How an edge runs between its cards. A thread hangs between pins at the top of both cards, in
+ * front of them, and has no arrowheads. */
+export type Shape = 'curved' | 'straight' | 'angled' | 'thread';
 /** Where an edge has arrowheads: at its `to` card, at both cards, or at neither. */
 export type Arrow = 'to' | 'both' | 'none';
 /** How an edge's line is drawn: one solid line, dashes, dots, or two parallel lines. */

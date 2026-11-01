@@ -1,7 +1,8 @@
 // Where an edge runs between its two cards, in world units. Curved and angled lines leave each card
 // square to the side that faces the other card, from the middle of that side, unless that leads
 // them through another card and the other pair of sides does not. A straight line runs along the
-// line between the cards' centers. Arrowheads sit at `to`, at both cards, or at neither.
+// line between the cards' centers. Arrowheads sit at `to`, at both cards, or at neither. A thread
+// hangs between pins at the top of both cards, whatever lies between, and has no arrowheads.
 import type { Arrow, Frame, Shape } from '#lib/api.js';
 
 type Point = { x: number; y: number };
@@ -17,12 +18,18 @@ const MAX_BEND = 120;
 const PIECES = 16;
 /** Half the height of an edge's label, which sits on the line's middle. */
 export const LABEL_HALF = 11;
+/** How far below the middle of a card's top a thread's pin goes in, so the pin holds the card. */
+const PIN_DEPTH = 8;
+/** How far a thread hangs at its middle, below the line between its pins, for each unit between them. */
+const SAG = 0.1;
 
 export type Route = {
 	/** SVG path of the line, which stops where its arrowheads begin. */
 	path: string;
 	/** SVG points of each arrowhead. */
 	arrows: string[];
+	/** Where a thread's pins go into its cards; none for other lines. */
+	pins: Point[];
 	/** The line's halfway point, where its label sits. */
 	mid: Point;
 	/** Which way the line leaves its first card: square to the side it leaves through, along x or y. */
@@ -104,7 +111,7 @@ function draw({ start, tip, d }: Ends, { shape, arrow }: Style, px: number) {
 		...(arrow === 'none' ? [] : [head(tip, d, px)]),
 		...(arrow === 'both' ? [head(start, { x: -d.x, y: -d.y }, px)] : [])
 	];
-	const line = (points: Point[], mid: Point) => ({ route: { path: `M${points.map(xy).join(' L')}`, arrows, mid, out: d, into: d }, points });
+	const line = (points: Point[], mid: Point) => ({ route: { path: `M${points.map(xy).join(' L')}`, arrows, pins: [], mid, out: d, into: d }, points });
 	const m = halfway(p, q);
 	if (shape === 'straight') return line([p, q], m);
 	// Out of one card, across halfway, then into the other, bending at right angles.
@@ -120,8 +127,33 @@ function draw({ start, tip, d }: Ends, { shape, arrow }: Style, px: number) {
 		const [k0, k1, k2, k3] = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
 		return { x: k0 * p.x + k1 * c1.x + k2 * c2.x + k3 * q.x, y: k0 * p.y + k1 * c1.y + k2 * c2.y + k3 * q.y };
 	};
-	const route = { path: `M${xy(p)} C${xy(c1)} ${xy(c2)} ${xy(q)}`, arrows, mid: at(0.5), out: d, into: d };
+	const route = { path: `M${xy(p)} C${xy(c1)} ${xy(c2)} ${xy(q)}`, arrows, pins: [], mid: at(0.5), out: d, into: d };
 	return { route, points: Array.from({ length: PIECES + 1 }, (_, i) => at(i / PIECES)) };
+}
+
+/** Whether a line between these cards runs through their left and right sides: when they lie
+ * further apart across than down, for their sizes. Through the top and bottom otherwise. */
+function runsAcross(a: Frame, b: Frame) {
+	const dx = Math.abs(center(b).x - center(a).x);
+	const dy = Math.abs(center(b).y - center(a).y);
+	return dx / (a.w + b.w) >= dy / (a.h + b.h);
+}
+
+/** A thread, from a pin at the middle of one card's top to one at the other's. It hangs as a string
+ * does, along a parabola under the line between its pins, lower the further apart they are; one
+ * pin straight above the other, it hangs straight. It leaves and reaches its cards the way a
+ * curved line between them would, for Tab and for making room. */
+function thread(a: Frame, b: Frame): Route {
+	// Never past a card's middle: a thread being drawn hangs from the pointer itself.
+	const pin = (f: Frame) => ({ x: f.x + f.w / 2, y: f.y + Math.min(PIN_DEPTH, f.h / 2) });
+	const p = pin(a);
+	const q = pin(b);
+	const m = halfway(p, q);
+	const sag = SAG * Math.hypot(q.x - p.x, q.y - p.y);
+	// A quadratic curve's middle lies halfway to its control point.
+	const control = { x: m.x, y: m.y + 2 * sag };
+	const { d } = sides(a, b, runsAcross(a, b));
+	return { path: `M${xy(p)} Q${xy(control)} ${xy(q)}`, arrows: [], pins: [p, q], mid: { x: m.x, y: m.y + sag }, out: d, into: d };
 }
 
 /** The route between two boxes. Its arrowheads and bends are sized in pixels of `px` world units:
@@ -129,6 +161,7 @@ function draw({ start, tip, d }: Ends, { shape, arrow }: Style, px: number) {
  * A curved or angled line that would run through one of `obstacles` takes the other pair of sides
  * when that line misses them all. */
 export function route(a: Frame, b: Frame, style: Style, px = 1, obstacles: Frame[] = []): Route {
+	if (style.shape === 'thread') return thread(a, b);
 	if (style.shape === 'straight') {
 		const ends = centers(a, b);
 		const { d } = ends;
@@ -136,13 +169,8 @@ export function route(a: Frame, b: Frame, style: Style, px = 1, obstacles: Frame
 		const side = (f: Frame) => (Math.abs(d.x) * f.h >= Math.abs(d.y) * f.w ? { x: Math.sign(d.x) || 1, y: 0 } : { x: 0, y: Math.sign(d.y) || 1 });
 		return { ...draw(ends, style, px).route, out: side(a), into: side(b) };
 	}
-	// Through the left and right sides when the cards lie further apart across than down, for
-	// their sizes; through the top and bottom otherwise.
-	const dx = Math.abs(center(b).x - center(a).x);
-	const dy = Math.abs(center(b).y - center(a).y);
-	const across = dx / (a.w + b.w) >= dy / (a.h + b.h);
-	const first = draw(sides(a, b, across), style, px);
+	const first = draw(sides(a, b, runsAcross(a, b)), style, px);
 	if (clears(first.points, obstacles)) return first.route;
-	const other = draw(sides(a, b, !across), style, px);
+	const other = draw(sides(a, b, !runsAcross(a, b)), style, px);
 	return clears(other.points, obstacles) ? other.route : first.route;
 }

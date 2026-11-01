@@ -166,3 +166,14 @@ fn shape_arrow_and_stroke_are_written_only_when_not_the_default() {
   s.arrow_edges(&ids, Arrow::To).unwrap();
   assert_eq!(serde_json::from_str::<Value>(&f.read(".canvas/edges/OLD.json")).unwrap(), serde_json::json!({ "from": "A", "to": "B" }));
 }
+
+#[test]
+fn a_thread_is_a_shape_of_its_own() {
+  let f = two_cards();
+  f.write(".canvas/edges/E.json", r#"{ "from": "A", "to": "B", "shape": "thread" }"#);
+  let s = open(&f);
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().edges.remove(0).shape.as_str(), "thread");
+  s.shape_edges(&["E".to_string()], Shape::Curved).unwrap();
+  s.shape_edges(&["E".to_string()], Shape::Thread).unwrap();
+  assert_eq!(edge(&f, "E").shape, Shape::Thread);
+}

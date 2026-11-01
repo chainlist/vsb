@@ -22,7 +22,8 @@ export const THEMES: Theme[] = [
 	{ id: 'pad', name: 'Engineering pad', paper: 'grid' },
 	{ id: 'orbit', name: 'Orbit', paper: 'grid' },
 	{ id: 'cairn', name: 'Cairn', paper: 'dots' },
-	{ id: 'wilds', name: 'Outer Wilds', paper: 'dots' }
+	{ id: 'wilds', name: 'Outer Wilds', paper: 'dots' },
+	{ id: 'board', name: 'Investigation board', paper: 'empty' }
 ];
 
 export const DEFAULT_THEME = THEMES[0].id;
