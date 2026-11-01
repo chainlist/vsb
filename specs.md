@@ -387,7 +387,9 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
 
 ## Edges
 
-- Mod+drag (Ctrl, Cmd on macOS) from a card draws an edge: releasing on another card connects them, `from` the first, `to` the second. Started on the paper, the same gesture draws a zone. Releasing on the paper or on the starting card creates nothing.
+- Mod+drag (Ctrl, Cmd on macOS) from a card draws an edge: releasing on another card connects them, `from` the first, `to` the second. Started on the paper, the same gesture draws a zone. Releasing on the starting card creates nothing.
+  - **Releasing on the paper adds a card there,** linked from the first: an empty card, the size of a card placed by double-click, with the middle of its side facing the first card on the pointer, so the line ends where it was let go. That side is the one a curved line from the first card reaches the pointer on, whatever the style for new edges: left or right when the pointer lies further off across than down for the first card's size, top or bottom otherwise. With snapping on, its corner lands on the grid, never nearer the first card. It joins the innermost zone under its center, as a placed card does.
+  - The edge has the vault's style for new edges, and the card and its edge are one undo step. Then, as after Tab, the new card is selected and opens for typing; landing off screen, or under the chrome, it is shown.
 - Edges join cards only, never zones or notes. Cards in different zones and empty cards can be connected.
 - No edge from a card to itself, and at most one edge between two cards, in either direction. Connecting a pair that is already connected selects its edge.
 - Each edge has a style, picked for the selected edges in the selection bar: its shape, its arrowheads and its line.
