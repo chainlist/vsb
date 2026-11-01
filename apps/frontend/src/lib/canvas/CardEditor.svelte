@@ -43,6 +43,7 @@
 	onblur={() => (selection.editing = null)}
 	onpointerdown={(e) => e.stopPropagation()}
 	ondblclick={(e) => e.stopPropagation()}
+	oncontextmenu={(e) => e.stopPropagation()}
 ></textarea>
 
 <style>

@@ -64,6 +64,12 @@ fn enable_pinch(app: &tauri::App) -> tauri::Result<()> {
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
+    // Paste from the canvas's right-click menu has no paste event to read: it reads the clipboard,
+    // which WebView2 would first ask about.
+    .on_permission_request(|_, kind| match kind {
+      tauri::webview::PermissionKind::ClipboardRead => tauri::webview::PermissionResponse::Allow,
+      _ => tauri::webview::PermissionResponse::Default,
+    })
     .manage(commands::AppState::default())
     .invoke_handler(tauri::generate_handler![
       commands::device_interface_size,

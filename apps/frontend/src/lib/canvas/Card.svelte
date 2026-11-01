@@ -7,6 +7,7 @@
 	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
 	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
+	import { pick } from './menu.js';
 	import { selection } from './selection.svelte.js';
 	import CardContent from './CardContent.svelte';
 	import CardEditor from './CardEditor.svelte';
@@ -70,6 +71,7 @@
 	onpointerdown={press}
 	onclick={follow}
 	ondblclick={open}
+	oncontextmenu={() => pick(card.id)}
 	out:collapse
 >
 	<!-- A note that fails to show fails alone, in its card. -->

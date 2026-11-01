@@ -4,6 +4,7 @@
 	import { isMod } from '#lib/keys.js';
 	import { startMove } from './gestures.js';
 	import { outline } from './ink.js';
+	import { pick } from './menu.js';
 	import { ink } from './pen.svelte.js';
 	import { selection } from './selection.svelte.js';
 
@@ -21,11 +22,18 @@
 
 {#snippet line(points: number[], stroke: PenStroke, faded: boolean)}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<path class="inked" class:faded style:--tint={stroke.color} d={outline(points, stroke.width)} onpointerdown={press} />
+	<path
+		class="inked"
+		class:faded
+		style:--tint={stroke.color}
+		d={outline(points, stroke.width)}
+		onpointerdown={press}
+		oncontextmenu={() => pick(drawing.id)}
+	/>
 {/snippet}
 
 <!-- Above cards and edges. Presses go through it, to what lies beneath, except on its ink, which
-     selects and moves it as a card is. Selected, it shows its box. -->
+     selects and moves it as a card is, and opens its menu on a right-click. Selected, it shows its box. -->
 <div
 	class="drawing"
 	class:selected

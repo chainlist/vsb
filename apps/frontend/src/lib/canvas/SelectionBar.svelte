@@ -70,6 +70,7 @@
 		style:top="max(calc(52px + var(--window-band)), {at.y - 10}px)"
 		onpointerdown={(e) => e.stopPropagation()}
 		ondblclick={(e) => e.stopPropagation()}
+		oncontextmenu={(e) => e.preventDefault()}
 	>
 		<div class="bar index-card chrome">
 			{#if texts.length}

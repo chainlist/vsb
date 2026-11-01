@@ -6,6 +6,7 @@ import {
 	canvasContents,
 	clearCard,
 	colorItems,
+	createCard,
 	createZone,
 	deleteCards,
 	deleteDrawings,
@@ -33,10 +34,14 @@ import { history } from './history.js';
 import { cover, inside, items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
-/** Opens the card's editor, the zone's name or the edge's label. A card whose note is missing has
- * nothing to edit, nor has a card showing an image or a web page. */
+/** Whether an item has something to edit. A card whose note is missing has nothing, nor has a card
+ * showing an image or a web page. */
+export const editable = (item: CardView | ZoneView | EdgeView) =>
+	!('note' in item && ((item.note !== null && !item.resolved) || item.file !== null || item.link !== null));
+
+/** Opens the card's editor, the zone's name or the edge's label. */
 export function edit(item: CardView | ZoneView | EdgeView) {
-	if ('note' in item && ((item.note !== null && !item.resolved) || item.file !== null || item.link !== null)) return;
+	if (!editable(item)) return;
 	selection.only(item.id);
 	selection.editing = item.id;
 }
@@ -156,6 +161,20 @@ export async function show(kind: 'card' | 'zone', id: string) {
 export async function fitAll() {
 	const contents = await canvasContents();
 	if (contents) camera.glide(contents);
+}
+
+/** Places an empty card centered on a world point and opens it. Zoomed out, it would be hidden in a
+ * cluster: it is framed, zoomed in until it shows. */
+export function placeCard(at: { x: number; y: number }) {
+	const { x, y, w, h } = newCardAt(at);
+	const hidden = items.collapsed;
+	return history.edit(async () => {
+		const id = await createCard(x, y, w, h);
+		if (hidden) camera.glide(cover([{ x, y, w, h }]), OPEN_ZOOM);
+		selection.only(id);
+		selection.editing = id;
+		return [{ kind: 'card', id, value: null }];
+	});
 }
 
 /** Places a card for a note, centered on a world point, and selects it. A note that already has

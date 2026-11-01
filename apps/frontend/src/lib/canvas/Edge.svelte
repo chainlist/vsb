@@ -3,6 +3,7 @@
 	import { edit, label } from './actions.js';
 	import { startMove } from './gestures.js';
 	import { items } from './items.svelte.js';
+	import { pick } from './menu.js';
 	import { selection } from './selection.svelte.js';
 	import EdgeLine from './EdgeLine.svelte';
 	import InlineField from './InlineField.svelte';
@@ -15,6 +16,7 @@
 	const dimmed = $derived(selection.dimsEdge(edge));
 
 	const press = (e: PointerEvent) => startMove(e, edge);
+	const menu = () => pick(edge.id);
 
 	function open(e: MouseEvent) {
 		// Not a double-click on the canvas, which would place a card.
@@ -23,8 +25,9 @@
 	}
 </script>
 
-<!-- The line and its label: a press selects the edge, a double-click edits the label. -->
-<EdgeLine route={line} stroke={edge.stroke} {selected} {dimmed} onpointerdown={press} ondblclick={open} />
+<!-- The line and its label: a press selects the edge, a double-click edits the label, a right-click
+     opens its menu. -->
+<EdgeLine route={line} stroke={edge.stroke} {selected} {dimmed} onpointerdown={press} ondblclick={open} oncontextmenu={menu} />
 {#if editing || edge.label}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
@@ -35,6 +38,7 @@
 		style:top="{line.mid.y}px"
 		onpointerdown={press}
 		ondblclick={open}
+		oncontextmenu={menu}
 	>
 		{#if editing}
 			<InlineField value={edge.label ?? ''} placeholder="Label" save={(text) => label(edge.id, text)} />

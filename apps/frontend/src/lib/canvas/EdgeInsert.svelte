@@ -26,6 +26,7 @@
 			aria-label="Insert a card here"
 			onpointerdown={stop}
 			ondblclick={stop}
+			oncontextmenu={(e) => e.preventDefault()}
 			onclick={() => insertOnEdge(edge)}
 		>
 			<Plus />

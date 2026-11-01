@@ -5,6 +5,7 @@
 	import { GRIP, startResize, type Pull } from './gestures.js';
 	import { items } from './items.svelte.js';
 	import { asMarker } from './marker.js';
+	import { pick } from './menu.js';
 	import { selection } from './selection.svelte.js';
 
 	/** The card or zone under the pointer, if any. */
@@ -61,6 +62,7 @@
 				class:corner={h.px && h.py}
 				onpointerdown={(e) => press(e, item, kind, h)}
 				ondblclick={(e) => open(e, item, kind)}
+				oncontextmenu={() => pick(item.id)}
 			></span>
 		{/each}
 	</div>

@@ -1,19 +1,23 @@
 <script lang="ts">
-	import { createCard, type Rect } from '#lib/api.js';
+	import { ContextMenu as ContextMenuPrimitive } from 'bits-ui';
+	import type { Rect } from '#lib/api.js';
+	import * as ContextMenu from '#lib/components/ui/context-menu/index.js';
 	import { bindKeys, isMod } from '#lib/keys.js';
+	import { placeCard } from './actions.js';
 	import { batchDialog } from './batchDialog.svelte.js';
 	import { selecting, startBox } from './boxSelect.svelte.js';
 	import { camera } from './camera.svelte.js';
 	import { listenForPaste } from './clipboard.js';
 	import { draft, startDraw } from './draw.svelte.js';
 	import { track } from './drag.js';
-	import { GRIP, newCardAt } from './gestures.js';
+	import { GRIP } from './gestures.js';
 	import { GRID } from './grid.svelte.js';
 	import { history } from './history.js';
 	import { forgetImages, listenForDrops } from './images.js';
 	import { outline } from './ink.js';
-	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
+	import { items } from './items.svelte.js';
 	import { forgetReading, reading } from './links.svelte.js';
+	import { paperAt } from './menu.js';
 	import { newEdges } from './newEdges.svelte.js';
 	import { ink, startInk } from './pen.svelte.js';
 	import { route } from './route.js';
@@ -22,6 +26,7 @@
 	import { pointIn, zoomOn } from './zoom.js';
 	import BatchDialog from './BatchDialog.svelte';
 	import Bundle from './Bundle.svelte';
+	import CanvasMenu from './CanvasMenu.svelte';
 	import Card from './Card.svelte';
 	import Cluster from './Cluster.svelte';
 	import Drawing from './Drawing.svelte';
@@ -48,6 +53,8 @@
 	/** The camera at the last two presses. A double-click whose first click moved it, zooming in on a
 	 * cluster or a bundle, ends somewhere else, and places nothing. */
 	let views = ['', ''];
+	/** Where the paper was right-clicked, in world units; null while the menu is the selection's. */
+	let spot = $state<{ x: number; y: number } | null>(null);
 
 	camera.reset();
 	items.reset();
@@ -140,110 +147,119 @@
 	function place(e: MouseEvent) {
 		if (views[0] !== camera.transform) return;
 		const p = local(e);
-		const { x, y, w, h } = newCardAt(camera.toWorld(p.x, p.y));
-		// Zoomed out, the card would be hidden in a cluster: it is framed, zoomed in until it shows.
-		const hidden = items.collapsed;
-		return history.edit(async () => {
-			const id = await createCard(x, y, w, h);
-			if (hidden) camera.glide(cover([{ x, y, w, h }]), OPEN_ZOOM);
-			selection.only(id);
-			selection.editing = id;
-			return [{ kind: 'card', id, value: null }];
-		});
+		return placeCard(camera.toWorld(p.x, p.y));
+	}
+
+	// Before the menu opens: an item right-clicked has already been selected on the way here.
+	function aim(e: MouseEvent) {
+		const p = local(e);
+		spot = paperAt(camera.toWorld(p.x, p.y));
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-	class="canvas graph-paper"
-	class:panning
-	style:--cell="{paper.square}px"
-	style:--ox="{paper.origin.x}px"
-	style:--oy="{paper.origin.y}px"
-	style:--minor={paper.minor}
-	bind:this={el}
-	bind:clientWidth={camera.width}
-	bind:clientHeight={camera.height}
-	onpointerdown={down}
-	onpointermove={move}
-	onpointerleave={leave}
-	ondblclick={place}
->
-	<!-- --scale: one screen pixel in world units, for marks drawn at a constant size on screen. -->
-	<div class="world" class:collapsed={items.collapsed} style:transform={camera.transform} style:--scale={1 / camera.zoom}>
-		{#each items.zones as zone (zone.id)}
-			<Zone {zone} />
-		{/each}
-		{#each items.edges as edge (edge.id)}
-			<Edge {edge} />
-		{/each}
-		{#each items.bundles as bundle}
-			<Bundle {bundle} />
-		{/each}
-		{#if draft.link}
-			<EdgeLine route={route(...draft.link, newEdges.style)} draft />
-		{/if}
-		{#each items.cards as card (card.id)}
-			<Card {card} />
-		{/each}
-		{#each reading.pages as page (page.id)}
-			<div
-				class="reading index-card note-card"
-				style:left="{page.x}px"
-				style:top="{page.y}px"
-				style:width="{page.w}px"
-				style:height="{page.h}px"
-			>
-				Reading {page.host}…
-			</div>
-		{/each}
-		{#each items.drawings as drawing (drawing.id)}
-			<Drawing {drawing} />
-		{/each}
-		{#if ink.live || ink.pending.length}
-			<svg class="ink" aria-hidden="true">
-				{#each ink.pending as stroke (stroke)}
-					<path class="inked" style:--tint={stroke.color} d={outline(stroke.points, stroke.width)} />
-				{/each}
-				{#if ink.live}
-					<path class="inked" style:--tint={ink.live.color} d={outline(ink.live.points, ink.live.width, false)} />
-				{/if}
-			</svg>
-		{/if}
-		{#each items.clusters as cluster (cluster.cell.join())}
-			<Cluster {cluster} />
-		{/each}
-		{#if draft.box}
-			<div
-				class="draft"
-				style:left="{draft.box.x}px"
-				style:top="{draft.box.y}px"
-				style:width="{draft.box.w}px"
-				style:height="{draft.box.h}px"
-			></div>
-		{/if}
-		{#if selecting.box}
-			<div
-				class="box"
-				style:left="{selecting.box.x}px"
-				style:top="{selecting.box.y}px"
-				style:width="{selecting.box.w}px"
-				style:height="{selecting.box.h}px"
-			></div>
-		{/if}
-		<Guides />
-		<ResizeHandles {hovered} />
-	</div>
-	{#if ink.on}
-		<!-- Over everything on the canvas, under the chrome: presses draw or erase, and a double-click
-		     places nothing. -->
+<!-- A right-click anywhere on the canvas opens its menu. bits-ui's own trigger, as it wraps the
+     canvas: shadcn's carries a data-slot, which would give everything on it the components' preflight. -->
+<ContextMenu.Root>
+	<ContextMenuPrimitive.Trigger oncontextmenu={aim}>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="hand {ink.erasing ? 'eraser' : 'pen'}" onpointerdown={inking} ondblclick={(e) => e.stopPropagation()}></div>
-	{/if}
-	<SelectionBar />
-	<EdgeInsert />
-	<WayPicker />
-</div>
+		<div
+			class="canvas graph-paper"
+			class:panning
+			style:--cell="{paper.square}px"
+			style:--ox="{paper.origin.x}px"
+			style:--oy="{paper.origin.y}px"
+			style:--minor={paper.minor}
+			bind:this={el}
+			bind:clientWidth={camera.width}
+			bind:clientHeight={camera.height}
+			onpointerdown={down}
+			onpointermove={move}
+			onpointerleave={leave}
+			ondblclick={place}
+		>
+			<!-- --scale: one screen pixel in world units, for marks drawn at a constant size on screen. -->
+			<div class="world" class:collapsed={items.collapsed} style:transform={camera.transform} style:--scale={1 / camera.zoom}>
+				{#each items.zones as zone (zone.id)}
+					<Zone {zone} />
+				{/each}
+				{#each items.edges as edge (edge.id)}
+					<Edge {edge} />
+				{/each}
+				{#each items.bundles as bundle}
+					<Bundle {bundle} />
+				{/each}
+				{#if draft.link}
+					<EdgeLine route={route(...draft.link, newEdges.style)} draft />
+				{/if}
+				{#each items.cards as card (card.id)}
+					<Card {card} />
+				{/each}
+				{#each reading.pages as page (page.id)}
+					<div
+						class="reading index-card note-card"
+						style:left="{page.x}px"
+						style:top="{page.y}px"
+						style:width="{page.w}px"
+						style:height="{page.h}px"
+					>
+						Reading {page.host}…
+					</div>
+				{/each}
+				{#each items.drawings as drawing (drawing.id)}
+					<Drawing {drawing} />
+				{/each}
+				{#if ink.live || ink.pending.length}
+					<svg class="ink" aria-hidden="true">
+						{#each ink.pending as stroke (stroke)}
+							<path class="inked" style:--tint={stroke.color} d={outline(stroke.points, stroke.width)} />
+						{/each}
+						{#if ink.live}
+							<path class="inked" style:--tint={ink.live.color} d={outline(ink.live.points, ink.live.width, false)} />
+						{/if}
+					</svg>
+				{/if}
+				{#each items.clusters as cluster (cluster.cell.join())}
+					<Cluster {cluster} />
+				{/each}
+				{#if draft.box}
+					<div
+						class="draft"
+						style:left="{draft.box.x}px"
+						style:top="{draft.box.y}px"
+						style:width="{draft.box.w}px"
+						style:height="{draft.box.h}px"
+					></div>
+				{/if}
+				{#if selecting.box}
+					<div
+						class="box"
+						style:left="{selecting.box.x}px"
+						style:top="{selecting.box.y}px"
+						style:width="{selecting.box.w}px"
+						style:height="{selecting.box.h}px"
+					></div>
+				{/if}
+				<Guides />
+				<ResizeHandles {hovered} />
+			</div>
+			{#if ink.on}
+				<!-- Over everything on the canvas, under the chrome: presses draw or erase, and a double-click
+				     places nothing, nor does a right-click open a menu. -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div
+					class="hand {ink.erasing ? 'eraser' : 'pen'}"
+					onpointerdown={inking}
+					ondblclick={(e) => e.stopPropagation()}
+					oncontextmenu={(e) => e.preventDefault()}
+				></div>
+			{/if}
+			<SelectionBar />
+			<EdgeInsert />
+			<WayPicker />
+		</div>
+	</ContextMenuPrimitive.Trigger>
+	<CanvasMenu paper={spot} />
+</ContextMenu.Root>
 <BatchDialog />
 
 <style>

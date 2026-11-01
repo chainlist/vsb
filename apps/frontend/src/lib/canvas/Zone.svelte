@@ -7,6 +7,7 @@
 	import { cover, items, OPEN_ZOOM } from './items.svelte.js';
 	import { lines, MEDIUM } from './ink.js';
 	import { asMarker, MARKER, zoneMarkers } from './marker.js';
+	import { pick } from './menu.js';
 	import { selection } from './selection.svelte.js';
 	import InlineField from './InlineField.svelte';
 
@@ -61,8 +62,9 @@
 </script>
 
 <!-- The body is paper: dragging it pans, double-clicking places a card inside, or zooms in on a
-     collapsed zone. The name is the handle: a press selects, a drag moves, a double-click renames.
-     As a marker, the rim around the name is the body. -->
+     collapsed zone, and a right-click opens the paper's menu. The name is the handle: a press
+     selects, a drag moves, a double-click renames, a right-click opens the zone's menu. As a marker,
+     the rim around the name is the body. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	bind:this={node}
@@ -98,7 +100,13 @@
 			<InlineField value={zone.name} placeholder="Untitled" save={(name) => rename(zone.id, name)} />
 		{:else}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<span class="name" class:untitled={!zone.name} onpointerdown={(e) => startMove(e, zone)} ondblclick={open}>
+			<span
+				class="name"
+				class:untitled={!zone.name}
+				onpointerdown={(e) => startMove(e, zone)}
+				ondblclick={open}
+				oncontextmenu={() => pick(zone.id)}
+			>
 				{zone.name || 'Untitled'}
 			</span>
 		{/if}

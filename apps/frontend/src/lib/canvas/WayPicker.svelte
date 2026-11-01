@@ -65,6 +65,7 @@
 			tabindex="-1"
 			onpointerdown={stop}
 			ondblclick={stop}
+			oncontextmenu={(e) => e.preventDefault()}
 			{@attach (el) => el.focus()}
 		>
 			{#each WAYS as [key, way, name, Icon, cell] (key)}

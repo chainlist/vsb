@@ -9,7 +9,8 @@
 		dimmed = false,
 		draft = false,
 		onpointerdown,
-		ondblclick
+		ondblclick,
+		oncontextmenu
 	}: {
 		route: Route;
 		stroke?: Stroke;
@@ -21,6 +22,7 @@
 		/** Given these, a wide invisible line along the curve takes the pointer. */
 		onpointerdown?: (e: PointerEvent) => void;
 		ondblclick?: (e: MouseEvent) => void;
+		oncontextmenu?: (e: MouseEvent) => void;
 	} = $props();
 </script>
 
@@ -28,7 +30,7 @@
 <svg class="edge-line" class:selected class:dimmed class:draft data-stroke={stroke}>
 	{#if onpointerdown}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<path class="hit" d={route.path} {onpointerdown} {ondblclick} />
+		<path class="hit" d={route.path} {onpointerdown} {ondblclick} {oncontextmenu} />
 	{/if}
 	<path class="line" d={route.path} />
 	{#if stroke === 'double'}

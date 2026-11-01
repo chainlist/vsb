@@ -1,7 +1,7 @@
 // Copying, pasting and duplicating. Copying puts the selection on the system clipboard twice: as its
 // cards' text, for other apps, and as a clip hidden in the HTML, for this app, in any vault. Pasting
-// lands centered under the pointer; text from another app becomes a card, a lone web address a link
-// card once its page is read, and an image an image card.
+// lands centered under the pointer, or where the paper was right-clicked; text from another app
+// becomes a card, a lone web address a link card once its page is read, and an image an image card.
 import { copyItems, pasteItems, type Clip } from '#lib/api.js';
 import { typing } from '#lib/keys.js';
 import { renderMarkdown } from '#lib/markdown.js';
@@ -66,21 +66,35 @@ export function listenForPaste() {
 	return () => removeEventListener('paste', onPaste);
 }
 
-// Text comes before an image: an app such as a word processor copies text with a picture of it.
 function onPaste(e: ClipboardEvent) {
 	const at = due;
 	due = null;
 	const data = e.clipboardData;
 	if (!at || typing(e.target) || !data) return;
-	const text = data.getData('text/plain');
+	if (land(data.getData('text/plain'), data.getData('text/html'), [...data.files], at)) e.preventDefault();
+}
+
+/** Pastes centered on a world point from the paper's right-click menu. A menu has no paste event: the
+ * clipboard is read, which a browser may ask permission for first. */
+export async function pasteAt(at: { x: number; y: number }) {
+	const found = await navigator.clipboard.read();
+	const read = (type: string) => found.find((item) => item.types.includes(type))?.getType(type);
+	const text = (await (await read('text/plain'))?.text()) ?? '';
+	const html = (await (await read('text/html'))?.text()) ?? '';
+	const images = await Promise.all(found.flatMap((item) => item.types.filter((t) => t.startsWith('image/')).map((t) => item.getType(t))));
+	land(text, html, images, at);
+}
+
+/** Lands what the clipboard holds centered on a world point, saying whether it held anything to paste.
+ * Text comes before an image: an app such as a word processor copies text with a picture of it. */
+function land(text: string, html: string, files: Blob[], at: { x: number; y: number }) {
 	const link = webAddress(text);
-	const clip = clipIn(data.getData('text/html')) ?? (link ? null : textClip(text));
-	const image = clip || link ? undefined : [...data.files].find(isImage);
-	if (!clip && !link && !image) return;
-	e.preventDefault();
+	const clip = clipIn(html) ?? (link ? null : textClip(text));
+	const image = clip || link ? undefined : files.find(isImage);
 	if (clip) paste(clip, at);
 	else if (link) void linkClip(link, at).then((read) => read && paste(read, at));
 	else if (image) void addImages([{ name: pastedName(image), blob: image }], at);
+	return !!(clip || link || image);
 }
 
 /** Pastes a clip centered on a world point, its corner on the grid when snapping is on, as one undo

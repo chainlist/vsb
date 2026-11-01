@@ -43,6 +43,7 @@
 		onblur={done}
 		onpointerdown={stop}
 		ondblclick={stop}
+		oncontextmenu={stop}
 	/>
 </form>
 
