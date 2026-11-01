@@ -77,10 +77,10 @@
 	--edge-dim: color-mix(in srgb, var(--ink-soft) calc(var(--dim) * 100%), var(--paper));
 	--thread-dim: color-mix(in srgb, var(--thread) calc(var(--dim) * 100%), var(--paper));
 	--fade: 200ms;
-	/* A thread's pins are brass thumbtacks, the same in every theme: their brass, the dark of their
+	/* A thread's pins are steel thumbtacks, the same in every theme: their steel, the dark of their
 	   edges and the light they catch. Dimmed, they fade into the paper as an edge does. */
-	--pin: #cfa64f;
-	--pin-edge: #6b4c16;
+	--pin: #b8bec6;
+	--pin-edge: #3c434c;
 	--pin-dim: color-mix(in srgb, var(--pin) calc(var(--dim) * 100%), var(--paper));
 	--glint: rgb(255 255 255 / 0.85);
 }

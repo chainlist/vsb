@@ -40,7 +40,7 @@
 		<path class="hit" d={route.path} {onpointerdown} {ondblclick} {oncontextmenu} />
 	{/if}
 	{#if shape === 'thread'}
-		<!-- Brass lit from the top left: light on the tack, its rim in shade, its shadow soft. -->
+		<!-- Steel lit from the top left: light on the tack, its rim in shade, its shadow soft. -->
 		<defs>
 			<radialGradient id="{id}-light" cx="36%" cy="30%" r="62%">
 				<stop offset="0" style="stop-color: var(--glint)" />
@@ -73,7 +73,7 @@
 	{#each route.arrows as points (points)}
 		<polygon {points} />
 	{/each}
-	<!-- A brass thumbtack over each end of the thread: a disc with a ring and a dimple at its middle. -->
+	<!-- A steel thumbtack over each end of the thread: a disc with a ring and a dimple at its middle. -->
 	{#each route.pins as pin, i (i)}
 		<g transform="translate({pin.x} {pin.y})">
 			<circle class="tack" r={PIN} />
@@ -143,7 +143,7 @@
 		stroke: var(--thread-shadow);
 	}
 
-	/* Brass whatever the thread's color, selected or not. */
+	/* Steel whatever the thread's color, selected or not. */
 	.tack {
 		fill: var(--pin);
 		transition: fill var(--fade);
