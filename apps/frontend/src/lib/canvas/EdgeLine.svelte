@@ -27,8 +27,10 @@
 		oncontextmenu?: (e: MouseEvent) => void;
 	} = $props();
 
-	/** The radius of a thread's pin head, in world units. */
-	const PIN = 6;
+	/** The radius of a thread's thumbtack, in world units. */
+	const PIN = 6.5;
+	/** Names this line's gradients apart from every other line's. */
+	const id = $props.id();
 </script>
 
 <!-- A 1px SVG at the world origin, drawing past its edges: at zero size it would draw nothing. -->
@@ -38,11 +40,28 @@
 		<path class="hit" d={route.path} {onpointerdown} {ondblclick} {oncontextmenu} />
 	{/if}
 	{#if shape === 'thread'}
-		<!-- A thread stands off the board on its pins: their shadows fall a little below them. -->
+		<!-- Brass lit from the top left: light on the tack, its rim in shade, its shadow soft. -->
+		<defs>
+			<radialGradient id="{id}-light" cx="36%" cy="30%" r="62%">
+				<stop offset="0" style="stop-color: var(--glint)" />
+				<stop offset="0.22" style="stop-color: var(--glint); stop-opacity: 0.4" />
+				<stop offset="0.55" style="stop-color: var(--glint); stop-opacity: 0" />
+			</radialGradient>
+			<radialGradient id="{id}-shade" cx="42%" cy="38%" r="62%">
+				<stop offset="0.55" style="stop-color: var(--pin-edge); stop-opacity: 0" />
+				<stop offset="1" style="stop-color: var(--pin-edge); stop-opacity: 0.6" />
+			</radialGradient>
+			<radialGradient id="{id}-shadow">
+				<stop offset="0" style="stop-color: var(--thread-shadow)" />
+				<stop offset="0.55" style="stop-color: var(--thread-shadow); stop-opacity: 0.65" />
+				<stop offset="1" style="stop-color: var(--thread-shadow); stop-opacity: 0" />
+			</radialGradient>
+		</defs>
+		<!-- A thread stands off the board between its tacks: its shadow falls a little below it. -->
 		<g class="shadow">
-			<path class="line" d={route.path} />
+			<path class="line" d={route.path} transform="translate(1.5 3)" />
 			{#each route.pins as pin, i (i)}
-				<circle cx={pin.x} cy={pin.y} r={PIN} />
+				<ellipse cx={pin.x + 1} cy={pin.y + 1.6} rx={PIN * 1.2} ry={PIN * 1.1} fill="url(#{id}-shadow)" />
 			{/each}
 		</g>
 	{/if}
@@ -54,10 +73,16 @@
 	{#each route.arrows as points (points)}
 		<polygon {points} />
 	{/each}
-	<!-- Each pin's head over the thread's end, with a glint of light on it. -->
+	<!-- A brass thumbtack over each end of the thread: a disc with a ring and a dimple at its middle. -->
 	{#each route.pins as pin, i (i)}
-		<circle class="pin" cx={pin.x} cy={pin.y} r={PIN} />
-		<circle class="glint" cx={pin.x - PIN / 3} cy={pin.y - PIN / 3} r={PIN / 3} />
+		<g transform="translate({pin.x} {pin.y})">
+			<circle class="tack" r={PIN} />
+			<circle class="lit" r={PIN} fill="url(#{id}-shade)" />
+			<circle class="lit" r={PIN} fill="url(#{id}-light)" />
+			<circle class="ring" r={PIN * 0.62} />
+			<circle class="ring" r={PIN - 0.25} />
+			<circle class="dimple" r={PIN / 6} />
+		</g>
 	{/each}
 </svg>
 
@@ -109,31 +134,45 @@
 		stroke-width: calc(2.5 * var(--px));
 	}
 
-	/* A little below the thread. Its path is a .line too, so it takes the thread's dashes or dots. */
 	.shadow {
-		transform: translate(1.5px, 3px);
 		transition: opacity var(--fade);
 	}
 
+	/* Its path is a .line too, so it takes the thread's dashes or dots. */
 	.shadow .line {
 		stroke: var(--thread-shadow);
 	}
 
-	.shadow circle {
-		fill: var(--thread-shadow);
+	/* Brass whatever the thread's color, selected or not. */
+	.tack {
+		fill: var(--pin);
+		transition: fill var(--fade);
 	}
 
-	.pin {
-		fill: currentColor;
+	.ring {
+		fill: none;
+		stroke: var(--pin-edge);
+		stroke-opacity: 0.6;
+		stroke-width: 0.5;
 	}
 
-	.glint {
-		fill: var(--glint);
+	.dimple {
+		fill: var(--pin-edge);
+		fill-opacity: 0.6;
+	}
+
+	.lit,
+	.ring,
+	.dimple {
 		transition: opacity var(--fade);
 	}
 
-	/* Dimmed, the pins lose their light and the thread its shadow, as the rest fades into the paper. */
-	.dimmed :is(.shadow, .glint) {
+	.dimmed .tack {
+		fill: var(--pin-dim);
+	}
+
+	/* Dimmed, the tacks lose their light and the thread its shadow, as the rest fades into the paper. */
+	.dimmed :is(.shadow, .lit, .ring, .dimple) {
 		opacity: var(--dim);
 	}
 

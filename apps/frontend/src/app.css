@@ -77,8 +77,12 @@
 	--edge-dim: color-mix(in srgb, var(--ink-soft) calc(var(--dim) * 100%), var(--paper));
 	--thread-dim: color-mix(in srgb, var(--thread) calc(var(--dim) * 100%), var(--paper));
 	--fade: 200ms;
-	/* Light caught on a thread's pin head, in every theme. */
-	--glint: rgb(255 255 255 / 0.55);
+	/* A thread's pins are brass thumbtacks, the same in every theme: their brass, the dark of their
+	   edges and the light they catch. Dimmed, they fade into the paper as an edge does. */
+	--pin: #cfa64f;
+	--pin-edge: #6b4c16;
+	--pin-dim: color-mix(in srgb, var(--pin) calc(var(--dim) * 100%), var(--paper));
+	--glint: rgb(255 255 255 / 0.85);
 }
 
 /* No grain on a theme's paper unless the theme lays one: a preview drawn in another theme would
