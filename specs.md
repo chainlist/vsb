@@ -125,7 +125,7 @@ apps/frontend/src/routes/
 - **Repeated UI is one component.** For example, the Unplaced tray and search results both list notes, so they share one note list component; the tray and search share one panel shell. Every list beside the canvas pages through one helper.
 - **Design tokens:** every color, font, radius and shadow comes from a theme's tokens (see [Appearance](#appearance)). Components never hard-code them.
 - **shadcn-svelte components** live in `#lib/components/ui`, copied from its registry. `app.css` maps their colors, radii and shadows onto the theme's tokens, so they follow the vault's theme. Tailwind comes without its preflight reset, which the rest of the app is not styled for, and without `dark:` variants: a theme, not the OS, decides whether it is dark.
-- **Icons are Lucide icons**, drawn in the color of their text, at a size set once in the root layout. An icon Lucide lacks (the angled edge shape) is drawn through Lucide's own `Icon` component, so it matches.
+- **Icons are Lucide icons**, drawn in the color of their text, at a size set once in the root layout. An icon Lucide lacks (the angled and thread edge shapes) is drawn through Lucide's own `Icon` component, so it matches.
   - A universal symbol in a tight bar stands alone, with a tooltip and a screen-reader label: close (cross), delete (trash).
   - The [rail](#canvas-chrome), the zoom controls, the pen bar, the selection bar and the window's buttons show their icons alone too: a tooltip gives each one's name and shortcut, and a label names it for screen readers.
   - Everywhere else the icon sits beside its text.
@@ -251,8 +251,8 @@ Competitor scan
 
 - `from`, `to`: card ULIDs.
 - `label`: optional.
-- `shape`: `curved` (default), `straight`, `angled`.
-- `arrow`: where arrowheads are drawn: `to` (default), `both`, `none`.
+- `shape`: `curved` (default), `straight`, `angled`, `thread`.
+- `arrow`: where arrowheads are drawn: `to` (default), `both`, `none`. A thread draws none, whatever its `arrow`, which is kept for when it takes another shape.
 - `stroke`: how the line is drawn: `solid` (default), `dashed`, `dotted`, `double` (two parallel lines).
 - Fields at their default value are left out of the file.
 
@@ -393,6 +393,11 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - Curved and angled lines leave each card square to the side that faces the other card, from the middle of that side. An angled line bends at right angles halfway across.
   - When that line would run through another card on the canvas, the edge takes the other pair of sides (top and bottom instead of left and right, or the reverse) if that line misses every card; when neither does, it keeps the first. Only cards count: crossing another edge or a zone's frame is fine. A line moves as soon as a card is dragged into or out of its way.
   - A straight line runs along the line between the two cards' centers, from border to border, whatever lies between.
+  - **A thread** is red string pinned between the two cards, in every theme: it hangs from a pin at the middle of each card's top, 8 world units in, so the pin holds the card. Between them it sags as a string would, along a parabola under the line between the pins, its middle as far below that line as a tenth of the pins' distance; one pin straight above the other, it hangs straight. It runs over whatever lies between.
+    - It is drawn in front of the cards, its label too, where every other edge runs behind them. Thicker than a line (2.5 world units), in the theme's thread color, with a shadow a little below it and below each pin, as string standing off a board on its pins. Each pin is a round head in the thread's color with a glint of light.
+    - It has no arrowheads: the selection bar and Settings > Canvas leave out the arrowheads' select while the shape shown is Thread. Its line style still applies: dashed or dotted string.
+    - Selected it takes the accent, as any edge; dimmed it fades into the paper, and its shadow and glints fade with it. Being drawn with Mod+drag, it hangs from the pointer.
+    - For Tab and for making room it leaves and reaches its cards the way a curved line between them would.
 - Pressing the line or its label selects the edge. Double-clicking it, or Enter while it is selected, edits the label in place at the curve's middle. New edges have no label; clearing a label removes it from the file.
 - Deleting a card deletes its edges. An edge is drawn whenever it crosses the screen, even with both its cards off-screen.
 - **Inserting a card on an edge.** A lone selected edge shows a + on its middle, or just under its label when it has one, so the label stays readable. Clicking it places an empty card, the size of a card placed by double-click, between the edge's two cards, in the innermost zone at the edge's middle, and opens it for editing, as a placed card. The edge is split in two, from its first card to the new one and from the new one to its second: both keep its shape, arrowheads and line, and the first keeps its label.
@@ -703,7 +708,7 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
 ### Bundles
 
 - Zoomed out, each end of an edge is drawn at the outermost zone holding its card (its frame, or its marker when it is drawn as one) or, for a loose card, at its cell's marker. The edges between two ends are drawn as one line, a bundle. An edge with both cards at the same end lies inside it and is not drawn.
-- A bundle is drawn curved and solid, whatever its edges' styles and the style for new edges, from the middle of the sides facing each other. Its line and arrowheads keep their size on screen. It has an arrowhead at each end that at least one of its edges points to: edges both ways give heads at both ends, edges without heads add none.
+- A bundle is drawn curved and solid, whatever its edges' styles and the style for new edges, from the middle of the sides facing each other. Its line and arrowheads keep their size on screen. It has an arrowhead at each end that at least one of its edges points to: edges both ways give heads at both ends, edges without heads add none, and neither do threads.
 - The count sits on the line, like an edge's label, when it is 2 or more.
 - Clicking the line or its count frames both ends, zoomed in at least until their edges show. Dragging from it pans. While a collapsed zone is dragged, its bundles follow it.
 - A bundle is found through its edges' bounds: it is drawn when one of its edges crosses the queried area.
@@ -716,20 +721,22 @@ CREATE TABLE ui_state (k TEXT PRIMARY KEY, v TEXT);
   - **Canvas:** snapping to the grid and the style for new edges, both the vault's, and what the mouse wheel does on this device.
   - **Keyboard:** every key, read-only, grouped by where it works: the canvas, editing, placing a linked card, drawing, panels and settings, the zone list, the builder. Each group lists its bindings' own tables, then the keys a control takes itself (Enter in a field, Escape in a dialog), and a last group lists the mouse and trackpad: dragging, the wheel, Shift+wheel, Ctrl+wheel and a pinch, double-clicking, Shift+click, Shift+drag, Mod+drag and Alt while dragging.
   - **Vault:** the vault's name and where it lives, in its backend's words. On the desktop, its folder's path and Show in folder, which opens the folder around it in Explorer or Finder with the vault selected (the opener plugin's Rust function, called by a command of the app's own; the plugin is not registered, so its commands stay out of the page's reach). In the browser, that it is kept in this browser and whether the browser agreed to keep it (see [Persistence](#persistence)).
-- **Five themes:** Studio, the default, Engineering pad, and three dark ones, Orbit, Cairn and Outer Wilds.
+- **Six themes:** Studio, the default, Engineering pad, Investigation board, and three dark ones, Orbit, Cairn and Outer Wilds.
   - Studio: a cool gray canvas dotted at the grid crossings, white cards with a hairline edge, graphite text and a petrol accent. Instrument Sans for notes and controls; zone names are set narrower.
   - Engineering pad: sage graph paper, index cards with a red rule under the title, fountain-pen blue. Literata for notes, IBM Plex Sans for controls.
   - Orbit (futuristic): a deep navy canvas with faint major lines and brighter nodes where they cross, cards edged in light, an ice-blue accent. Saira for notes and controls; zone names are set narrower.
   - Cairn (eerie, Celtic): a peat-moss canvas with a faint speckle, slate cards with a dim gold rule under the title, fog-pale text and a bog-gold accent. Alegreya for notes, Alegreya Sans for controls.
   - Outer Wilds (the game's ship log): a deep-space indigo canvas with stars at the grid crossings, indigo cards with a Nomai-blue rule under the title, warm cream text and a campfire-orange accent. Fraunces for notes, Space Grotesk for controls.
+  - Investigation board: a tan cork board with a fine grain of darker and lighter granules and no marks, cream sheets casting a pinned sheet's shadow, red thread and a ballpoint-blue accent, so a selected thread still shows. Courier Prime, a typewriter face, for notes; IBM Plex Sans for controls. Threads are a shape like any other: picking this theme leaves the style for new edges as it was.
 - **A theme is a set of design tokens:** CSS custom properties, picked by the `data-theme` attribute on the root element. A new theme, or a dark variant, is a new set of values with no component changes.
+  - Every theme has a thread color, a red that reads on its paper, and a shadow for threads.
   - The tokens also set whether the theme is light or dark (for scrollbars and form controls), the wash behind a dialog, how strongly zones and cards are washed (more on dark paper, so each highlighter still reads as its color), and an x-height for fonts that run small, so text reads the same size in every theme.
   - Fonts are bundled with the app; nothing loads from the network.
 - **The theme belongs to the vault.** Picking one in Appearance applies it at once and writes it to `vault.json`, so the vault looks the same on every device that opens it. The default is left out of the file; a theme this build does not know shows as the default.
 - **The paper belongs to the vault too:** how its canvas is marked, picked in Appearance under the themes from a sample of each in the vault's theme, applied at once and written to `vault.json` (`paper`).
   - **Dots** at the grid's crossings, **Grid** (ruled lines), **Crosses** (a small cross at each crossing) or **Empty** (the paper alone). Major marks, every fifth square, are stronger than minor ones, which fade out as the squares shrink, as the grid steps up while zooming out. A cross's arms shorten on small squares, so crosses never meet.
-  - Until one is picked, each theme brings its own: Studio, Cairn and Outer Wilds dots, Engineering pad and Orbit a grid (Orbit's with nodes where its major lines cross, as Outer Wilds' grid has). Once picked, it stays the vault's whatever the theme, and the themes' previews show it.
-  - A theme gives each mark its colors; crosses take the dots'.
+  - Until one is picked, each theme brings its own: Studio, Cairn and Outer Wilds dots, Investigation board none, Engineering pad and Orbit a grid (Orbit's with nodes where its major lines cross, as Outer Wilds' grid has). Once picked, it stays the vault's whatever the theme, and the themes' previews show it.
+  - A theme gives each mark its colors; crosses take the dots'. A theme may also lay a grain under the marks (Investigation board's cork), which moves with the canvas but keeps its size on screen; a theme without one has none, even previewed inside a vault whose theme has one.
 - **Screens outside a vault** (the vault picker, errors) use the default theme and its paper.
 - **The interface size belongs to the device:** 100% (the default), 115% or 130%, picked in Appearance, applied at once and kept in the app-data folder's `device.json`, the same in every vault and never synced. The default is left out of the file.
   - It scales the chrome: the vault card, the rail, the zoom controls, the zone list, the tray and search's sheet, the selection bar, the pen bar, the batch dialog, menus and tooltips, the settings dialog and the vault picker.
