@@ -137,12 +137,13 @@ apps/frontend/src/routes/
 | Concept | What it is | Stored in |
 |---|---|---|
 | Note | Markdown content | `notes/**/*.md` |
-| Card | A placement on the canvas: position, size, alignment, and optionally a note, an image or a link | `.canvas/cards/<card-id>.json` |
+| Card | A placement on the canvas: its kind, position, size, alignment, and optionally a note, an image or a link | `.canvas/cards/<card-id>.json` |
 | Zone | A user-defined area that groups cards and other zones | `.canvas/zones/<zone-id>.json` |
 | Edge | A connection between two cards | `.canvas/edges/<edge-id>.json` |
 | Drawing | Strokes of the pen grouped as one item, in a zone or on the canvas | `.canvas/drawings/<drawing-id>.json` |
 
 - A card can have no note: an empty card, used to preplace structure.
+- A card shows its note on an index card, or on a sticky note: a [post-it](#post-its).
 - A card can show an image file of the vault in place of a note: an [image card](#images).
 - A card can show a web page in place of a note, by its address: a [link card](#links).
 - A note can have no card: it appears in the Unplaced tray.
@@ -234,14 +235,15 @@ Competitor scan
 { "note": "01JC...", "zone": null, "x": 120, "y": 40, "w": 200, "h": 80, "halign": "center", "valign": "center", "color": "#f5d76e" }
 ```
 
+- `kind`: what the card shows: `postit`, its note on a [post-it](#post-its); `image`, a file (`file`); or `link`, a web page (`link`). Left out for an index card, which shows its note. A file written before cards had a kind is told by what it shows, an image card by its `file` and a link card by its `link`, and gains its kind the next time it is written.
 - `note`: note ULID, or `null` for an empty card.
 - `zone`: zone ULID, or `null` for a card directly on the canvas. The canvas acts as an invisible zone at (0, 0), so both cases share one code path.
 - `x`, `y`: relative to the card's zone.
 - `halign`: `left` (default), `center`, `right`.
 - `valign`: `top` (default), `center`, `bottom`.
 - `color`: one of the highlighters zones take (see [Color](#color)), or left out for none.
-- `file`: the vault path of a file under `attachments/` the card shows in place of a note, `attachments/images/Diagram.png`; left out for none. A card shows a note or a file, never both, so `note` is `null` beside it.
-- `link`: the address of a web page the card shows in place of a note, `https://example.com/a`, http or https only; left out for none. Like `file`, it stands in for a note: `note` is `null` beside it.
+- `file`: the vault path of a file under `attachments/` an image card shows in place of a note, `attachments/images/Diagram.png`; left out for none. A card shows a note or a file, never both, so `note` is `null` beside it.
+- `link`: the address of a web page a link card shows in place of a note, `https://example.com/a`, http or https only; left out for none. Like `file`, it stands in for a note: `note` is `null` beside it.
 - `preview`: what that page said of itself when it was pasted (see [Links](#links)), `{ "title": "...", "description": "...", "image": "attachments/links/github.com.jpg" }`, each part left out when the page gave none, and the whole of it left out when it gave nothing or was not read.
 - Fields at their default value are left out of the file.
 
@@ -341,7 +343,7 @@ Competitor scan
 - A card can take a color, as a zone can: one of the same seven highlighters, from one list shared by both, kept in its card file and the same in every theme. Without one it stays on the theme's plain stock.
 - The whole card takes a light wash of its color over its stock, as a zone is washed over the paper. Each theme sets how strong the wash is (stronger on dark themes), so each color tells apart from the others and from plain stock while the text stays as readable as on plain stock.
 - The card stays tinted while it is edited. A dimmed card fades into its tinted stock. An unresolved card keeps its "Note not found" look whatever its color.
-- It is picked in the [selection bar](#canvas-chrome), for the selected cards and zones together. A card placed, inserted on an edge or made by a batch starts with no color.
+- It is picked in the [selection bar](#canvas-chrome), for the selected cards and zones together. A card placed, inserted on an edge or made by a batch starts with no color; a [post-it](#post-its) starts yellow.
 
 ### Deleting
 
@@ -358,12 +360,20 @@ Notes with no card (never placed, created outside the app, or whose cards were a
 
 The tray is also where one is deleted for good. See [Unplaced tray and search](#unplaced-tray-and-search).
 
+### Post-its
+
+- **A post-it is a note card drawn as a sticky note:** a square of colored paper written on by hand. Its note is a note like any other, in `notes/`, edited, saved, found by search and left in the Unplaced tray as an index card's is. Only its card differs, by its kind: `"kind": "postit"` in its card file.
+- **Adding one.** Add post-it here, in the paper's [right-click menu](#right-click-menus), places one centered where the menu was opened; the rail's Post-it button places one in the middle of the canvas. It is 200 by 200, joins the innermost zone under its center as a placed card does, and opens for typing. Left empty, it stays an empty post-it, as an empty card stays one.
+- **Its look,** the same in every theme. Its paper is its color at full strength rather than a light wash, yellow when it is added, any of the highlighters after (see [Color](#color)), and on it the text is in dark ink whatever the theme. With no color it is drawn on the theme's plain stock, in the theme's ink. It is written in Caveat, a handwriting face bundled with the app, at 22 pixels, never scaled by a theme's x-height; its title in bold, with no rule under it. Its corners are barely rounded, and a shadow under its bottom edge lifts it off the paper, kept while it is selected.
+- **Each leans its own way,** from half a degree to two, left or right, told by its ID: it leans the same each time it is drawn and on every device, and a pasted copy leans its own way. Its file keeps no angle. Its selection outline and handles lean with it; it moves, resizes and meets its edges as the upright box it stands in, which the lean shifts by a few world units at most.
+- **Otherwise it is a card:** it moves, resizes freely, aligns its text, joins zones, takes edges, and copies and pastes as a post-it. Tab after it adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty post-it.
+
 ### Images
 
 - **An image card shows an image file of the vault** in place of a note: PNG, JPEG, GIF, WebP, BMP, AVIF or SVG. The image fills the card, which keeps its shape: resized from a side or a corner, the side pulled further leads and the other follows, never below a card's smallest size. It has no title and no text: Enter and a double-click open nothing, and the selection bar's alignment grid leaves it out.
 - **Adding one.** Image files dragged in from the system and dropped on the canvas, or an image pasted with Mod+V (see [Copying and pasting](#copying-and-pasting)), become image cards centered where they land, in a row 40 world units apart when several are dropped together, their corners on the grid when snapping is on. Each is a world unit per pixel, shrunk to 480 on its longest side, grown to a card's smallest size when smaller, and joins the innermost zone under its center, as a placed card does. They are one undo step, and are selected.
 - **The file** is written first, under `attachments/images/`, named after the dropped file as a note is after its title: characters invalid on Windows left out, a clash numbered (`Diagram 2.png`). A pasted image has no name: it is named after the time it was pasted, `Pasted image 20261030130732.png`. Deleting the card, or undoing its adding, leaves the file, as it leaves a note. Several cards may show one file: a copied image card shows the same file.
-- **A missing file,** moved, renamed or deleted outside the app, or not synced yet, shows as an unresolved card does: "Image not found", with Clear, which turns the card into an empty one. It is looked for again when its card next appears.
+- **A missing file,** moved, renamed or deleted outside the app, or not synced yet, shows as an unresolved card does: "Image not found", with Clear, which turns the card into an empty index card. It is looked for again when its card next appears.
 - **Read once while the vault is open:** each file comes from the backend once and is shown through an object URL; opening another vault lets them go. The backend reads files only under `attachments/`: a card file naming anything else shows as missing, and a clip naming anything else pastes an empty card.
 - **Dropping files** needs the window to hand them to the page: Tauri's own handling of dropped files is off (`dragDropEnabled: false`), so a drop reaches the page as in a browser. Any other file, dropped anywhere, is refused, so it never opens in place of the app.
 
@@ -439,7 +449,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
 ## Copying and pasting
 
 - **Copy (Mod+C)** puts the selected cards, zones and drawings on the system clipboard, with everything inside the selected zones at any depth, and the edges whose two cards are both copied. A selected edge comes only with its cards: edges alone copy nothing, and neither does an empty selection, which leaves the clipboard as it was.
-- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, or a [link card](#links)'s address, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's text rather than its note. Notes travel as their text, so a clip pastes into any vault, in either build. An [image card](#images) names its file, which another vault may not have: pasted there, it shows "Image not found".
+- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, or a [link card](#links)'s address, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's kind, and its text rather than its note. A clip from before cards had a kind is told by what its cards show, as a card file is; an image or link card left with nothing it may show pastes as an empty index card, and no card but an index card or a post-it makes a note. Notes travel as their text, so a clip pastes into any vault, in either build. An [image card](#images) names its file, which another vault may not have: pasted there, it shows "Image not found".
 - **Paste (Mod+V)** lands centered under the pointer, or on the middle of the canvas when the pointer is elsewhere, as the builder's cards do; with snapping on, the corner of what it pastes lands on the grid.
   - **Copied items paste as new ones:** each with a new ID, each card with text a new note holding it, named after its title (`Idea 2.md` beside `Idea.md`). Until V3 a note has one card, so a pasted card never shows the note it was copied from. A card whose note was missing pastes as an empty card.
   - **Text copied from another app** becomes one card holding it, as a card placed by double-click: the same size and alignment.
@@ -459,7 +469,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - Copy and Duplicate, while cards, zones or drawings are selected.
   - Zone around them, Arrange and Builder, when the selection bar shows them.
   - Delete.
-- **Anywhere else, the menu is the paper's,** for the spot clicked: a zone's body is paper, and so are a cluster and a bundle zoomed out. It holds Add card here, as a double-click there does (inside the zone under it); Paste here (see [Copying and pasting](#copying-and-pasting)); Select all on screen, as Mod+A; and Fit to content, as Mod+1. The selection stays as it was.
+- **Anywhere else, the menu is the paper's,** for the spot clicked: a zone's body is paper, and so are a cluster and a bundle zoomed out. It holds Add card here, as a double-click there does (inside the zone under it); Add post-it here, the same for a [post-it](#post-its); Paste here (see [Copying and pasting](#copying-and-pasting)); Select all on screen, as Mod+A; and Fit to content, as Mod+1. The selection stays as it was.
 - **Paste here reads the clipboard,** as a menu has no paste event: the desktop grants its window WebView2's clipboard-read permission, so it never asks; a browser may ask first. Items copied from the app keep their clip through the read.
 - **Choosing** runs the action and closes the menu, leaving the focus where the action put it, in a card opened for editing say. Escape closes it, and its keys never reach the canvas, as in the selection bar's menus. A right-click elsewhere while it is open moves it there, for what was right-clicked.
 - **No menu** on the selection bar, an edge's +, or Tab's picker, nor while the pen or an eraser is in hand: a right-click there does nothing. While a card, a zone's name or an edge's label is typed in, the right-click opens the system's own menu: cut, copy, paste, spelling.
@@ -472,7 +482,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - A band along the window's top, as tall as the buttons, moves the window, and a double-click there maximizes or restores it, as a title bar does. It is invisible until the pointer is in it, when a faint band shows. It lies over the canvas but under the vault card, the panels and dialogs: a panel's header moves the window from its empty space instead, and the selection bar stays below the band. While the window is not maximized, Windows resizes it from the band's top 4 pixels and from its other edges.
   - The browser build has neither: the browser's window has its own.
 - **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings, which shows its key, Mod+, (Ctrl+, or Cmd+, on macOS).
-- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B) and [Pen (P)](#drawings). The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the Pen button while pen mode is on. The panels stay routes, reached through links.
+- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B), [Pen (P)](#drawings) and [Post-it](#post-its), which places one in the middle of the canvas. The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the Pen button while pen mode is on. The panels stay routes, reached through links.
 - **The pen bar,** at the bottom center while [pen mode](#drawings) is on: the tool in hand, the pen's color and its width.
 - **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
@@ -605,6 +615,7 @@ CREATE INDEX zones_parent ON zones(parent);
 CREATE TABLE cards (
   key       INTEGER PRIMARY KEY,      -- shared with card_bounds
   id        TEXT UNIQUE NOT NULL,
+  kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, image or link
   note      TEXT,                     -- NULL = empty card
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
@@ -779,7 +790,7 @@ The web build runs the same app in a browser, without Tauri: the [platform layer
   - **A bundle counts all its edges.** On the desktop a bundle's count and arrowheads come from those of its edges whose own box meets the queried area, so they change as the window moves; in the browser they come from all the edges between its two ends, as [Bundles](#bundles) describes them. A bundle is found when the box around all its edges meets the area: on rare layouts one more than on the desktop, never one fewer.
   - **Search.** A word index of its own: for each word, folded (case and accents left out), the notes holding it and those holding it in their title, split in sixteen shards by note, so a save rewrites small records and a word typed reads a few. Every word typed must start a word of the note, as with FTS5. Best first means: a title word counts thrice, every other word starting as typed once; the matches are the desktop's, their order is not bm25's.
   - **Zones in memory.** While a vault is open its zones are held in memory: a vault has few, and the desktop walks them all on every query too. Each zone record keeps the cards it holds directly, each card's box and color, for the zone list's counts, framing and the [previews](#previews), so a zoomed-out query never reads the cards. A vault from before (database version 1, which kept a count and a box) gets them when it is next opened, one from before drawings (version 2) gets their store, and one from before strokes had their own color (version 3) gets its drawings in the shape strokes have now.
-  - **Attachments** are kept by vault path in a store of their own, each with the bytes its file would hold; a clash of names is found ignoring case. A vault from before images (version 4) gets the store when it is next opened.
+  - **Attachments** are kept by vault path in a store of their own, each with the bytes its file would hold; a clash of names is found ignoring case. A vault from before images (version 4) gets the store when it is next opened, and one from before cards had a kind (version 5) gets each image and link card's kind.
 - **One command at a time**, as the desktop's lock runs them, and each edit is one transaction: it lands whole or not at all.
 
 ### Vaults by name
