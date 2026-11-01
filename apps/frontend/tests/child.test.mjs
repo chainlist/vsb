@@ -2,7 +2,7 @@
 // TypeScript source, with `route` giving each edge's sides as the canvas draws them.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { children, firstSpot, lane, slide, ways, WAYS } from '../src/lib/canvas/child.ts';
+import { children, firstSpot, lane, slide, spotAt, ways, WAYS } from '../src/lib/canvas/child.ts';
 import { route } from '../src/lib/canvas/route.ts';
 
 const SIZE = { w: 240, h: 140 };
@@ -97,4 +97,45 @@ test('a straight edge counts the side it really arrives on', () => {
 	const straight = link(wide, tall, [wide, tall], { shape: 'straight', arrow: 'to' });
 	assert.deepEqual([straight.out, straight.into], [{ x: 0, y: 1 }, { x: 1, y: 0 }]);
 	assert.deepEqual(ways('tall', [straight]), [{ x: 1, y: 0 }]);
+});
+
+/** Where the card added by releasing an edge drawn from `from` at `p` on the paper lands, the side
+ * picked as the canvas picks it. */
+const dropped = (from, p, grid = 0) => spotAt(p, route(from, { ...p, w: 0, h: 0 }, { shape: 'curved', arrow: 'none' }).into, SIZE, grid);
+/** Where a route's line ends, as "x,y". */
+const tip = (r) => r.path.split(' ').at(-1);
+/** Whether two boxes overlap. */
+const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+test('released on the paper, the new card puts the middle of its side facing the parent on the pointer', () => {
+	const parent = card('parent', 0, 0);
+	const cases = [
+		[{ x: 500, y: 100 }, '500,30', { x: 1, y: 0 }],
+		[{ x: 150, y: 400 }, '30,400', { x: 0, y: 1 }],
+		[{ x: -200, y: 50 }, '-440,-20', { x: -1, y: 0 }],
+		[{ x: 100, y: -300 }, '-20,-440', { x: 0, y: -1 }]
+	];
+	for (const [p, expected, into] of cases) {
+		const placed = dropped(parent, p);
+		assert.equal(at(placed), expected);
+		const r = route(parent, placed, { shape: 'curved', arrow: 'none' });
+		assert.deepEqual(r.into, into, 'the edge arrives on the side that faces the parent');
+		assert.equal(tip(r), `${p.x},${p.y}`, 'and ends where it was let go');
+	}
+});
+
+test('released past a corner, the new card takes the side the line was heading for and clears the parent', () => {
+	const parent = card('parent', 0, 0);
+	const placed = dropped(parent, { x: 260, y: 160 });
+	assert.equal(at(placed), '140,160', 'below, its top on the pointer');
+	assert.ok(!overlaps(parent, placed));
+	assert.equal(tip(route(parent, placed, { shape: 'curved', arrow: 'none' })), '260,160');
+});
+
+test('on the grid, the new card lands on a crossing, never nearer the parent', () => {
+	const parent = card('parent', 8, 0);
+	assert.equal(at(dropped(parent, { x: 249, y: 93 }, 20)), '260,20', 'right of it, rounded on along the way');
+	assert.ok(!overlaps(parent, dropped(parent, { x: 249, y: 93 }, 20)));
+	assert.equal(at(dropped(parent, { x: -7, y: 50 }, 20)), '-260,-20', 'left of it, rounded on leftward');
+	assert.equal(at(dropped(parent, { x: 249, y: 93 })), '249,23', 'without a grid, on whole world units');
 });

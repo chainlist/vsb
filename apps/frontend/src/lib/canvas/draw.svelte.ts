@@ -1,12 +1,16 @@
 // Drawing with Mod+drag, Mod being Ctrl (Cmd on macOS): from a card, an edge to the card it is
-// released on; anywhere else on the paper, a zone, which takes in the cards and zones fully inside
-// it. The draft follows the pointer; the item is created on release.
-import { createEdge, createZone, type CardView, type Frame } from '#lib/api.js';
+// released on, or to a new card where it is released on the paper; anywhere else on the paper, a
+// zone, which takes in the cards and zones fully inside it. The draft follows the pointer; the item
+// is created on release.
+import { createCard, createEdge, createZone, type CardView, type Frame } from '#lib/api.js';
 import { camera } from './camera.svelte.js';
+import { spotAt } from './child.js';
 import { track } from './drag.js';
-import { MIN } from './gestures.js';
+import { MIN, NEW_CARD } from './gestures.js';
+import { GRID, snap } from './grid.svelte.js';
 import { history } from './history.js';
 import { items } from './items.svelte.js';
+import { route } from './route.js';
 import { selection } from './selection.svelte.js';
 
 type Point = { x: number; y: number };
@@ -48,18 +52,21 @@ function drawZone(down: PointerEvent, from: Point) {
 	});
 }
 
-/** Releasing on the card it started from, or on the paper, connects nothing. */
+/** Releasing on the paper adds a card there; on the card it started from, it connects nothing. */
 function connect(down: PointerEvent, card: CardView, from: Point) {
 	let target: CardView | undefined;
+	let paper: Point | undefined;
 	track(down, {
 		move(dx, dy) {
 			const to = { x: from.x + dx / camera.zoom, y: from.y + dy / camera.zoom };
 			target = items.cardAt(to);
+			paper = target ? undefined : to;
 			if (target?.id === card.id) target = undefined;
 			draft.link = [card, target ?? { ...to, w: 0, h: 0 }];
 		},
 		end() {
 			draft.link = null;
+			if (paper) return addLinked(card, paper);
 			if (!target) return;
 			const to = target.id;
 			history.edit(async () => {
@@ -68,5 +75,23 @@ function connect(down: PointerEvent, card: CardView, from: Point) {
 				return undo;
 			});
 		}
+	});
+}
+
+/** Adds an empty card where an edge drawn from `card` was released on the paper, the middle of its
+ * side facing `card` on that point, connected from `card` and open for typing. It joins the zone
+ * under its center, as a placed card does. The card and its edge are one undo step. */
+function addLinked(card: CardView, at: Point) {
+	// The side a curved line reaches, whatever the style: a straight line drawn to a point always
+	// arrives across.
+	const { into } = route(card, { ...at, w: 0, h: 0 }, { shape: 'curved', arrow: 'none' });
+	const { x, y, w, h } = spotAt(at, into, NEW_CARD, snap.on ? GRID : 0);
+	history.edit(async () => {
+		const id = await createCard(x, y, w, h);
+		const { undo } = await createEdge(card.id, id);
+		camera.reveal({ minX: x, minY: y, maxX: x + w, maxY: y + h });
+		selection.only(id);
+		selection.editing = id;
+		return [{ kind: 'card', id, value: null }, ...undo];
 	});
 }

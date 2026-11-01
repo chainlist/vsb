@@ -1,5 +1,6 @@
 // Where Tab puts a card's next child: the way the card's edges already flow, then a free spot that
-// way, beside the children already there. Pure, so Node tests it without the app.
+// way, beside the children already there. Also where a child lands when an edge drawn from a card
+// is released on the paper. Pure, so Node tests it without the app.
 import type { EdgeView, Frame } from '#lib/api.js';
 import type { Direction } from './batch.js';
 import type { Route } from './route.js';
@@ -93,4 +94,14 @@ export function lane(spot: Frame, way: Point, gap: number) {
 		maxX: across ? spot.x + spot.w + gap : Number.MAX_VALUE,
 		maxY: across ? Number.MAX_VALUE : spot.y + spot.h + gap
 	};
+}
+
+/** Where a new child of `size` lands when an edge drawn from its parent is released at `p` on the
+ * paper, reaching `p` heading `into`: with the middle of the side the edge arrives on at `p`, so the
+ * line ends where it was let go. On a `grid` its corner lands on the grid, never nearer the parent. */
+export function spotAt(p: Point, into: Point, size: Size, grid = 0): Frame {
+	const unit = grid || 1;
+	// Rounded on along `into`, or to the nearest across it.
+	const on = (v: number, d: number) => (d > 0 ? Math.ceil : d < 0 ? Math.floor : Math.round)(v / unit) * unit;
+	return { x: on(p.x - (size.w * (1 - into.x)) / 2, into.x), y: on(p.y - (size.h * (1 - into.y)) / 2, into.y), ...size };
 }
