@@ -440,6 +440,20 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - **Then** the pasted items are selected, and framed as a batch's cards are when zoomed out, where they would be hidden, or when they land partly off-screen. The paste is one undo step; undoing it keeps the new notes, unplaced, as undoing a batch does.
   - **Only the browser's paste event reads the clipboard without asking,** so Mod+V on the canvas notes where to land and lets the key through, and the paste event that follows pastes. Typing in a card, a field or the builder, Mod+V pastes the text there, as usual.
 - **Duplicate (Mod+D)** copies the selection as Mod+C does, without the clipboard, and pastes it two graph-paper squares right and down of where it is, in one undo step. The copies are selected, so Mod+D again steps on.
+- **The paper's [right-click menu](#right-click-menus)** pastes too: Paste here lands what Mod+V would, centered where the menu was opened.
+
+## Right-click menus
+
+- **A right-click on the canvas opens a menu at the pointer:** shadcn-svelte's context menu, drawn at the interface size as the chrome's menus are. Each item shows its icon and its name, with its key or gesture at its far end. The browser's own menu never shows on the canvas.
+- **On an item, the menu is the selection's.** A right-click on a card, a zone's name (its handle, or its marker), an edge's line or label, a drawing's ink or a resize handle selects that item first, unless it is already selected: a right-click inside a larger selection keeps it. The menu lists what applies, as the selection bar does, in groups split by a line:
+  - Edit (a lone card with text), Rename (a lone zone) or Edit label (a lone edge), as Enter does; Add linked card (a lone card), as Tab; Open link (a lone [link card](#links)), as Ctrl+click.
+  - Copy and Duplicate, while cards, zones or drawings are selected.
+  - Zone around them, Arrange and Builder, when the selection bar shows them.
+  - Delete.
+- **Anywhere else, the menu is the paper's,** for the spot clicked: a zone's body is paper, and so are a cluster and a bundle zoomed out. It holds Add card here, as a double-click there does (inside the zone under it); Paste here (see [Copying and pasting](#copying-and-pasting)); Select all on screen, as Mod+A; and Fit to content, as Mod+1. The selection stays as it was.
+- **Paste here reads the clipboard,** as a menu has no paste event: the desktop grants its window WebView2's clipboard-read permission, so it never asks; a browser may ask first. Items copied from the app keep their clip through the read.
+- **Choosing** runs the action and closes the menu, leaving the focus where the action put it, in a card opened for editing say. Escape closes it, and its keys never reach the canvas, as in the selection bar's menus. A right-click elsewhere while it is open moves it there, for what was right-clicked.
+- **No menu** on the selection bar, an edge's +, or Tab's picker, nor while the pen or an eraser is in hand: a right-click there does nothing. While a card, a zone's name or an edge's label is typed in, the right-click opens the system's own menu: cut, copy, paste, spelling.
 
 ## Canvas chrome
 
