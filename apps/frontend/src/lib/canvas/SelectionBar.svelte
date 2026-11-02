@@ -3,9 +3,10 @@
 	import Network from '@lucide/svelte/icons/network';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Workflow from '@lucide/svelte/icons/workflow';
+	import type { MindmapView } from '#lib/api.js';
 	import Tip from '#lib/chrome/Tip.svelte';
 	import { keyName } from '#lib/keys.js';
-	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, showsNote, strokeSelected, zoneSelected } from './actions.js';
+	import { arrowSelected, colorSelected, deleteSelected, shapeSelected, showMindmap, showsNote, strokeSelected, zoneSelected } from './actions.js';
 	import { arrangeSelected } from './arrange.js';
 	import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 	import { selecting } from './boxSelect.svelte.js';
@@ -29,6 +30,11 @@
 	const zones = $derived(selection.zones);
 	const drawings = $derived(selection.drawings);
 	const zone = $derived(zones.length === 1 && selection.ids.length === 1);
+	/** A mindmap selected alone, its note found: it can show its map or its note's Markdown. */
+	const mindmap = $derived.by(() => {
+		const [card] = cards;
+		return selection.ids.length === 1 && card?.kind === 'mindmap' && (card.note === null || card.resolved) ? card : null;
+	});
 	// An edge counts by its middle, where its label is (its ends lie on its cards).
 	const mids = $derived(selection.edges.map((e) => items.routeOf(e).mid));
 	// In screen space, so the bar keeps its size at any zoom: above the top-left corner of the
@@ -52,6 +58,10 @@
 			stroke: shared(edges.map((e) => e.stroke))
 		};
 	});
+
+	function show(view: MindmapView) {
+		if (mindmap && mindmap.view !== view) void showMindmap(mindmap, view);
+	}
 </script>
 
 {#snippet swatch(value: string | null)}
@@ -73,6 +83,13 @@
 		oncontextmenu={(e) => e.preventDefault()}
 	>
 		<div class="bar index-card chrome">
+			<!-- Two buttons side by side, the one showing in the pen's color, as the rail's toggles are. -->
+			{#if mindmap}
+				<div class="modes" role="group" aria-label="Show as">
+					<button aria-pressed={mindmap.view === 'map'} onclick={() => show('map')}>Mindmap</button>
+					<button aria-pressed={mindmap.view === 'markdown'} onclick={() => show('markdown')}>Markdown</button>
+				</div>
+			{/if}
 			{#if texts.length}
 				<AlignGrid cards={texts} />
 			{/if}
@@ -157,5 +174,33 @@
 	.delete:hover {
 		background: var(--danger-paper);
 		color: var(--danger);
+	}
+
+	.modes {
+		display: flex;
+		gap: 2px;
+		padding: 2px;
+		border-radius: var(--radius-control);
+		box-shadow: inset 0 0 0 1px var(--border);
+		font: 500 11px var(--font-ui);
+	}
+
+	.modes button {
+		padding: 3px 9px;
+		border: none;
+		border-radius: calc(var(--radius-control) - 2px);
+		background: none;
+		color: var(--ink-soft);
+		cursor: pointer;
+	}
+
+	.modes button:hover {
+		background: var(--paper);
+		color: var(--ink);
+	}
+
+	.modes button[aria-pressed='true'] {
+		background: color-mix(in srgb, var(--pen) 14%, var(--card));
+		color: var(--pen);
 	}
 </style>
