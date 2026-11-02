@@ -1,4 +1,4 @@
-// Takes the site's screenshots, into src/lib/shots: builds a demo vault in the web build through
+// Takes the site's screenshots, into src/lib/shots: builds two demo vaults in the web build through
 // `#lib/api`, as the app would, then frames and shoots the canvas over the Chrome DevTools Protocol.
 // With `pnpm dev:web` running, and Chrome started on a profile of its own (in a short folder:
 // Chrome fails to open IndexedDB under a long path), as the bench does:
@@ -16,6 +16,8 @@ const base = new URL(args.app).pathname;
 const out = new URL('./src/lib/shots/', import.meta.url);
 /** The thesis's three zones, in world units: what most shots frame. */
 const THESIS = { minX: 0, minY: 0, maxX: 1500, maxY: 660 };
+/** The case's cards, in world units. */
+const CASE = { minX: 0, minY: 0, maxX: 1560, maxY: 880 };
 
 /** Runs in the page: the demo vault, a thesis on sleep and memory, with a reading list, a lab
  * notebook, teaching and meetings around it, so that zoomed out it is a map. Returns its ID and the
@@ -25,6 +27,8 @@ async function seed({ base }) {
 	const { createVault } = await import(`${base}src/lib/platform/browser/vaults.ts`);
 	const { id } = await createVault('Thesis');
 	await api.openVault(id);
+	// A new vault opens on its onboarding until it has been through it.
+	await api.setVaultOnboarded();
 	await api.setDevicePen({ color: '#f4a261', width: 3, eraser: 'stroke' });
 	const [yellow, orange, pink, violet, blue, green] = ['#f5d76e', '#f4a261', '#e98a9b', '#a78bdb', '#6fa8dc', '#7cc49a'];
 
@@ -153,6 +157,51 @@ async function link({ base, links }) {
 	for (const [from, to] of links) await api.createEdge(from, to);
 }
 
+/** Runs in the page: the second demo vault, a case on an Investigation board, its suspects and clues
+ * joined by red thread to what went missing. Returns its ID. */
+async function seedCase({ base }) {
+	const api = await import(`${base}src/lib/api.ts`);
+	const { createVault } = await import(`${base}src/lib/platform/browser/vaults.ts`);
+	const { POSTIT_COLOR } = await import(`${base}src/lib/canvas/colors.ts`);
+	const { id } = await createVault('Case');
+	await api.openVault(id);
+	await api.setVaultOnboarded();
+	await api.setVaultTheme('board');
+	await api.setVaultEdgeStyle({ shape: 'thread', arrow: 'to', stroke: 'solid' });
+
+	async function card(text, x, y, w = 300, h = 120, kind = 'note', color = null) {
+		const id = await api.createCard(x, y, w, h, kind, color);
+		await api.createNoteForCard(id, text);
+		return id;
+	}
+	const postit = (text, x, y) => card(text, x, y, 200, 200, 'postit', POSTIT_COLOR);
+	async function thread(from, to, label) {
+		const { id } = await api.createEdge(from, to);
+		if (label) await api.labelEdge(id, label);
+	}
+
+	// A thread hangs from the top of each card, over whatever is below: the short notes and the cards
+	// a thread reaches from above keep it off most of the writing.
+	const manuscript = await card('The missing manuscript\n\nThe only copy.\n\nGone between 9 and 11 pm.', 590, 300, 380, 150);
+	const safe = await postit('Who knew the safe code?', 40, 0);
+	const editor = await card('The editor\n\nLeft the party at 10.', 0, 300, 340);
+	const train = await postit('Check the 10:40 train', 20, 470);
+	const ticket = await card('Torn train ticket\n\nLondon, 10:40 pm.', 380, 660);
+	const footprints = await card('Muddy footprints\n\nGarden door to study.', 660, 0);
+	const nephew = await card('The nephew\n\nIn the garden, he says.', 1260, 40);
+	const key = await card('The study key\n\nBack by midnight.', 760, 600, 260, 110);
+	const housekeeper = await card('The housekeeper\n\nHolds the other key.', 1260, 760);
+	await thread(editor, manuscript, 'motive');
+	await thread(nephew, manuscript, 'motive');
+	await thread(housekeeper, manuscript, 'access');
+	await thread(safe, manuscript);
+	await thread(editor, ticket);
+	await thread(train, ticket);
+	await thread(footprints, nephew, 'garden');
+	await thread(key, housekeeper);
+	return id;
+}
+
 const page = await connect(Number(args.port));
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** Waits until `expression` is true in the page. */
@@ -219,7 +268,7 @@ async function shoot(name) {
 
 await page.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
 await go(args.app);
-const { id: vault, links } = await page.evaluate(`(${seed})(${JSON.stringify({ base })})`);
+let { id: vault, links } = await page.evaluate(`(${seed})(${JSON.stringify({ base })})`);
 
 await open();
 await view(THESIS);
@@ -255,7 +304,7 @@ await shoot('panels');
 // The zone list stays open, remembered for the vault: close it again.
 await key('l', { ctrl: true });
 
-for (const theme of ['pad', 'orbit', 'cairn', 'wilds', null]) {
+for (const theme of ['pad', 'orbit', 'cairn', 'wilds', 'board', null]) {
 	await page.evaluate(`import('${base}src/lib/api.ts').then((api) => api.setVaultTheme(${JSON.stringify(theme)}))`);
 	await open();
 	if (!theme) break;
@@ -270,4 +319,12 @@ await open();
 await view({ x: 730, y: 330, zoom: 0.25 });
 await mouse(1400, 880);
 await shoot('map');
+
+// The case, on cork and red thread.
+await go(args.app);
+vault = await page.evaluate(`(${seedCase})(${JSON.stringify({ base })})`);
+await open();
+await view(CASE);
+await mouse(1400, 880);
+await shoot('investigation');
 page.close();

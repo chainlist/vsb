@@ -4,6 +4,7 @@
 	import { THEMES } from '#lib/app.js';
 	import Shot from '#lib/Shot.svelte';
 	import studio from '#lib/shots/canvas.webp';
+	import board from '#lib/shots/theme-board.webp';
 	import cairn from '#lib/shots/theme-cairn.webp';
 	import orbit from '#lib/shots/theme-orbit.webp';
 	import pad from '#lib/shots/theme-pad.webp';
@@ -14,7 +15,8 @@
 		pad: { src: pad, look: 'sage graph paper, index cards with a red rule under the title, fountain-pen blue.' },
 		orbit: { src: orbit, look: 'a deep navy grid with brighter nodes where its lines cross, and cards edged in light.' },
 		cairn: { src: cairn, look: 'peat-moss paper, slate cards with a dim gold rule, fog-pale text.' },
-		wilds: { src: wilds, look: 'deep-space indigo with stars at the grid crossings, warm cream text and a campfire-orange accent.' }
+		wilds: { src: wilds, look: 'deep-space indigo with stars at the grid crossings, warm cream text and a campfire-orange accent.' },
+		board: { src: board, look: 'tan cork with a fine grain, cream sheets pinned flat, typewritten notes and a ballpoint-blue accent.' }
 	};
 	const themes = THEMES.filter((t) => t.id in looks);
 

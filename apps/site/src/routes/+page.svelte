@@ -8,6 +8,7 @@
 	import { NAME, highlighter } from '#lib/app.js';
 	import builder from '#lib/shots/builder.webp';
 	import canvas from '#lib/shots/canvas.webp';
+	import investigation from '#lib/shots/investigation.webp';
 	import links from '#lib/shots/links.webp';
 	import map from '#lib/shots/map.webp';
 	import panels from '#lib/shots/panels.webp';
@@ -54,7 +55,7 @@
 				<p><kbd>Ctrl</kbd> drag on the paper to draw a zone. Zones nest, and moving one brings everything inside along.</p>
 			</Card>
 			<Card title="Links connect them">
-				<p><kbd>Ctrl</kbd> drag from one card to another. Give the link a label, a dashed or dotted line, arrowheads at either end.</p>
+				<p><kbd>Ctrl</kbd> drag from one card to another. Give the link a label, a dashed or dotted line, arrowheads at either end, or make it red thread.</p>
 			</Card>
 			<Card title="Tab keeps you going">
 				<p>Press <kbd>Tab</kbd> on a card to add a linked card after it, already open for typing.</p>
@@ -177,7 +178,33 @@ attachments/
 
 	<Edge back />
 
-	<Zone id="themes" name="Five themes" color={highlighter('Pink')}>
+	<Zone id="investigation" name="Pin it up like a case" color={highlighter('Orange')}>
+		<div class="row">
+			<Card title="Red thread">
+				<p>
+					Make any link a thread: red string pinned to the top of each card with a steel tack, sagging between them in front of
+					everything. Pick it in the bar over a selected link, or for every new link in Settings.
+				</p>
+			</Card>
+			<Card title="An investigation board">
+				<p>The Investigation board theme is tan cork with a fine grain, cream sheets pinned flat and notes in a typewriter face.</p>
+			</Card>
+			<Card title="Pick a kind of board">
+				<p>
+					Each vault asks once what it is: Engineering, with the Studio theme and curved links, or Investigation, with cork and red
+					thread. Change the theme and the links separately later, in Settings.
+				</p>
+			</Card>
+		</div>
+		<Shot
+			src={investigation}
+			alt="A case on the Investigation board theme: typewritten cards and two post-its on tan cork, joined by red threads pinned with steel tacks, most of them to the missing manuscript, some labeled motive, access and garden."
+		/>
+	</Zone>
+
+	<Edge />
+
+	<Zone id="themes" name="Six themes" color={highlighter('Pink')}>
 		<Themes />
 	</Zone>
 </div>
