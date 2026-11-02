@@ -143,7 +143,7 @@ apps/frontend/src/routes/
 | Drawing | Strokes of the pen grouped as one item, in a zone or on the canvas | `.canvas/drawings/<drawing-id>.json` |
 
 - A card can have no note: an empty card, used to preplace structure.
-- A card shows its note on an index card, or on a sticky note: a [post-it](#post-its).
+- A card shows its note on an index card, on a sticky note (a [post-it](#post-its)), or drawn as a [mindmap](#mindmaps).
 - A card can show an image file of the vault in place of a note: an [image card](#images).
 - A card can show a web page in place of a note, by its address: a [link card](#links).
 - A note can have no card: it appears in the Unplaced tray.
@@ -235,7 +235,7 @@ Competitor scan
 { "note": "01JC...", "zone": null, "x": 120, "y": 40, "w": 200, "h": 80, "halign": "center", "valign": "center", "color": "#f5d76e" }
 ```
 
-- `kind`: what the card shows: `postit`, its note on a [post-it](#post-its); `image`, a file (`file`); or `link`, a web page (`link`). Left out for an index card, which shows its note. A file written before cards had a kind is told by what it shows, an image card by its `file` and a link card by its `link`, and gains its kind the next time it is written.
+- `kind`: what the card shows: `postit`, its note on a [post-it](#post-its); `mindmap`, its note drawn as a [mindmap](#mindmaps); `image`, a file (`file`); or `link`, a web page (`link`). Left out for an index card, which shows its note. A file written before cards had a kind is told by what it shows, an image card by its `file` and a link card by its `link`, and gains its kind the next time it is written.
 - `note`: note ULID, or `null` for an empty card.
 - `zone`: zone ULID, or `null` for a card directly on the canvas. The canvas acts as an invisible zone at (0, 0), so both cases share one code path.
 - `x`, `y`: relative to the card's zone.
@@ -368,6 +368,51 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
 - **Each leans its own way,** from half a degree to two, left or right, told by its ID: it leans the same each time it is drawn and on every device, and a pasted copy leans its own way. Its file keeps no angle. Its selection outline and handles lean with it; it moves, resizes and meets its edges as the upright box it stands in, which the lean shifts by a few world units at most.
 - **Otherwise it is a card:** it moves, resizes freely, aligns its text, joins zones, takes edges, and copies and pastes as a post-it. Tab after it adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty post-it.
 
+### Mindmaps
+
+- **A mindmap card draws its note as a mindmap:** the note's headings and lists are its branches. Its note is a note like any other, in `notes/`, plain Markdown that another app reads as an outline: edited, saved, found by search and left in the Unplaced tray as an index card's is. Only its card differs, by its kind: `"kind": "mindmap"` in its card file.
+- **Adding one.** Add mindmap here, in the paper's [right-click menu](#right-click-menus), places one centered where the menu was opened; the rail's Mindmap button places one in the middle of the canvas. It is 480 by 300, joins the innermost zone under its center as a placed card does, and opens with its root ready for typing. Left empty, it stays an empty mindmap.
+- **How the note holds the map.** Each node has a title and may have text, its first line and the lines after it, as a note has. The map is written so:
+  - The root is the note's title, a level 1 heading: `# Launch plan`.
+  - A node with children is a heading one level below its parent's: `##` under the root, down to `######`.
+  - A leaf of one line is a list item: `- Hiring`.
+  - A leaf of several lines is a heading, its first line, with the rest under it.
+  - Under its heading, a node's text comes first, then its children: the list items, then the headings.
+  - Under a `######` heading no level is left: its children are a list, each item's text indented under it and its own children nested under it, in the map's order.
+
+  ```markdown
+  # Launch plan
+
+  ## Goals
+  - Faster onboarding
+  - Fewer tickets
+
+  ## Risks
+  - Hiring
+
+  ### Pricing
+  Competitors cut prices in Q3.
+  ```
+- **A note written any other way** reads too, by hand, in another app, or before it was a mindmap:
+  - The first line is the root, whatever it is, as it is the note's title.
+  - A heading is a child of the nearest heading above it with fewer `#`, or of the root.
+  - A list item is a child of the nearest item above it indented less, or else of the heading above it: lists nest at any depth. `*`, `+` and numbered items are list items too.
+  - Any other line is text: of the item it is indented under, or that it follows with no blank line between, else of the heading above it. A fenced code block is text whole.
+  - A list is always children: a list in a node's text makes children of that node.
+- **The map shows the note's order,** list items before headings. So a node moves when its form changes: a one-line leaf given a second line or a child goes after its one-line siblings, and back among them once it is one line again.
+- **Its look.** The root at the left; each node's children in a column to its right, centered on it, joined to it by curves in the theme's soft ink. The root is boxed and bold; every other node sits on a line its curve runs into. A node's text, rendered from its Markdown, is under its title, smaller. An empty mindmap shows a faint root, "Mindmap". The map fits in the card, shrunk until it does but never grown, and sits where the card's alignment puts it, top left by default: resizing the card gives it room.
+- **Editing it in the map.** A double-click, or Enter, opens it with its root selected; the canvas's keys are off until it closes.
+  - A click selects a node. Left selects its parent, Right its first child, Up and Down the sibling above or below.
+  - Tab adds a child to the selected node, and Enter a sibling after it (a child, on the root), ready for typing. A new node is one line, so it lands among the list items: after the last of them when it is added after a heading.
+  - F2 or a double-click types the selected node's text; typing a character starts it over with that character. Shift+Enter starts a new line: the first line is the title, the rest its text. Enter keeps what was typed, and so does a click elsewhere; Tab keeps it and adds a child; Escape puts back what was there, and drops a node just added.
+  - A node left with no text and no children goes.
+  - Delete or Backspace removes the selected node with its children. The root stays.
+  - Mod+Z, and Mod+Shift+Z or Mod+Y, undo and redo the changes made since it opened.
+  - Escape, or a click outside the card, closes it. The card stays selected.
+- **Editing it as text.** Markdown, in the corner of an open mindmap, shows its note's text in an editor, and Map shows the map again, read from the text. In the text, Tab indents by two spaces, so a list item nests. While a mindmap is open, Tab never adds a linked card.
+- **Saving.** Each change in the map writes the whole note in the form above. It is saved as a card's text is: about a second after the last change, and when the mindmap closes; the first save with content creates the note, and a note created in this edit and left empty goes. So a note written any other way takes that form from the first change made in the map. Text typed as text is saved as typed.
+- **Otherwise it is a card:** it moves, resizes, takes a color as an index card does, aligns, joins zones, takes edges, and copies and pastes as a mindmap. Tab after it, while it is closed, adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty mindmap.
+
 ### Images
 
 - **An image card shows an image file of the vault** in place of a note: PNG, JPEG, GIF, WebP, BMP, AVIF or SVG. The image fills the card, which keeps its shape: resized from a side or a corner, the side pulled further leads and the other follows, never below a card's smallest size. It has no title and no text: Enter and a double-click open nothing, and the selection bar's alignment grid leaves it out.
@@ -449,7 +494,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
 ## Copying and pasting
 
 - **Copy (Mod+C)** puts the selected cards, zones and drawings on the system clipboard, with everything inside the selected zones at any depth, and the edges whose two cards are both copied. A selected edge comes only with its cards: edges alone copy nothing, and neither does an empty selection, which leaves the clipboard as it was.
-- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, or a [link card](#links)'s address, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's kind, and its text rather than its note. A clip from before cards had a kind is told by what its cards show, as a card file is; an image or link card left with nothing it may show pastes as an empty index card, and no card but an index card or a post-it makes a note. Notes travel as their text, so a clip pastes into any vault, in either build. An [image card](#images) names its file, which another vault may not have: pasted there, it shows "Image not found".
+- **The clipboard holds it twice.** For other apps, the cards' text: each card's note, or a [link card](#links)'s address, top to bottom then left to right, a blank line between, as plain text and, rendered from its Markdown, as HTML. For this app, a clip hidden in an attribute of that HTML: the items, their places from the corner of the box around them, their colors and styles, and each card's kind, and its text rather than its note. A clip from before cards had a kind is told by what its cards show, as a card file is; an image or link card left with nothing it may show pastes as an empty index card, and no card but an index card, a post-it or a mindmap makes a note. Notes travel as their text, so a clip pastes into any vault, in either build. An [image card](#images) names its file, which another vault may not have: pasted there, it shows "Image not found".
 - **Paste (Mod+V)** lands centered under the pointer, or on the middle of the canvas when the pointer is elsewhere, as the builder's cards do; with snapping on, the corner of what it pastes lands on the grid.
   - **Copied items paste as new ones:** each with a new ID, each card with text a new note holding it, named after its title (`Idea 2.md` beside `Idea.md`). Until V3 a note has one card, so a pasted card never shows the note it was copied from. A card whose note was missing pastes as an empty card.
   - **Text copied from another app** becomes one card holding it, as a card placed by double-click: the same size and alignment.
@@ -469,7 +514,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - Copy and Duplicate, while cards, zones or drawings are selected.
   - Zone around them, Arrange and Builder, when the selection bar shows them.
   - Delete.
-- **Anywhere else, the menu is the paper's,** for the spot clicked: a zone's body is paper, and so are a cluster and a bundle zoomed out. It holds Add card here, as a double-click there does (inside the zone under it); Add post-it here, the same for a [post-it](#post-its); Paste here (see [Copying and pasting](#copying-and-pasting)); Select all on screen, as Mod+A; and Fit to content, as Mod+1. The selection stays as it was.
+- **Anywhere else, the menu is the paper's,** for the spot clicked: a zone's body is paper, and so are a cluster and a bundle zoomed out. It holds Add card here, as a double-click there does (inside the zone under it); Add post-it here, the same for a [post-it](#post-its); Add mindmap here, for a [mindmap](#mindmaps); Paste here (see [Copying and pasting](#copying-and-pasting)); Select all on screen, as Mod+A; and Fit to content, as Mod+1. The selection stays as it was.
 - **Paste here reads the clipboard,** as a menu has no paste event: the desktop grants its window WebView2's clipboard-read permission, so it never asks; a browser may ask first. Items copied from the app keep their clip through the read.
 - **Choosing** runs the action and closes the menu, leaving the focus where the action put it, in a card opened for editing say. Escape closes it, and its keys never reach the canvas, as in the selection bar's menus. A right-click elsewhere while it is open moves it there, for what was right-clicked.
 - **No menu** on the selection bar, an edge's +, or Tab's picker, nor while the pen or an eraser is in hand: a right-click there does nothing. While a card, a zone's name or an edge's label is typed in, the right-click opens the system's own menu: cut, copy, paste, spelling.
@@ -482,7 +527,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - A band along the window's top, as tall as the buttons, moves the window, and a double-click there maximizes or restores it, as a title bar does. It is invisible until the pointer is in it, when a faint band shows. It lies over the canvas but under the vault card, the panels and dialogs: a panel's header moves the window from its empty space instead, and the selection bar stays below the band. While the window is not maximized, Windows resizes it from the band's top 4 pixels and from its other edges.
   - The browser build has neither: the browser's window has its own.
 - **The vault card** shows the vault's name after its first letter on the accent. It opens a menu: Switch vault, back to the vault picker, and Settings, which shows its key, Mod+, (Ctrl+, or Cmd+, on macOS).
-- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B), [Pen (P)](#drawings) and [Post-it](#post-its), which places one in the middle of the canvas. The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the Pen button while pen mode is on. The panels stay routes, reached through links.
+- **The rail,** down the left edge right under the vault card, holds the tools by their icons alone, with bigger targets: Zones (Mod+L), Unplaced (Mod+U) and Search (Mod+F), then Builder (Mod+B), [Pen (P)](#drawings), [Post-it](#post-its) and [Mindmap](#mindmaps), each of which places one in the middle of the canvas. The Zones button shows when the [zone list](#zone-list) is open, a panel's button when its route is, and the Pen button while pen mode is on. The panels stay routes, reached through links.
 - **The pen bar,** at the bottom center while [pen mode](#drawings) is on: the tool in hand, the pen's color and its width.
 - **The zoom controls,** in the bottom-right corner: zoom out, the zoom in percent, zoom in, and fit to content.
   - Minus and plus step through set zooms, from 5% to 400% with 40% among them, around the middle of the window.
@@ -615,7 +660,7 @@ CREATE INDEX zones_parent ON zones(parent);
 CREATE TABLE cards (
   key       INTEGER PRIMARY KEY,      -- shared with card_bounds
   id        TEXT UNIQUE NOT NULL,
-  kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, image or link
+  kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, mindmap, image or link
   note      TEXT,                     -- NULL = empty card
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
