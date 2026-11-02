@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { cubicOut } from 'svelte/easing';
-	import { openLink, type CardView } from '#lib/api.js';
+	import { openLink, type CardView, type MindmapView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
-	import { edit, sizeMindmap, tilt } from './actions.js';
+	import { edit, showMindmap, sizeMindmap, tilt } from './actions.js';
 	import { mindmaps, startMove } from './gestures.js';
 	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
@@ -16,7 +16,7 @@
 
 	let { card }: { card: CardView } = $props();
 
-	/** What a mindmap shows, as its editor says at once, until its file says so too. */
+	/** What a mindmap shows, as its buttons say at once, until its file says so too. */
 	let view = $derived(card.view);
 	let element: HTMLElement;
 
@@ -42,6 +42,16 @@
 	const selected = $derived(selection.has(card.id));
 	const dimmed = $derived(selection.dims(card.id));
 	const lean = $derived(tilt(card));
+	/** A mindmap selected alone shows its buttons; open, its nodes or its text have the focus, and it
+	 * shows none. */
+	const modes = $derived(card.kind === 'mindmap' && !missing && !editing && selected && selection.ids.length === 1);
+
+	/** Shows a mindmap's map, read from its note, or its note's Markdown, and keeps which in its file. */
+	function showAs(next: MindmapView) {
+		if (next === view) return;
+		view = next;
+		void showMindmap(card, next);
+	}
 
 	// Mod+drag draws an edge from the card: the canvas handles it, as it handles drawing a zone.
 	function press(e: PointerEvent) {
@@ -75,7 +85,6 @@
 	class:note-card={card.kind !== 'image' || missing}
 	class:postit={card.kind === 'postit'}
 	class:mindmap={card.kind === 'mindmap' && view === 'map'}
-	class:unclipped={card.kind === 'mindmap' && (view === 'map' || editing)}
 	class:tinted={card.color !== null}
 	class:missing
 	class:selected
@@ -100,7 +109,7 @@
 	<ErrorBoundary what="This card">
 		<!-- Showing its Markdown, a mindmap is an index card but for its editor. -->
 		{#if card.kind === 'mindmap' && !missing && editing}
-			<MindmapEditor {card} onview={(v) => (view = v)} onsize={hold} />
+			<MindmapEditor {card} onsize={hold} />
 		{:else if card.kind === 'mindmap' && !missing && view === 'map'}
 			<Mindmap {card} onsize={hold} />
 		{:else if editing}
@@ -110,6 +119,25 @@
 		{/if}
 	</ErrorBoundary>
 </div>
+{#if modes}
+	<!-- Beside the card rather than in it, which clips what shows its Markdown. Pressing them keeps the
+	     focus where it is, so keys still reach the canvas, and never reaches the card or the paper. -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="modes"
+		style:left="{card.x + card.w}px"
+		style:top="{card.y}px"
+		onpointerdown={(e) => {
+			e.preventDefault();
+			e.stopPropagation();
+		}}
+		ondblclick={(e) => e.stopPropagation()}
+		oncontextmenu={(e) => e.preventDefault()}
+	>
+		<button aria-pressed={view === 'map'} onclick={() => showAs('map')}>Mindmap</button>
+		<button aria-pressed={view === 'markdown'} onclick={() => showAs('markdown')}>Markdown</button>
+	</div>
+{/if}
 
 <style>
 	.card {
@@ -165,17 +193,13 @@
 	}
 
 	/* A mindmap is drawn straight on the paper, as ink: no stock and no shadow. A color washes it over
-	   the paper as a zone is washed, the grid showing through. */
+	   the paper as a zone is washed, the grid showing through. Its map can pass its card's sides while
+	   its nodes are on their way to a new size; the map clips itself when it fits its card. */
 	.mindmap {
 		--lift: 0 0 transparent;
+		overflow: visible;
 		background: none;
 		transition: opacity var(--fade);
-	}
-
-	/* A map can pass its card's sides while its nodes are on their way to a new size, and an open
-	   mindmap's buttons sit above its card. The map clips itself when it fits its card. */
-	.unclipped {
-		overflow: visible;
 	}
 
 	/* Open, its nodes are selected, not the card: no outline. */
@@ -225,5 +249,40 @@
 
 	.dimmed::after {
 		opacity: calc(1 - var(--dim));
+	}
+
+	/* Just above the card's top right corner: two buttons side by side, the one showing in the pen's
+	   color, as the rail's toggles are. */
+	.modes {
+		position: absolute;
+		translate: -100% calc(-100% - 4px);
+		display: flex;
+		gap: 2px;
+		padding: 2px;
+		border-radius: var(--radius-control);
+		background: var(--card);
+		box-shadow:
+			inset 0 0 0 1px var(--border),
+			0 1px 2px rgb(0 0 0 / 0.08);
+		font: 500 11px var(--font-ui);
+	}
+
+	.modes button {
+		padding: 3px 9px;
+		border: none;
+		border-radius: calc(var(--radius-control) - 2px);
+		background: none;
+		color: var(--ink-soft);
+		cursor: pointer;
+	}
+
+	.modes button:hover {
+		background: var(--paper);
+		color: var(--ink);
+	}
+
+	.modes button[aria-pressed='true'] {
+		background: color-mix(in srgb, var(--pen) 14%, var(--card));
+		color: var(--pen);
 	}
 </style>
