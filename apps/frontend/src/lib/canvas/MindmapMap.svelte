@@ -47,6 +47,10 @@
 	type Frame = Size & { id: string; key: Key | null; node: MindNode; parent: string | null; x: number; y: number; grown: number };
 
 	const idOf = (key: Key) => ids?.get(key) ?? key;
+	// The selected node and the one typed, by ID: the nodes as drawn can still stand at the keys they
+	// had before a change, another node's now.
+	const selectedId = $derived(selected === null ? null : idOf(selected));
+	const typingId = $derived(typing === null ? null : idOf(typing));
 
 	/** Each node's size as drawn, by its ID, kept as it changes: its text wraps and its fonts load. */
 	let sizes = $state<Record<string, Size>>({});
@@ -208,7 +212,7 @@
 			<div
 				class="node"
 				class:root={f.parent === null}
-				class:selected={key !== null && key === selected}
+				class:selected={key !== null && f.id === selectedId}
 				class:removed={key === null}
 				style:left="{f.x + PAD}px"
 				style:top="{f.y + PAD}px"
@@ -218,7 +222,7 @@
 				onpointerdown={() => key !== null && onpick?.(key)}
 				ondblclick={() => key !== null && onopen?.(key)}
 			>
-				{#if key !== null && key === typing}
+				{#if key !== null && f.id === typingId}
 					{@render field?.()}
 				{:else if f.node.title || f.parent !== null}
 					<span class="title">{@html html(f.node).title}</span>
@@ -246,14 +250,16 @@
 		opacity: var(--shown);
 	}
 
+	/* Clear until it is laid out, not hidden: a new mindmap's root takes the focus for typing from the
+	   start. */
 	.map {
 		position: absolute;
 		transform-origin: 0 0;
-		visibility: hidden;
+		opacity: 0;
 	}
 
 	.map.ready {
-		visibility: visible;
+		opacity: 1;
 	}
 
 	svg {

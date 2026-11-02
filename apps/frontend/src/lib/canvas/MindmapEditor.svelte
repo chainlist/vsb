@@ -44,9 +44,11 @@
 	let ready = $state(false);
 	let mode = $state<'map' | 'text'>('map');
 	let selected = $state<Key>('');
-	/** The node whose text is being typed, what is typed so far, and what to put back on Escape: the
-	 * note before, and the node selected before, when a node was added to be typed. */
-	let typing = $state<{ key: Key; draft: string; before: Version; back: Key } | null>(null);
+	/** The node whose text is being typed, and what to put back on Escape: the note before, and the
+	 * node selected before, when a node was added to be typed. */
+	let typing = $state<{ key: Key; before: Version; back: Key } | null>(null);
+	/** What is typed so far, kept apart so the field never reads it from a typing that just ended. */
+	let draft = $state('');
 	/** The note before each change made since the mindmap opened, and after each undone. */
 	let undos: Version[] = [];
 	let redos: Version[] = [];
@@ -115,23 +117,25 @@
 		return selected;
 	}
 
-	/** Starts typing a node's text, from `draft`. */
-	function type(key: Key, draft: string, before = now(), back = key) {
+	/** Starts typing a node's text, from `from`. */
+	function type(key: Key, from: string, before = now(), back = key) {
 		selected = key;
-		typing = { key, draft, before, back };
+		draft = from;
+		typing = { key, before, back };
 	}
 
 	/** Keeps what was typed. A node left with no text and no children goes; the root stays. The map
 	 * takes the focus back when the keyboard kept it, not when a click elsewhere did. */
 	function keep(refocus = true) {
 		if (!typing) return;
-		const { key, draft, before } = typing;
+		const { key, before } = typing;
+		const typed = draft;
 		typing = null;
 		if (refocus) editor.focus();
 		change((map) => {
 			const n = at(map, key);
 			if (!n) return;
-			setText(n, draft);
+			setText(n, typed);
 			const parent = at(map, parentKey(key) ?? '');
 			if (!key || !parent || n.title || n.body || n.children.length) return;
 			parent.children.splice(parent.children.indexOf(n), 1);
@@ -322,11 +326,9 @@
 			onopen={open}
 		>
 			{#snippet field()}
-				{#if typing}
-					<span class="field" data-text={typing.draft}>
-						<textarea rows="1" cols="1" bind:value={typing.draft} use:focus onblur={() => keep(false)}></textarea>
-					</span>
-				{/if}
+				<span class="field" data-text={draft}>
+					<textarea rows="1" cols="1" bind:value={draft} use:focus onblur={() => keep(false)}></textarea>
+				</span>
 			{/snippet}
 		</MindmapMap>
 	{:else}
