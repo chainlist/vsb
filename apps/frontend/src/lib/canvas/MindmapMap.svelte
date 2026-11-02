@@ -29,7 +29,7 @@
 		typing?: Key | null;
 		field?: Snippet;
 		/** A press on a node, and a double-click. */
-		onpick?: (key: Key) => void;
+		onpick?: (key: Key, e: PointerEvent) => void;
 		onopen?: (key: Key) => void;
 	} = $props();
 
@@ -219,7 +219,8 @@
 				style:opacity={f.grown < 1 ? f.grown : undefined}
 				style:scale={f.grown < 1 ? 0.5 + f.grown / 2 : undefined}
 				use:measure={f.id}
-				onpointerdown={() => key !== null && onpick?.(key)}
+				data-node
+				onpointerdown={(e) => key !== null && onpick?.(key, e)}
 				ondblclick={() => key !== null && onopen?.(key)}
 			>
 				{#if key !== null && f.id === typingId}

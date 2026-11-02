@@ -24,12 +24,17 @@
 	];
 
 	// A single selected card or zone has handles, while it is edited too, and so has the one under
-	// the pointer, which can be resized without selecting it first. A zone drawn as a marker has none.
+	// the pointer, which can be resized without selecting it first. A zone drawn as a marker has none,
+	// nor has an open mindmap: its nodes are selected, not its card.
 	const targets = $derived.by(() => {
 		const ids = new Set<string>();
 		if (selection.ids.length === 1) ids.add(selection.ids[0]);
 		if (hovered) ids.add(hovered);
-		return [...ids].flatMap((id) => items.find(id) ?? []).filter((t) => t.kind === 'card' || !asMarker(t.item));
+		return [...ids]
+			.flatMap((id) => items.find(id) ?? [])
+			.filter((t) =>
+				t.kind === 'card' ? !(t.item.id === selection.editing && (t.item as CardView).kind === 'mindmap') : !asMarker(t.item)
+			);
 	});
 
 	// Mod+drag draws an edge from a card: the canvas handles it, as it does on the card itself.

@@ -12,6 +12,7 @@ export const MINDMAP_KEYS = {
 	move: { keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], label: 'Select the parent, the first child, or the sibling above or below' },
 	undo: { keys: ['Mod+z'], label: 'Undo a change to the map' },
 	redo: { keys: ['Mod+Shift+z', 'Mod+y'], label: 'Redo a change to the map' },
+	close: { keys: ['Escape'], label: 'Close the map and select its card' },
 	indent: { keys: ['Tab'], label: 'In its Markdown, indent by two spaces' }
 } satisfies Record<string, KeyHelp>;
 

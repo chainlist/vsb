@@ -14,6 +14,7 @@ import {
 	type Rect,
 	type ZoneView
 } from '#lib/api.js';
+import { isMod } from '#lib/keys.js';
 import { guides, lines, pull, type Axis } from './align.js';
 import { camera } from './camera.svelte.js';
 import { track } from './drag.js';
@@ -51,6 +52,25 @@ function around(skip: Set<string>) {
 	return items.cards
 		.filter((c) => !skip.has(c.id) && c.x < v.maxX && c.x + c.w > v.minX && c.y < v.maxY && c.y + c.h > v.minY)
 		.map(({ x, y, w, h }) => ({ x, y, w, h }));
+}
+
+/** A press on a node of a closed mindmap: a click runs `click`, which opens it at that node, and
+ * leaves the card unselected; a drag moves the card, as a press on it would, from where it was
+ * pressed. Shift and Mod presses are the card's. */
+export function pressNode(down: PointerEvent, card: CardView, click: () => void) {
+	if (down.button !== 0 || isMod(down)) return;
+	if (down.shiftKey) return startMove(down, card);
+	down.stopPropagation();
+	let moving = false;
+	track(down, {
+		move() {
+			if (!moving) startMove(down, card);
+			moving = true;
+		},
+		end(dragged) {
+			if (!dragged) click();
+		}
+	});
 }
 
 export function startMove(down: PointerEvent, item: { id: string }) {

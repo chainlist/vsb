@@ -157,6 +157,11 @@
 		transition: opacity var(--fade);
 	}
 
+	/* Open, its nodes are selected, not the card: no outline. */
+	.mindmap.editing {
+		box-shadow: none;
+	}
+
 	.mindmap.tinted:not(.missing) {
 		background: color-mix(in srgb, var(--tint) var(--zone-wash), transparent);
 	}

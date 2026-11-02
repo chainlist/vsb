@@ -1,8 +1,24 @@
+<script module lang="ts">
+	import type { CardView } from '#lib/api.js';
+	import type { Key } from './mindmap.js';
+	import { selection } from './selection.svelte.js';
+
+	/** The node a mindmap opens at, when a click on it opened it; else it opens at its root. */
+	let start: { card: string; key: Key } | null = null;
+
+	/** Opens a mindmap at one of its nodes. */
+	export function openAt(card: CardView, key: Key) {
+		start = { card: card.id, key };
+		selection.editing = card.id;
+	}
+</script>
+
 <script lang="ts">
 	// An open mindmap: its nodes are selected, added, typed and removed in the map, or its note is
 	// typed as Markdown. Each change in the map writes the whole note, saved as a card's text is.
+	// While it is open, the card itself is not selected: no outline, handles or selection bar.
 	import { onDestroy, onMount, tick } from 'svelte';
-	import { readNote, type CardView } from '#lib/api.js';
+	import { readNote } from '#lib/api.js';
 	import { failure } from '#lib/failure.svelte.js';
 	import { bindKeys, isMod } from '#lib/keys.js';
 	import { editSession } from './editSession.js';
@@ -25,10 +41,8 @@
 		TYPING_KEYS,
 		walk,
 		write,
-		type Key,
 		type MindNode
 	} from './mindmap.js';
-	import { selection } from './selection.svelte.js';
 
 	let { card }: { card: CardView } = $props();
 
@@ -69,6 +83,18 @@
 
 	// A note that fails to load or save says so in the failure notice, as in a card's editor.
 	onMount(async () => {
+		// Open, the card is no longer selected: its nodes are. It opens at the root, unless a click on
+		// another node opened it.
+		selection.clear();
+		const opening = start?.card === card.id ? start.key : '';
+		start = null;
+		// The map as it was drawn closed, at once, so a second click of a double-click finds its node
+		// while the note is read again.
+		const drawn = card.note ? texts.get(card.note) : undefined;
+		if (drawn !== undefined) {
+			show(drawn);
+			if (at(root, opening)) selected = opening;
+		}
 		try {
 			show(card.note ? await readNote(card.note) : '');
 		} catch (e) {
@@ -77,6 +103,7 @@
 			return;
 		}
 		session = editSession(card.id, card.note, text, failure.report, () => (selection.editing = null));
+		if (at(root, opening)) selected = opening;
 		ready = true;
 		await tick();
 		editor.focus();
@@ -264,8 +291,9 @@
 		type(selected, e.key);
 	}
 
+	/** Types a node's text, once the note is read: what is typed before would not be saved. */
 	function open(key: Key) {
-		if (typing?.key === key) return;
+		if (!ready || typing?.key === key) return;
 		keep(false);
 		const n = at(root, key);
 		if (n) type(key, textOf(n));
@@ -276,11 +304,25 @@
 		if (!editor.contains(e.relatedTarget as Node | null)) selection.editing = null;
 	}
 
+	/** Closes the mindmap and selects its card, as Escape does. */
+	function toCard() {
+		selection.editing = null;
+		selection.only(card.id);
+	}
+
+	/** A press on the space around the nodes closes the mindmap and goes on to its card, which it
+	 * selects or drags. Presses on a node, the field or the switch stay in the map. */
+	function press(e: PointerEvent) {
+		if ((e.target as Element).closest('[data-node], .modes, textarea')) e.stopPropagation();
+		else toCard();
+	}
+
 	const inMap = () => ready && mode === 'map' && !typing;
 	const inTyping = () => typing !== null;
 
 	$effect(() =>
 		bindKeys([
+			{ ...MINDMAP_KEYS.close, inText: true, when: () => ready && !typing, run: toCard },
 			{ ...TYPING_KEYS.keep, inText: true, when: inTyping, run: () => keep() },
 			{ ...TYPING_KEYS.child, inText: true, when: inTyping, run: () => (keep(), addChild()) },
 			{ ...TYPING_KEYS.cancel, inText: true, when: inTyping, run: cancel },
@@ -310,7 +352,7 @@
 	bind:this={editor}
 	onkeydown={typeOver}
 	onfocusout={leave}
-	onpointerdown={(e) => e.stopPropagation()}
+	onpointerdown={press}
 	ondblclick={(e) => e.stopPropagation()}
 	oncontextmenu={(e) => e.stopPropagation()}
 >

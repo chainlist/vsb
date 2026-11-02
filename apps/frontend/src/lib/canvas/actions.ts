@@ -61,7 +61,8 @@ export const editable = (item: CardView | ZoneView | EdgeView) =>
 
 /** Opens the card's editor, the zone's name or the edge's label. */
 export function edit(item: CardView | ZoneView | EdgeView) {
-	if (!editable(item)) return;
+	// Already open: a mindmap opened by a click on a node stays as it is, its card unselected.
+	if (!editable(item) || selection.editing === item.id) return;
 	selection.only(item.id);
 	selection.editing = item.id;
 }

@@ -7,7 +7,9 @@
 	import { readNote, type CardView } from '#lib/api.js';
 	import { failure } from '#lib/failure.svelte.js';
 	import { finished } from './editSession.js';
+	import { pressNode } from './gestures.js';
 	import { parse } from './mindmap.js';
+	import { openAt } from './MindmapEditor.svelte';
 	import MindmapMap from './MindmapMap.svelte';
 
 	let { card }: { card: CardView } = $props();
@@ -36,4 +38,5 @@
 	});
 </script>
 
-<MindmapMap {root} halign={card.halign} valign={card.valign} />
+<!-- A click on a node opens the mindmap at it; a drag moves the card. -->
+<MindmapMap {root} halign={card.halign} valign={card.valign} onpick={(key, e) => pressNode(e, card, () => openAt(card, key))} />

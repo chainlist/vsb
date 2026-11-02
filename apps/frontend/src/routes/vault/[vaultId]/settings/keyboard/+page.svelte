@@ -18,7 +18,7 @@
 		['Canvas', all(CANVAS_KEYS)],
 		['Editing', [...all(EDITING_KEYS), { keys: ['Enter'], label: "Finish an edge's label or a zone's name" }]],
 		['Placing a linked card', all(PICKER_KEYS)],
-		['Mindmap, while open', [...all(MINDMAP_KEYS), { keys: ['Escape'], label: 'Close the mindmap' }]],
+		['Mindmap, while open', all(MINDMAP_KEYS)],
 		['Typing a mindmap node', [...all(TYPING_KEYS), { keys: ['Shift+Enter'], label: 'Start a new line: the lines after the first are its text' }]],
 		[
 			'Drawing',
