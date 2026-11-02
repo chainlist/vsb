@@ -60,6 +60,7 @@
 	class="card index-card"
 	class:note-card={card.kind !== 'image' || missing}
 	class:postit={card.kind === 'postit'}
+	class:mindmap={card.kind === 'mindmap'}
 	class:tinted={card.color !== null}
 	class:missing
 	class:selected
@@ -146,6 +147,27 @@
 		padding: 0;
 		border: none;
 		font: 700 1em/1.2 var(--font-hand);
+	}
+
+	/* A mindmap is drawn straight on the paper, as ink: no stock and no shadow. A color washes it over
+	   the paper as a zone is washed, the grid showing through. */
+	.mindmap {
+		--lift: 0 0 transparent;
+		background: none;
+		transition: opacity var(--fade);
+	}
+
+	.mindmap.tinted:not(.missing) {
+		background: color-mix(in srgb, var(--tint) var(--zone-wash), transparent);
+	}
+
+	/* With no stock to veil it, a dimmed mindmap fades into the paper. */
+	.mindmap::after {
+		content: none;
+	}
+
+	.mindmap.dimmed {
+		opacity: var(--dim);
 	}
 
 	/* After the tint: a missing note looks the same whatever its card's color. */

@@ -359,6 +359,7 @@
 		color: inherit;
 	}
 
+	/* On the paper's plain color, so the grid never runs under the text. */
 	.markdown {
 		flex: 1;
 		margin: 0;
@@ -366,7 +367,7 @@
 		border: none;
 		outline: none;
 		resize: none;
-		background: transparent;
+		background: var(--paper);
 		color: inherit;
 		font: 13px/1.5 var(--font-mono, ui-monospace, monospace);
 	}
