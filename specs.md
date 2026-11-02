@@ -199,7 +199,7 @@ Rarely written. Holds:
   - `theme`: the theme the vault is drawn in
   - `paper`: how its canvas is marked, `dots`, `grid`, `cross` or `empty` (see [Appearance](#appearance)); left out until picked, for the theme's own
   - `snap`: `false` when moved and resized cards and zones do not snap to the grid (on by default)
-  - `fitMindmaps`: `true` when each [mindmap](#mindmaps) is shrunk to fit its card, rather than its card taking its map's size (off by default)
+  - `fitMindmaps`: `true` when each [mindmap](#mindmaps) is scaled to fit its card, rather than its card taking its map's size (off by default)
   - `newEdges`: the style every edge the app creates gets (see [Edges](#edges)), each part (`shape`, `arrow`, `stroke`) left out at its default as in an edge file, and the whole of it while all are: `"newEdges": { "shape": "angled", "stroke": "dashed" }`
   - `onboarded`: `true` once the vault has been through its [onboarding](#onboarding), so it shows only once; left out until then
 
@@ -238,6 +238,7 @@ Competitor scan
 
 - `kind`: what the card shows: `postit`, its note on a [post-it](#post-its); `mindmap`, its note drawn as a [mindmap](#mindmaps); `image`, a file (`file`); or `link`, a web page (`link`). Left out for an index card, which shows its note. A file written before cards had a kind is told by what it shows, an image card by its `file` and a link card by its `link`, and gains its kind the next time it is written.
 - `view`: `markdown` while a [mindmap](#mindmaps) shows its note's Markdown, on an index card; left out while it shows its map.
+- `scale`: how large a [mindmap](#mindmaps) draws its map against the map's own size, set by resizing its card; left out at 1.
 - `note`: note ULID, or `null` for an empty card.
 - `zone`: zone ULID, or `null` for a card directly on the canvas. The canvas acts as an invisible zone at (0, 0), so both cases share one code path.
 - `x`, `y`: relative to the card's zone.
@@ -404,8 +405,9 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
 - **The map shows the note's order,** list items before headings. So a node moves when its form changes: a one-line leaf given a second line or a child goes after its one-line siblings, and back among them once it is one line again.
 - **On the paper.** A mindmap is drawn straight on the paper, as ink: no stock and no shadow, its outline showing only while it is selected. A color washes its box over the paper as a zone is washed, the grid showing through. Dimmed, it fades into the paper.
 - **Its look.** The root at the left; each node's children in a column to its right, centered on it, joined to it by curves in the theme's soft ink. The root is boxed and bold; every other node sits on a line its curve runs into. A node's text, rendered from its Markdown, is under its title, smaller. An empty mindmap shows a faint root, "Mindmap".
-- **Its card takes its map's size,** the card's margin around it, growing and shrinking as the map does with its top left corner staying put, so only the map's own branches move. It has no handles: its map alone sizes it. Each new size is written to its card file, never as a step of undo, and a map drawn at another size than its card's, its note changed in another app or its theme setting it in another face, sizes its card as it shows. While its nodes are on their way, they can pass the card's sides.
-  - **A vault can fit its maps in their cards instead:** Fit maps in their cards, in Settings > Canvas (`fitMindmaps` in `vault.json`). Each map is then shrunk until it fits its card but never grown, and sits where the card's alignment puts it, top left by default; resizing the card gives it room.
+- **Its card takes its map's size,** at the card's scale, the card's margin around it, growing and shrinking as the map does with its top left corner staying put, so only the map's own branches move. Each new size is written to its card file, never as a step of undo, and a map drawn at another size than its card's, its note changed in another app or its theme setting it in another face, sizes its card as it shows. While its nodes are on their way, they can pass the card's sides.
+  - **Resizing it scales its map:** the card keeps the map's shape, led by the side pulled further as an image's is, and the map is drawn larger or smaller with it, its text too, the card's margin staying as it is. It never gets smaller than any card. Nodes added or removed then grow or shrink the card at that scale. The card keeps its scale in its file (`"scale": 1.5`), so a pasted copy keeps it too; a resize and its scale are one step of undo.
+  - **A vault can fit its maps in their cards instead:** Fit maps in their cards, in Settings > Canvas (`fitMindmaps` in `vault.json`). The card then keeps its size, resized freely, and its map is scaled up or down until it fits the card, sitting where the card's alignment puts it, top left by default.
 - **Its branches move.** When the map changes, a node added grows out of its parent's end along its curve, a node removed draws back into the end of its nearest node that stays, with its children, and every node whose place changes glides there, all over 260 ms. A node keeps itself through each change in the map, its form moving it, and through undo, redo and Escape; read again from its text, it is told by its place. New sizes alone, as a node is typed, move nothing: the map is laid out again at once.
 - **Editing it in the map.** A click on a node opens it with that node selected, card selected or not; a double-click on the space around its nodes, or Enter on the selected card, opens it with its root selected. The canvas's keys are off until it closes.
   - **Open, its nodes are selected, not its card:** the card shows no outline, handles or selection bar, and no card dims.
@@ -422,7 +424,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - It keeps the size its map gave the card, and resizes as an index card does; showing its map again sizes the card to the map, unless maps fit their cards.
   - In the text, Tab indents by two spaces, so a list item nests. While a mindmap is open, Tab never adds a linked card.
 - **Saving.** Each change in the map writes the whole note in the form above. It is saved as a card's text is: about a second after the last change, and when the mindmap closes; the first save with content creates the note, and a note created in this edit and left empty goes. So a note written any other way takes that form from the first change made in the map. Text typed as text is saved as typed.
-- **Otherwise it is a card:** it moves, takes a color, joins zones, takes edges, and copies and pastes as a mindmap. Tab after it, while it is closed, adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty mindmap.
+- **Otherwise it is a card:** it moves, resizes, takes a color, joins zones, takes edges, and copies and pastes as a mindmap. Tab after it, while it is closed, adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty mindmap.
 
 ### Images
 
@@ -673,6 +675,8 @@ CREATE TABLE cards (
   key       INTEGER PRIMARY KEY,      -- shared with card_bounds
   id        TEXT UNIQUE NOT NULL,
   kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, mindmap, image or link
+  view      TEXT NOT NULL DEFAULT 'map',  -- a mindmap's: map or markdown
+  scale     REAL NOT NULL DEFAULT 1,  -- a mindmap's map, against its own size
   note      TEXT,                     -- NULL = empty card
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file
