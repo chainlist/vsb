@@ -40,7 +40,7 @@
 			id: 'link',
 			name: 'Link',
 			src: link,
-			alt: 'A Read next card linked to two link cards: a Wikipedia page on memory consolidation, with its title and description, and a DOI address.',
+			alt: "A Read next card linked to two link cards: Wikipedia's page on the hippocampus, with its drawing of the brain and its title, and a TED talk on sleep as a YouTube video, its thumbnail under a play button.",
 			line: "a pasted web address. The desktop app shows the page's title, description and image, and plays a YouTube video right on the card."
 		}
 	];

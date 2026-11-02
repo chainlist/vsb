@@ -18,6 +18,45 @@ const out = new URL('./src/lib/shots/', import.meta.url);
 const THESIS = { minX: 0, minY: 0, maxX: 1500, maxY: 660 };
 /** The case's cards, in world units. */
 const CASE = { minX: 0, minY: 0, maxX: 1560, maxY: 880 };
+/** The pages pasted as link cards in the kinds vault: a page, and a YouTube video. */
+const PAGES = { page: 'https://en.wikipedia.org/wiki/Hippocampus', video: 'https://www.youtube.com/watch?v=5MuIMqhT8DM' };
+
+/** What the desktop keeps of a page whose address is pasted, read as `apps/desktop/src/links.rs`
+ * reads it: its head's title, description and image, Open Graph's tags first, then Twitter's, then
+ * plain HTML. The web build reads no page, so the kinds vault takes its link cards' previews from
+ * here, the image as base64 with the name it is kept under. */
+async function readPage(url) {
+	const agent = 'Mozilla/5.0 (compatible; Scree; link preview)';
+	const html = await (await fetch(url, { headers: { 'User-Agent': agent, Accept: 'text/html,application/xhtml+xml' } })).text();
+	const body = html.search(/<body\b/i);
+	const head = body < 0 ? html : html.slice(0, body);
+	const metas = [...head.matchAll(/<meta\b([^>]*)>/gi)].map((m) =>
+		Object.fromEntries([...m[1].matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)].map((a) => [a[1].toLowerCase(), a[2] ?? a[3] ?? a[4]]))
+	);
+	const meta = (...keys) => keys.map((k) => metas.find((m) => (m.property ?? m.name)?.toLowerCase() === k && m.content?.trim())?.content).find(Boolean);
+	const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+	const decode = (text) =>
+		text.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (all, r) =>
+			r[0] === '#' ? String.fromCodePoint(parseInt(r.slice(r[1] === 'x' || r[1] === 'X' ? 2 : 1), r[1] === 'x' || r[1] === 'X' ? 16 : 10)) : (named[r] ?? all)
+		);
+	const clean = (text, max) => {
+		const t = text === undefined ? '' : decode(text).split(/\s+/).filter(Boolean).join(' ');
+		return !t ? undefined : [...t].length > max ? [...t].slice(0, max - 1).join('').trimEnd() + '…' : t;
+	};
+	const src = meta('og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src');
+	let image;
+	if (src) {
+		const res = await fetch(new URL(decode(src).trim(), url), { headers: { 'User-Agent': agent } });
+		const types = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/bmp': 'bmp', 'image/avif': 'avif', 'image/svg+xml': 'svg' };
+		const ext = types[res.headers.get('content-type')?.split(';')[0]];
+		if (ext) image = { name: `${new URL(url).host.replace(/^www\./, '')}.${ext}`, bytes: Buffer.from(await res.arrayBuffer()).toString('base64') };
+	}
+	return {
+		title: clean(meta('og:title', 'twitter:title') ?? /<title\b[^>]*>([^<]*)/i.exec(head)?.[1], 200),
+		description: clean(meta('og:description', 'twitter:description', 'description'), 500),
+		image
+	};
+}
 
 /** Runs in the page: the demo vault, a thesis on sleep and memory, with a reading list, a lab
  * notebook, teaching and meetings around it, so that zoomed out it is a map. Returns its ID and the
@@ -206,8 +245,9 @@ async function seedCase({ base }) {
 const SCENES = { note: 0, postit: 3000, mindmap: 6000, image: 9000, link: 12000 };
 
 /** Runs in the page: the third demo vault, a card of each kind from the thesis, each in a scene of its
- * own along the x axis, for the kinds picker. Returns its ID. */
-async function seedKinds({ base, scenes }) {
+ * own along the x axis, for the kinds picker, the link cards with their pages as `readPage` read them.
+ * Returns its ID. */
+async function seedKinds({ base, scenes, pages }) {
 	const api = await import(`${base}src/lib/api.ts`);
 	const { createVault } = await import(`${base}src/lib/platform/browser/vaults.ts`);
 	const { POSTIT_COLOR } = await import(`${base}src/lib/canvas/colors.ts`);
@@ -321,39 +361,32 @@ async function seedKinds({ base, scenes }) {
 	const night1 = await card('Night 1, sleeper 7\n\nDeep sleep in the first two cycles, REM growing toward morning: a textbook night.', x + 580, 40, 340, 160);
 	await edge(image.id, night1, { label: 'scored as' });
 
-	// Links: a web address pasted becomes a card, with what the page said of itself on the desktop.
+	// Links: a web address pasted becomes a card showing its page, as the desktop shows it, at the size
+	// the desktop gives it (links.svelte.ts); a YouTube video's card is its thumbnail, ready to play.
 	x = scenes.link;
-	const reading = await card('Read next\n\nBefore the pilot: the background, then the paper that started it.', x - 440, 70, 340, 150);
+	const kept = async ({ title, description, image }) => ({
+		...(title && { title }),
+		...(description && { description }),
+		...(image && { image: await api.writeImage(image.name, Uint8Array.from(atob(image.bytes), (c) => c.charCodeAt(0)).buffer) })
+	});
+	const link = async (id, y, w, h) => ({ id, kind: 'link', zone: null, x: 0, y, w, h, text: null, link: pages[id].url, preview: await kept(pages[id]) });
+	const reading = await card('Read next\n\nBefore the pilot: the background, then the talk that sums it up.', x - 440, 120, 340, 150);
 	const pasted = await api.pasteItems(
 		{
 			x: 0,
 			y: 0,
-			w: 320,
-			h: 360,
+			w: 480,
+			h: 630,
 			zones: [],
 			drawings: [],
 			edges: [],
-			cards: [
-				{
-					id: 'wiki',
-					kind: 'link',
-					zone: null,
-					x: 0,
-					y: 0,
-					w: 320,
-					h: 160,
-					text: null,
-					link: 'https://en.wikipedia.org/wiki/Memory_consolidation',
-					preview: { title: 'Memory consolidation', description: 'The processes that make a new memory stable after it is first formed.' }
-				},
-				{ id: 'doi', kind: 'link', zone: null, x: 0, y: 200, w: 320, h: 160, text: null, link: 'https://doi.org/10.1038/nature04286' }
-			]
+			cards: [await link('page', 0, 320, pages.page.image ? 320 : 160), await link('video', 360, 480, 270)]
 		},
 		x,
-		0
+		-120
 	);
 	await edge(reading, pasted.ids[0], { label: 'background' });
-	await edge(reading, pasted.ids[1], { label: 'the paper' });
+	await edge(reading, pasted.ids[1], { label: 'the talk' });
 	return id;
 }
 
@@ -486,7 +519,9 @@ await shoot('investigation');
 // A card of each kind, each scene framed up close, at most 130%. Twice: a mindmap takes its map's size
 // as it is drawn.
 await go(args.app);
-vault = await page.evaluate(`(${seedKinds})(${JSON.stringify({ base, scenes: SCENES })})`);
+const pages = {};
+for (const [id, url] of Object.entries(PAGES)) pages[id] = { url, ...(await readPage(url)) };
+vault = await page.evaluate(`(${seedKinds})(${JSON.stringify({ base, scenes: SCENES, pages })})`);
 await open();
 for (const [kind, x] of Object.entries(SCENES)) {
 	for (let pass = 0; pass < 2; pass++) {
