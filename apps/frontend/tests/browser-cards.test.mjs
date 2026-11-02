@@ -215,6 +215,20 @@ test('a mindmap keeps what it shows and its map drops it again', async () => {
 	assert.equal((await api.queryViewport(WORLD, 0, null)).cards[0].view, 'map');
 });
 
+test('a mindmap scaled keeps its scale with its size, and undo puts both back', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 480, 300, 'mindmap');
+	assert.equal((await api.queryViewport(WORLD, 0, null)).cards[0].scale, 1);
+	const undo = await api.scaleMindmap(id, -20, 10, 720, 450, 1.5);
+	const scaled = await file('card', id);
+	assert.deepEqual([scaled.scale, scaled.x, scaled.w], [1.5, -20, 720]);
+	const [view] = (await api.queryViewport(WORLD, 0, null)).cards;
+	assert.deepEqual([view.scale, view.x, view.h], [1.5, -20, 450]);
+	await api.applyStates(undo);
+	assert.deepEqual(await file('card', id), { kind: 'mindmap', note: null, zone: null, x: 0, y: 0, w: 480, h: 300 });
+	assert.equal((await api.queryViewport(WORLD, 0, null)).cards[0].scale, 1);
+});
+
 test('only a card showing a note is created empty', async () => {
 	await fresh();
 	await assert.rejects(api.createCard(0, 0, 200, 200, 'image'));

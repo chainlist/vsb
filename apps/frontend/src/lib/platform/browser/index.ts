@@ -113,6 +113,8 @@ export const moveCards = (moves: Move[]) => writing((e) => cards.moveCards(e, mo
 export const resizeCard = (id: string, x: number, y: number, w: number, h: number) => writing((e) => cards.resizeCard(e, id, x, y, w, h));
 export const alignCards = (ids: string[], halign: HAlign, valign: VAlign) => writing((e) => cards.alignCards(e, ids, halign, valign));
 export const setMindmapView = (id: string, view: MindmapView) => writing((e) => cards.setMindmapView(e, id, view));
+export const scaleMindmap = (id: string, x: number, y: number, w: number, h: number, scale: number) =>
+	writing((e) => cards.scaleMindmap(e, id, x, y, w, h, scale));
 export const clearCard = (id: string) => writing((e) => cards.clearCard(e, id));
 export const deleteCards = (ids: string[]) => writing((e) => cards.deleteCards(e, ids));
 

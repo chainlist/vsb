@@ -48,7 +48,7 @@ impl Index {
       "WITH RECURSIVE {ZONE_ABS}
        SELECT c.id, c.note, c.zone, coalesce(zabs.ax, 0) + c.x, coalesce(zabs.ay, 0) + c.y, c.w, c.h,
          c.halign, c.valign, c.color, n.title, n.excerpt, n.key IS NOT NULL, c.file, c.link,
-         json_extract(c.preview, '$.title'), json_extract(c.preview, '$.description'), json_extract(c.preview, '$.image'), c.kind, c.view
+         json_extract(c.preview, '$.title'), json_extract(c.preview, '$.description'), json_extract(c.preview, '$.image'), c.kind, c.view, c.scale
        FROM card_bounds b JOIN cards c ON c.key = b.key
        LEFT JOIN zabs ON zabs.id = c.zone LEFT JOIN notes n ON n.id = c.note
        WHERE {MEETS} AND {LARGE}"
@@ -59,6 +59,7 @@ impl Index {
           id: r.get(0)?,
           kind: r.get(18)?,
           view: r.get(19)?,
+          scale: r.get(20)?,
           note: r.get(1)?,
           zone: r.get(2)?,
           x: r.get(3)?,

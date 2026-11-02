@@ -46,6 +46,7 @@
 	{root}
 	halign={card.halign}
 	valign={card.valign}
+	size={card.scale}
 	onpick={(key, e) => pressNode(e, card, () => openAt(card, key))}
 	onsize={read ? onsize : undefined}
 />

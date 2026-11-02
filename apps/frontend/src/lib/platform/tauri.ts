@@ -227,6 +227,10 @@ export const alignCards = (ids: string[], halign: HAlign, valign: VAlign) =>
 
 export const setMindmapView = (id: string, view: MindmapView) => invoke<ItemState[]>('set_mindmap_view', { id, view });
 
+/** Resizes a mindmap's card as `resizeCard` does, its map drawn at `scale` against its own size. */
+export const scaleMindmap = (id: string, x: number, y: number, w: number, h: number, scale: number) =>
+	invoke<ItemState[]>('scale_mindmap', { id, x, y, w, h, scale });
+
 /** Turns an unresolved card into an empty one. */
 export const clearCard = (id: string) => invoke<ItemState[]>('clear_card', { id });
 

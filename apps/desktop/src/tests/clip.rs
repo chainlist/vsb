@@ -1,6 +1,6 @@
 use super::{card_file, files, open, put_card, put_zone, Fixture, WORLD};
 use crate::clip::Clip;
-use crate::items::{self, CardKind, Edge, Kind, MindmapView, Preview, Zone};
+use crate::items::{self, CardKind, Edge, Kind, MapScale, MindmapView, Preview, Zone};
 use crate::note::NoteText;
 use crate::session::Session;
 use serde_json::json;
@@ -190,6 +190,17 @@ fn a_mindmap_showing_its_markdown_pastes_showing_it() {
   let clip = s.copy_items(&ids(&[&id]), &[], &[]).unwrap();
   let copy = card_file(&f, &s.paste_items(&clip, 600.0, 0.0).unwrap().ids[0]);
   assert_eq!((copy.kind, copy.view), (CardKind::Mindmap, MindmapView::Markdown));
+}
+
+#[test]
+fn a_scaled_mindmap_pastes_at_its_scale() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let id = s.create_card(CardKind::Mindmap, None, 0.0, 0.0, 480.0, 300.0).unwrap();
+  s.scale_mindmap(&id, 0.0, 0.0, 240.0, 150.0, 0.5).unwrap();
+  let clip = s.copy_items(&ids(&[&id]), &[], &[]).unwrap();
+  let copy = card_file(&f, &s.paste_items(&clip, 600.0, 0.0).unwrap().ids[0]);
+  assert_eq!((copy.kind, copy.scale, copy.w), (CardKind::Mindmap, MapScale(0.5), 240.0));
 }
 
 #[test]

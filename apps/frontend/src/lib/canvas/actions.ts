@@ -136,8 +136,7 @@ const unwritten = new Map<string, Frame | null>();
 /** Sizes a mindmap's card to hold its map, its top left corner staying put: drawn at once, written
  * after any write of its size still under way. Not an undo step: its map sizes it again. */
 export async function sizeMindmap(card: CardView, w: number, h: number) {
-	[w, h] = [Math.ceil(w), Math.ceil(h)];
-	if (card.w === w && card.h === h) return;
+	if (Math.abs(card.w - w) < 0.5 && Math.abs(card.h - h) < 0.5) return;
 	[card.w, card.h] = [w, h];
 	const writing = unwritten.has(card.id);
 	unwritten.set(card.id, { x: card.x, y: card.y, w, h });

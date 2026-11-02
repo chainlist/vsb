@@ -148,6 +148,15 @@ test('a mindmap showing its Markdown pastes showing it', async () => {
 	assert.deepEqual([copy.kind, copy.view], ['mindmap', 'markdown']);
 });
 
+test('a scaled mindmap pastes at its scale', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 480, 300, 'mindmap');
+	await api.scaleMindmap(id, 0, 0, 240, 150, 0.5);
+	const clip = await api.copyItems([id], [], []);
+	const copy = await file('card', (await api.pasteItems(clip, 600, 0)).ids[0]);
+	assert.deepEqual([copy.kind, copy.scale, copy.w], ['mindmap', 0.5, 240]);
+});
+
 test('a clip from before kinds is told by what its cards show', async () => {
 	await fresh();
 	const pasted = async (extra) => {

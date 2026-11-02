@@ -12,6 +12,7 @@
 		ids,
 		halign,
 		valign,
+		size,
 		selected = null,
 		typing = null,
 		field,
@@ -25,6 +26,8 @@
 		ids?: Map<Key, string>;
 		halign: HAlign;
 		valign: VAlign;
+		/** How large the map is drawn against its own size, while its card takes its size. */
+		size: number;
 		/** The node selected in an open mindmap; null while it is closed. */
 		selected?: Key | null;
 		/** The node whose text is being typed: `field` shows in its place. */
@@ -33,8 +36,8 @@
 		/** A press on a node, and a double-click. */
 		onpick?: (key: Key, e: PointerEvent) => void;
 		onopen?: (key: Key) => void;
-		/** Hears the map's size as laid out, once each of its nodes is measured, while its card takes
-		 * its size. */
+		/** Hears the map's own size as laid out, once each of its nodes is measured, while its card
+		 * takes its size. */
 		onsize?: (w: number, h: number) => void;
 	} = $props();
 
@@ -165,9 +168,9 @@
 	let height = $state(0);
 	const w = $derived(Math.max(0, ...frames.map((f) => f.x + f.w)) + 2 * PAD);
 	const h = $derived(Math.max(0, ...frames.map((f) => f.y + f.h)) + 2 * PAD);
-	/** While maps fit their cards, shrunk to fit the card, never grown, and set where its alignment puts
-	 * it; else at its own size in the card's top left corner, as the card takes its size. */
-	const scale = $derived(mindmapFit.on ? Math.min(1, width / w, height / h) : 1);
+	/** While maps fit their cards, scaled up or down to fit the card and set where its alignment puts
+	 * it; else at its card's scale in its top left corner, as the card takes its size. */
+	const scale = $derived(mindmapFit.on ? Math.min(width / w, height / h) : size);
 	const left = $derived(mindmapFit.on ? (width - w * scale) * ALIGN[halign] : 0);
 	const top = $derived(mindmapFit.on ? (height - h * scale) * ALIGN[valign] : 0);
 

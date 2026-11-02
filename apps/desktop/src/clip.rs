@@ -6,7 +6,7 @@
 use crate::attachments;
 use crate::error::Result;
 use crate::index::Rect;
-use crate::items::{is_default, Card, CardKind, Drawing, Edge, HAlign, Kind, MindmapView, Preview, VAlign, Zone};
+use crate::items::{is_default, Card, CardKind, Drawing, Edge, HAlign, Kind, MapScale, MindmapView, Preview, VAlign, Zone};
 use crate::links;
 use crate::session::Session;
 use crate::states::ItemState;
@@ -35,6 +35,8 @@ pub struct ClipCard {
   pub kind: CardKind,
   #[serde(default, skip_serializing_if = "is_default")]
   pub view: MindmapView,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub scale: MapScale,
   pub zone: Option<String>,
   pub x: f64,
   pub y: f64,
@@ -172,8 +174,8 @@ impl Session {
       if zone == landing {
         ids.push(id.clone());
       }
-      let (view, halign, valign, color) = (c.view, c.halign, c.valign, c.color.clone());
-      let card = Card { kind, view, note, zone, x: cx, y: cy, w: c.w, h: c.h, halign, valign, color, file, link, preview };
+      let (view, scale, halign, valign, color) = (c.view, c.scale, c.halign, c.valign, c.color.clone());
+      let card = Card { kind, view, scale, note, zone, x: cx, y: cy, w: c.w, h: c.h, halign, valign, color, file, link, preview };
       states.push(ItemState::of(&id, &card)?);
       cards.insert(c.id.as_str(), id);
     }
@@ -214,9 +216,10 @@ impl Session {
           Some(note) if self.index.note_path(note)?.is_some() => Some(self.read_note(note)?),
           _ => None,
         };
-        let (kind, view, halign, valign, color, file, link, preview) = (c.kind, c.view, c.halign, c.valign, c.color, c.file, c.link, c.preview);
+        let (kind, view, scale, halign, valign) = (c.kind, c.view, c.scale, c.halign, c.valign);
+        let (color, file, link, preview) = (c.color, c.file, c.link, c.preview);
         let (x, y) = (ox + c.x, oy + c.y);
-        clip.cards.push(ClipCard { id: id.into(), kind, view, zone: within, x, y, w: c.w, h: c.h, halign, valign, color, text, file, link, preview });
+        clip.cards.push(ClipCard { id: id.into(), kind, view, scale, zone: within, x, y, w: c.w, h: c.h, halign, valign, color, text, file, link, preview });
       }
       Kind::Drawing => {
         let d: Drawing = self.read(id)?;

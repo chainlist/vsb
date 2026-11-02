@@ -3,7 +3,7 @@
 	import { openLink, type CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
 	import { edit, sizeMindmap, tilt } from './actions.js';
-	import { startMove } from './gestures.js';
+	import { mindmaps, startMove } from './gestures.js';
 	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
 	import ErrorBoundary from '#lib/chrome/ErrorBoundary.svelte';
@@ -20,11 +20,14 @@
 	let view = $derived(card.view);
 	let element: HTMLElement;
 
-	/** Sizes a mindmap's card to its map, `w` by `h`, with the card's padding around it. */
+	/** Sizes a mindmap's card to its map, `w` by `h` at its own size, drawn at the card's scale with
+	 * the card's padding around it; and keeps both for resizing to scale the map. */
 	function hold(w: number, h: number) {
 		const style = getComputedStyle(element);
 		const px = (side: string) => parseFloat(style.getPropertyValue(`padding-${side}`));
-		void sizeMindmap(card, w + px('left') + px('right'), h + px('top') + px('bottom'));
+		const pad = { x: px('left') + px('right'), y: px('top') + px('bottom') };
+		mindmaps.set(card.id, { w, h, pad });
+		void sizeMindmap(card, w * card.scale + pad.x, h * card.scale + pad.y);
 	}
 
 	const justify = { top: 'flex-start', center: 'center', bottom: 'flex-end' };

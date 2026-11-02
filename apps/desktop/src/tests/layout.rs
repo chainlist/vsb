@@ -129,6 +129,26 @@ fn a_mindmap_keeps_what_it_shows_and_its_map_drops_it_again() {
 }
 
 #[test]
+fn a_mindmap_scaled_keeps_its_scale_with_its_size_and_undo_puts_both_back() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let id = s.create_card(CardKind::Mindmap, None, 0.0, 0.0, 480.0, 300.0).unwrap();
+  let rel = format!(".canvas/cards/{id}.json");
+  assert!(raw(&f, &rel).get("scale").is_none());
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].scale, 1.0);
+  let undo = s.scale_mindmap(&id, -20.0, 10.0, 720.0, 450.0, 1.5).unwrap();
+  let file = raw(&f, &rel);
+  assert_eq!((file["scale"].as_f64(), file["x"].as_f64(), file["w"].as_f64()), (Some(1.5), Some(-20.0), Some(720.0)));
+  let view = &s.index.viewport(WORLD, 0.0, None).unwrap().cards[0];
+  assert_eq!((view.scale, view.x, view.h), (1.5, -20.0, 450.0));
+  s.apply(undo).unwrap();
+  let file = raw(&f, &rel);
+  assert!(file.get("scale").is_none());
+  assert_eq!((file["x"].as_f64(), file["w"].as_f64()), (Some(0.0), Some(480.0)));
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].scale, 1.0);
+}
+
+#[test]
 fn clearing_an_unresolved_card_makes_it_empty() {
   let f = Fixture::new();
   f.write(".canvas/cards/C.json", r#"{ "note": "GONE", "zone": null, "x": 0, "y": 0, "w": 200, "h": 100 }"#);

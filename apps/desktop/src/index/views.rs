@@ -25,6 +25,8 @@ pub struct CardView {
   pub kind: String,
   /// A mindmap's, `map` or `markdown`; `map` for any other card.
   pub view: String,
+  /// How large a mindmap draws its map against the map's own size; 1 for any other card.
+  pub scale: f64,
   pub note: Option<String>,
   pub zone: Option<String>,
   pub x: f64,

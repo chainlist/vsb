@@ -349,6 +349,11 @@ pub async fn set_mindmap_view(state: State<'_, AppState>, id: String, view: Mind
 }
 
 #[tauri::command]
+pub async fn scale_mindmap(state: State<'_, AppState>, id: String, x: f64, y: f64, w: f64, h: f64, scale: f64) -> Result<Vec<ItemState>> {
+  state.with(|s| s.scale_mindmap(&id, x, y, w, h, scale))
+}
+
+#[tauri::command]
 pub async fn clear_card(state: State<'_, AppState>, id: String) -> Result<Vec<ItemState>> {
   state.with(|s| s.clear_card(&id))
 }

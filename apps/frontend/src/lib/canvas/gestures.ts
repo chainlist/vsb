@@ -7,6 +7,7 @@ import {
 	moveZones,
 	resizeCard,
 	resizeZone,
+	scaleMindmap,
 	zoneContents,
 	type CardView,
 	type DrawingView,
@@ -21,6 +22,7 @@ import { track } from './drag.js';
 import { snap, toGrid } from './grid.svelte.js';
 import { history } from './history.js';
 import { items } from './items.svelte.js';
+import { mindmapFit } from './mindmapFit.svelte.js';
 import { selection } from './selection.svelte.js';
 import { videoOf } from './video.js';
 
@@ -34,6 +36,10 @@ export const NEW_POSTIT = { w: 200, h: 200 };
 export const NEW_MINDMAP = { w: 480, h: 300 };
 /** About the size of a new mindmap's card holding its empty root, while cards take their maps' size. */
 export const NEW_ROOT = { w: 80, h: 64 };
+
+/** Each mindmap drawn whose card takes its map's size, by its card: its map at its own size, and the
+ * card's padding around it, so resizing the card scales the map. */
+export const mindmaps = new Map<string, { w: number; h: number; pad: { x: number; y: number } }>();
 /** Width of a resize handle on a side or corner, in screen pixels, half of it outside the item. */
 export const GRIP = 10;
 /** How near, in screen pixels, a side or middle is pulled onto one of a card around it. */
@@ -160,6 +166,9 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 	// A YouTube video's width over its height: 16:9, or a Short's 9:16. Null for anything else.
 	const video = 'kind' in item && item.kind === 'link' && item.link !== null ? videoOf(item.link) : null;
 	const ratio = video ? (video.upright ? 9 / 16 : 16 / 9) : null;
+	// A mindmap whose card takes its map's size scales its map instead, the card keeping the map's shape.
+	const onMap = 'kind' in item && item.kind === 'mindmap' && item.view === 'map';
+	const map = onMap && !mindmapFit.on ? mindmaps.get(item.id) : undefined;
 	// A pulled side within reach of a side or the middle of a card around lands on it, or else on the grid.
 	const land = (v: number, axis: Axis) => v + (pull([v], still, axis, REACH / camera.zoom) ?? toGrid(v) - v);
 	track(down, {
@@ -184,6 +193,18 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 			if (ratio) {
 				const w = Math.max(px ? item.w : 0, py ? item.h * ratio : 0, MIN.w, MIN.h * ratio);
 				[item.w, item.h] = [Math.round(w), Math.round(w / ratio)];
+			}
+			// Led as an image is, the map's padding staying as it is, never smaller than a card.
+			if (map && 'scale' in item) {
+				const { w, h, pad } = map;
+				const along = (side: number, size: number, padding: number) => (side - padding) / size;
+				const scale = Math.max(
+					px ? along(item.w, w, pad.x) : 0,
+					py ? along(item.h, h, pad.y) : 0,
+					along(MIN.w, w, pad.x),
+					along(MIN.h, h, pad.y)
+				);
+				[item.w, item.h, item.scale] = [w * scale + pad.x, h * scale + pad.y, scale];
 			}
 			// Pulling the left or top edge keeps the opposite edge in place.
 			item.x = px < 0 ? from.x + from.w - item.w : from.x;
@@ -213,7 +234,8 @@ export function startResize(down: PointerEvent, item: Item, kind: ItemState['kin
 			}
 			// Back to its size, as a short drag can snap, nothing is written.
 			if (x === from.x && y === from.y && w === from.w && h === from.h) return;
-			history.edit(() => (kind === 'zone' ? resizeZone : resizeCard)(id, x, y, w, h));
+			if (map && 'scale' in item) history.edit(() => scaleMindmap(id, x, y, w, h, item.scale));
+			else history.edit(() => (kind === 'zone' ? resizeZone : resizeCard)(id, x, y, w, h));
 		}
 	});
 }

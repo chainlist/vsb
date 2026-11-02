@@ -14,6 +14,8 @@ export type CardFile = {
 	kind?: Exclude<CardKind, 'note'>;
 	/** Left out for a mindmap's map. */
 	view?: Exclude<MindmapView, 'map'>;
+	/** How large a mindmap draws its map against its own size; left out at 1. */
+	scale?: number;
 	note: string | null;
 	zone: string | null;
 	x: number;
@@ -170,6 +172,7 @@ export function fileOf(kind: Kind, value: unknown): File {
 	return kept({
 		kind: cardKind(v),
 		view: choice(v.view, ['map', 'markdown'], 'map', 'view') as CardFile['view'],
+		scale: v.scale === undefined || v.scale === 1 ? undefined : number(v.scale, 'scale'),
 		note: maybe(v.note),
 		zone: maybe(v.zone),
 		...at,

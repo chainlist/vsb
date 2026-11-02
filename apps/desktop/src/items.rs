@@ -117,6 +117,17 @@ impl MindmapView {
   }
 }
 
+/// How large a mindmap draws its map against the map's own size: 1 until its card is resized.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
+#[serde(transparent)]
+pub struct MapScale(pub f64);
+
+impl Default for MapScale {
+  fn default() -> MapScale {
+    MapScale(1.0)
+  }
+}
+
 impl Shape {
   pub fn as_str(self) -> &'static str {
     match self {
@@ -225,6 +236,9 @@ pub struct Card {
   /// What a mindmap card shows.
   #[serde(default, skip_serializing_if = "is_default")]
   pub view: MindmapView,
+  /// How large a mindmap draws its map.
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub scale: MapScale,
   pub note: Option<String>,
   pub zone: Option<String>,
   pub x: f64,
@@ -255,6 +269,8 @@ struct WrittenCard {
   kind: CardKind,
   #[serde(default)]
   view: MindmapView,
+  #[serde(default)]
+  scale: MapScale,
   note: Option<String>,
   zone: Option<String>,
   x: f64,
@@ -279,8 +295,8 @@ impl From<WrittenCard> for Card {
   fn from(c: WrittenCard) -> Card {
     let kind = c.kind.told(&c.file, &c.link);
     let (note, zone, color, file, link, preview) = (c.note, c.zone, c.color, c.file, c.link, c.preview);
-    let view = c.view;
-    Card { kind, view, note, zone, x: c.x, y: c.y, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color, file, link, preview }
+    let (view, scale) = (c.view, c.scale);
+    Card { kind, view, scale, note, zone, x: c.x, y: c.y, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color, file, link, preview }
   }
 }
 

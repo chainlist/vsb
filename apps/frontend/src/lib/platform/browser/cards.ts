@@ -113,6 +113,15 @@ export const alignCards = (e: Edit, ids: string[], halign: HAlign, valign: VAlig
 
 export const setMindmapView = (e: Edit, id: string, view: MindmapView) => edit(e, 'card', [id], (card) => Object.assign(card, { view }));
 
+/** Resizes a mindmap's card as `resizeCard` does, its map drawn at `scale` against its own size. */
+export function scaleMindmap(e: Edit, id: string, x: number, y: number, w: number, h: number, scale: number) {
+	return edit(e, 'card', [id], (card) => {
+		const at = card.zone === null ? undefined : e.layout.places.get(card.zone);
+		Object.assign(card, { x: x - (at?.x ?? 0), y: y - (at?.y ?? 0), w, h, scale });
+		if (scale === 1) delete card.scale;
+	});
+}
+
 /** Turns an unresolved card, whose note or file is missing, into an empty one: a post-it stays one,
  * an image card becomes an index card. */
 export const clearCard = (e: Edit, id: string) =>

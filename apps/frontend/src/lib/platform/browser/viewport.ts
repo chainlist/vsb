@@ -63,6 +63,7 @@ const cardView = ({ id, file, ax, ay, title, excerpt, resolved }: CardRecord): C
 	id,
 	kind: file.kind ?? 'note',
 	view: file.view ?? 'map',
+	scale: file.scale ?? 1,
 	note: file.note,
 	zone: file.zone,
 	x: ax,

@@ -4,7 +4,7 @@
 use crate::attachments;
 use crate::error::{msg, Result};
 use crate::index::Rect;
-use crate::items::{Card, CardKind, Drawing, HAlign, Kind, MindmapView, VAlign, Zone};
+use crate::items::{Card, CardKind, Drawing, HAlign, Kind, MapScale, MindmapView, VAlign, Zone};
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 use serde::Deserialize;
@@ -138,18 +138,21 @@ impl Session {
   /// Gives a card a new world rectangle. Resizing from the left or top moves its corner too, but
   /// never its zone: only a move changes membership.
   pub fn resize_card(&self, id: &str, x: f64, y: f64, w: f64, h: f64) -> Result<Vec<ItemState>> {
-    self.edit::<Card>(&[id], |_, card| {
-      let origin = match &card.zone {
-        Some(zone) => self.index.zone_origin(zone)?,
-        None => None,
-      };
-      let (ox, oy) = origin.unwrap_or((0.0, 0.0));
-      card.x = x - ox;
-      card.y = y - oy;
-      card.w = w;
-      card.h = h;
-      Ok(())
-    })
+    self.edit::<Card>(&[id], |_, card| self.reframe(card, x, y, w, h))
+  }
+
+  /// Puts a card on a world rectangle, in its own zone.
+  fn reframe(&self, card: &mut Card, x: f64, y: f64, w: f64, h: f64) -> Result<()> {
+    let origin = match &card.zone {
+      Some(zone) => self.index.zone_origin(zone)?,
+      None => None,
+    };
+    let (ox, oy) = origin.unwrap_or((0.0, 0.0));
+    card.x = x - ox;
+    card.y = y - oy;
+    card.w = w;
+    card.h = h;
+    Ok(())
   }
 
   pub fn align_cards(&self, ids: &[String], halign: HAlign, valign: VAlign) -> Result<Vec<ItemState>> {
@@ -164,6 +167,15 @@ impl Session {
   pub fn set_mindmap_view(&self, id: &str, view: MindmapView) -> Result<Vec<ItemState>> {
     self.edit::<Card>(&[id], |_, card| {
       card.view = view;
+      Ok(())
+    })
+  }
+
+  /// Resizes a mindmap's card as `resize_card` does, its map drawn at `scale` against its own size.
+  pub fn scale_mindmap(&self, id: &str, x: f64, y: f64, w: f64, h: f64, scale: f64) -> Result<Vec<ItemState>> {
+    self.edit::<Card>(&[id], |_, card| {
+      self.reframe(card, x, y, w, h)?;
+      card.scale = MapScale(scale);
       Ok(())
     })
   }

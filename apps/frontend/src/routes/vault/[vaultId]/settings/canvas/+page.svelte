@@ -84,8 +84,8 @@
 		<span>
 			<span class="name">Fit maps in their cards</span>
 			<span class="hint">
-				A mindmap's card takes its map's size, growing and shrinking as the map does. Checked, each map is shrunk
-				instead to fit its card, which you resize.
+				A mindmap's card takes its map's size, growing and shrinking as the map does, and resizing the card scales
+				the map. Checked, the card keeps the size you give it and its map is scaled to fit it.
 			</span>
 		</span>
 	</label>

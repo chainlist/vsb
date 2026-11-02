@@ -383,6 +383,7 @@
 			{ids}
 			halign={card.halign}
 			valign={card.valign}
+			size={card.scale}
 			{selected}
 			typing={typing?.key ?? null}
 			onpick={(key) => (selected = key)}
