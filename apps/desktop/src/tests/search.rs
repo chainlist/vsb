@@ -87,3 +87,19 @@ fn a_result_is_framed_by_its_box_in_the_world() {
   assert_eq!(s.index.item_box(Kind::Card, "NONE").unwrap(), None);
   assert_eq!(s.index.item_box(Kind::Zone, "NONE").unwrap(), None);
 }
+
+#[test]
+fn a_selection_is_framed_by_its_items_whatever_their_kinds() {
+  let f = Fixture::new();
+  f.write(".canvas/zones/Z.json", r#"{ "name": "Z", "parent": null, "x": 1000, "y": 0, "w": 400, "h": 300 }"#);
+  f.write(".canvas/cards/A.json", r#"{ "note": null, "zone": "Z", "x": 10, "y": 20, "w": 100, "h": 50 }"#);
+  f.write(".canvas/cards/B.json", r#"{ "note": null, "zone": null, "x": -500, "y": 800, "w": 200, "h": 100 }"#);
+  f.write(".canvas/edges/E.json", r#"{ "from": "A", "to": "B" }"#);
+  f.write(".canvas/drawings/D.json", r#"{ "zone": "Z", "x": 300, "y": 400, "w": 50, "h": 60, "strokes": [] }"#);
+  let s = open(&f);
+  let of = |ids: &[&str]| s.index.items_box(&ids.iter().map(|id| id.to_string()).collect::<Vec<_>>()).unwrap();
+  assert_eq!(of(&["A"]), Some(Rect::of(1010.0, 20.0, 100.0, 50.0)));
+  assert_eq!(of(&["Z", "D"]), Some(Rect::of(1000.0, 0.0, 400.0, 460.0)));
+  assert_eq!(of(&["E"]), Some(Rect::of(-500.0, 20.0, 1610.0, 880.0)), "an edge by its two cards");
+  assert_eq!(of(&["NONE"]), None);
+}

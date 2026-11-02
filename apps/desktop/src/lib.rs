@@ -127,6 +127,7 @@ pub fn run() {
       commands::resize_zone,
       commands::zone_contents,
       commands::canvas_contents,
+      commands::items_box,
       commands::rename_zone,
       commands::color_items,
       commands::delete_zones,

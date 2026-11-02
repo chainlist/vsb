@@ -119,6 +119,7 @@ export const moveZones = (moves: Move[]) => writing((e) => zones.moveZones(e, mo
 export const resizeZone = (id: string, x: number, y: number, w: number, h: number) => writing((e) => zones.resizeZone(e, id, x, y, w, h));
 export const zoneContents = (id: string) => reading((e) => scope.zoneContents(e, id));
 export const canvasContents = () => reading(scope.canvasContents);
+export const itemsBox = (ids: string[]) => reading((e) => scope.itemsBox(e, ids));
 export const renameZone = (id: string, name: string) => writing((e) => zones.renameZone(e, id, name));
 export const colorItems = (c: string[], z: string[], d: string[], color: string | null) => writing((e) => zones.colorItems(e, c, z, d, color));
 export const deleteZones = (ids: string[]) => writing((e) => zones.deleteZones(e, ids));

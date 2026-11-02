@@ -13,6 +13,7 @@ import {
 	deleteEdges,
 	deleteZones,
 	itemBox,
+	itemsBox,
 	labelEdge,
 	placeNote,
 	renameZone,
@@ -187,6 +188,12 @@ export async function show(kind: 'card' | 'zone', id: string) {
 export async function fitAll() {
 	const contents = await canvasContents();
 	if (contents) camera.glide(contents);
+}
+
+/** Frames the selection wherever it is, gliding there, zoomed in at least until zones open. */
+export async function fitSelected() {
+	const box = await itemsBox(selection.ids);
+	if (box) camera.glide(box, OPEN_ZOOM);
 }
 
 /** Places an empty card centered on a world point and opens it: an index card, a post-it, square and

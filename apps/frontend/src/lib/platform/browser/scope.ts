@@ -109,6 +109,22 @@ export async function canvasContents(e: Edit): Promise<Rect | null> {
 	]);
 }
 
+/** The world area covered by these items, whatever their kinds: each zone, card and drawing by its
+ * own box, each edge by its two cards'. Null when none of them is found. */
+export async function itemsBox(e: Edit, ids: string[]): Promise<Rect | null> {
+	const [cards, edges, drawings] = await Promise.all([
+		all<CardRecord>(e.tx.objectStore('cards'), ids),
+		all<EdgeRecord>(e.tx.objectStore('edges'), ids),
+		all<DrawingRecord>(e.tx.objectStore('drawings'), ids)
+	]);
+	return covering([
+		...ids.map((id) => e.layout.box(id)),
+		...cards.map((c) => (c ? boxOf({ x: c.ax, y: c.ay, w: c.file.w, h: c.file.h }) : null)),
+		...edges.flatMap((edge) => edge?.ends?.map(boxOf) ?? []),
+		...drawings.map((d) => (d ? drawingBox(d) : null))
+	]);
+}
+
 /** A card's or a zone's own box in the world. Null when it is gone. */
 export async function itemBox(e: Edit, kind: 'card' | 'zone', id: string): Promise<Rect | null> {
 	if (kind === 'zone') {

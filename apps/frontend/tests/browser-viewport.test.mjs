@@ -208,6 +208,21 @@ test('bundles follow restyled, moved and deleted edges', async () => {
 	assert.deepEqual(await at(), []);
 });
 
+test('a selection is framed by its items whatever their kinds', async () => {
+	await fresh();
+	await put(
+		zoneAt('Z', null, 1000, 0, 400, 300),
+		cardAt('A', 'Z', 10, 20, { w: 100, h: 50 }),
+		cardAt('B', null, -500, 800, { w: 200, h: 100 }),
+		edgeOf('E', 'A', 'B'),
+		{ kind: 'drawing', id: 'D', value: { zone: 'Z', x: 300, y: 400, w: 50, h: 60, strokes: [] } }
+	);
+	assert.deepEqual(await api.itemsBox(['A']), { minX: 1010, minY: 20, maxX: 1110, maxY: 70 });
+	assert.deepEqual(await api.itemsBox(['Z', 'D']), { minX: 1000, minY: 0, maxX: 1400, maxY: 460 });
+	assert.deepEqual(await api.itemsBox(['E']), { minX: -500, minY: 20, maxX: 1110, maxY: 900 }, 'an edge by its two cards');
+	assert.equal(await api.itemsBox(['NONE']), null);
+});
+
 test('only the cell sizes the canvas asks for are kept', async () => {
 	await fresh();
 	await assert.rejects(api.queryViewport(WORLD, 0, 100), /512, 1024, 2048, 4096/);

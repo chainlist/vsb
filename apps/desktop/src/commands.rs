@@ -369,6 +369,11 @@ pub async fn zone_contents(state: State<'_, AppState>, id: String) -> Result<Opt
 }
 
 #[tauri::command]
+pub async fn items_box(state: State<'_, AppState>, ids: Vec<String>) -> Result<Option<Rect>> {
+  state.with(|s| s.index.items_box(&ids))
+}
+
+#[tauri::command]
 pub async fn canvas_contents(state: State<'_, AppState>) -> Result<Option<Rect>> {
   state.with(|s| s.index.canvas_contents())
 }

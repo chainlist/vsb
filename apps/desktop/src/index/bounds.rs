@@ -130,6 +130,29 @@ impl Index {
     }
   }
 
+  /// The world area covered by these items, whatever their kinds: each zone, card and drawing by its
+  /// own box, each edge by its two cards'. None when none of them is indexed.
+  pub fn items_box(&self, ids: &[String]) -> Result<Option<Rect>> {
+    let sql = format!(
+      "WITH RECURSIVE {ZONE_ABS},
+       picked (id) AS (SELECT value FROM json_each(?1)),
+       ends (id) AS (SELECT from_card FROM edges WHERE id IN picked UNION SELECT to_card FROM edges WHERE id IN picked),
+       boxes (x1, y1, x2, y2) AS (
+         SELECT zabs.ax, zabs.ay, zabs.ax + max(z.w, 0), zabs.ay + max(z.h, 0)
+         FROM zabs JOIN zones z ON z.id = zabs.id WHERE z.id IN picked
+         UNION ALL
+         SELECT coalesce(zabs.ax, 0) + c.x, coalesce(zabs.ay, 0) + c.y, coalesce(zabs.ax, 0) + c.x + max(c.w, 0), coalesce(zabs.ay, 0) + c.y + max(c.h, 0)
+         FROM cards c LEFT JOIN zabs ON zabs.id = c.zone WHERE c.id IN picked OR c.id IN ends
+         UNION ALL
+         SELECT coalesce(zabs.ax, 0) + d.x, coalesce(zabs.ay, 0) + d.y, coalesce(zabs.ax, 0) + d.x + max(d.w, 0), coalesce(zabs.ay, 0) + d.y + max(d.h, 0)
+         FROM drawings d LEFT JOIN zabs ON zabs.id = d.zone WHERE d.id IN picked
+       )
+       SELECT min(x1), min(y1), max(x2), max(y2) FROM boxes"
+    );
+    let row = self.db.query_row(&sql, [serde_json::to_string(ids)?], |r| Ok([r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?]))?;
+    Ok(covered(row))
+  }
+
   /// What a scope's zones (other than a scoped zone itself), cards and drawings cover, from the exact
   /// coordinates.
   fn contents(&self, scope: Scope) -> Result<Option<Rect>> {
@@ -146,10 +169,15 @@ impl Index {
        SELECT min(x1), min(y1), max(x2), max(y2) FROM boxes"
     );
     let (card, zone) = scope.params();
-    let row: [Option<f64>; 4] = self.db.query_row(&sql, (card, zone), |r| Ok([r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?]))?;
-    Ok(match row {
-      [Some(min_x), Some(min_y), Some(max_x), Some(max_y)] => Some(Rect { min_x, min_y, max_x, max_y }),
-      _ => None,
-    })
+    let row = self.db.query_row(&sql, (card, zone), |r| Ok([r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?]))?;
+    Ok(covered(row))
+  }
+}
+
+/// The rectangle a covering query's row gives: None when it covered nothing.
+fn covered(row: [Option<f64>; 4]) -> Option<Rect> {
+  match row {
+    [Some(min_x), Some(min_y), Some(max_x), Some(max_y)] => Some(Rect { min_x, min_y, max_x, max_y }),
+    _ => None,
   }
 }

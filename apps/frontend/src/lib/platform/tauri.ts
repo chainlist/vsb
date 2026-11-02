@@ -245,6 +245,10 @@ export const zoneContents = (id: string) => invoke<Rect | null>('zone_contents',
 /** The world area covered by every zone and card, or null for an empty canvas. */
 export const canvasContents = () => invoke<Rect | null>('canvas_contents');
 
+/** The world area covered by these items, whatever their kinds, an edge by its two cards; or null
+ * when none of them is found. */
+export const itemsBox = (ids: string[]) => invoke<Rect | null>('items_box', { ids });
+
 export const renameZone = (id: string, name: string) => invoke<ItemState[]>('rename_zone', { id, name });
 
 /** Sets the color of cards, zones and drawings, as one edit; null for none. */

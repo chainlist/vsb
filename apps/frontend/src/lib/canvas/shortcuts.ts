@@ -1,6 +1,6 @@
 // Canvas keyboard shortcuts, bound through the shared key layer while the canvas is mounted.
 import type { Binding, KeyHelp } from '#lib/keys.js';
-import { deleteSelected, editSelected, fitAll, stopEditing } from './actions.js';
+import { deleteSelected, editSelected, fitAll, fitSelected, stopEditing } from './actions.js';
 import { batchDialog, BUILDER_KEYS } from './batchDialog.svelte.js';
 import { selectAll } from './boxSelect.svelte.js';
 import { armPaste, copyable, copySelected, duplicateSelected } from './clipboard.js';
@@ -21,7 +21,8 @@ export const CANVAS_KEYS = {
 	duplicate: { keys: ['Mod+d'], label: 'Duplicate the selection' },
 	undo: { keys: ['Mod+z'], label: 'Undo' },
 	redo: { keys: ['Mod+Shift+z', 'Mod+y'], label: 'Redo' },
-	fit: { keys: ['Mod+1'], label: 'Fit everything on the canvas' }
+	fit: { keys: ['Mod+1'], label: 'Fit everything on the canvas' },
+	fitSelection: { keys: ['Mod+2'], label: 'Fit the selection' }
 } satisfies Record<string, KeyHelp>;
 
 /** While a card, an edge's label or a zone's name is edited. */
@@ -51,6 +52,7 @@ export const shortcuts: Binding[] = [
 	{ ...CANVAS_KEYS.undo, run: () => history.undo() },
 	{ ...CANVAS_KEYS.redo, run: () => history.redo() },
 	{ ...CANVAS_KEYS.fit, run: fitAll },
+	{ ...CANVAS_KEYS.fitSelection, when: selected, run: fitSelected },
 	{ ...DRAWING_KEYS.pen, run: () => ink.toggle() },
 	{ ...DRAWING_KEYS.eraser, run: () => ink.eraser() }
 ];
