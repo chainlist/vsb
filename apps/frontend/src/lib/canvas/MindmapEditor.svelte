@@ -259,8 +259,9 @@
 	}
 
 	/** Shows the note's Markdown, or the map again, read from it, and keeps which in the card's file. */
-	function toggle() {
-		if (mode === 'map') toText();
+	function showAs(view: MindmapView) {
+		if (view === mode) return;
+		if (view === 'markdown') toText();
 		else toMap();
 		onview(mode);
 		void showMindmap(card, mode);
@@ -326,9 +327,9 @@
 	}
 
 	/** A press on the space around the nodes closes the mindmap and goes on to its card, which it
-	 * selects or drags. Presses on a node, a field or the toggle stay in the map. */
+	 * selects or drags. Presses on a node, a field or the buttons stay in the map. */
 	function press(e: PointerEvent) {
-		if ((e.target as Element).closest('[data-node], .mode, textarea')) e.stopPropagation();
+		if ((e.target as Element).closest('[data-node], .modes, textarea')) e.stopPropagation();
 		else toCard();
 	}
 
@@ -398,10 +399,15 @@
 			oninput={() => session?.input(text)}
 		></textarea>
 	{/if}
-	<!-- Pressing it keeps the focus where it is, so the mindmap stays open. -->
-	<button class="mode" aria-pressed={mode === 'markdown'} onpointerdown={(e) => e.preventDefault()} onclick={toggle}>
-		Markdown
-	</button>
+	<!-- Pressing them keeps the focus where it is, so the mindmap stays open. -->
+	<div class="modes">
+		<button aria-pressed={mode === 'map'} onpointerdown={(e) => e.preventDefault()} onclick={() => showAs('map')}>
+			Mindmap
+		</button>
+		<button aria-pressed={mode === 'markdown'} onpointerdown={(e) => e.preventDefault()} onclick={() => showAs('markdown')}>
+			Markdown
+		</button>
+	</div>
 </div>
 
 <style>
@@ -458,29 +464,39 @@
 		font: inherit;
 	}
 
-	/* In the card's top right corner, over its padding; pressed, in the pen's color, as the rail's
-	   toggles are. */
-	.mode {
+	/* In the card's top right corner, over its padding: two buttons side by side, the one showing in
+	   the pen's color, as the rail's toggles are. */
+	.modes {
 		position: absolute;
 		top: -8px;
 		right: -10px;
-		padding: 4px 10px;
-		border: none;
+		display: flex;
+		gap: 2px;
+		padding: 2px;
 		border-radius: var(--radius-control);
-		background: var(--paper);
-		box-shadow: inset 0 0 0 1px var(--border);
-		color: var(--ink-soft);
+		background: var(--card);
+		box-shadow:
+			inset 0 0 0 1px var(--border),
+			0 1px 2px rgb(0 0 0 / 0.08);
 		font: 500 11px var(--font-ui);
+	}
+
+	.modes button {
+		padding: 3px 9px;
+		border: none;
+		border-radius: calc(var(--radius-control) - 2px);
+		background: none;
+		color: var(--ink-soft);
 		cursor: pointer;
 	}
 
-	.mode:hover {
+	.modes button:hover {
+		background: var(--paper);
 		color: var(--ink);
 	}
 
-	.mode[aria-pressed='true'] {
-		background: color-mix(in srgb, var(--pen) 12%, var(--paper));
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pen) 40%, transparent);
+	.modes button[aria-pressed='true'] {
+		background: color-mix(in srgb, var(--pen) 14%, var(--card));
 		color: var(--pen);
 	}
 </style>
