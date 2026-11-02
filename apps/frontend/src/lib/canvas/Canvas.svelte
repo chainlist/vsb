@@ -77,6 +77,23 @@
 		if (contents) camera.fit(contents);
 	});
 	$effect(() => items.update());
+	// Resizing or maximizing the window leaves the cards where they are on the screen: as its corner
+	// moves, the view moves back by as much. Moving the window carries the canvas along, so where the
+	// window is is noted again whenever the pointer moves in it.
+	$effect(() => {
+		let at = { x: screenX, y: screenY };
+		const note = () => (at = { x: screenX, y: screenY });
+		const resized = () => {
+			camera.panBy(at.x - screenX, at.y - screenY);
+			note();
+		};
+		addEventListener('pointermove', note, { passive: true });
+		addEventListener('resize', resized);
+		return () => {
+			removeEventListener('pointermove', note);
+			removeEventListener('resize', resized);
+		};
+	});
 	$effect(() => bindKeys(shortcuts));
 	$effect(listenForPaste);
 	$effect(() => listenForDrops(el));
