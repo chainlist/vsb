@@ -400,6 +400,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - Any other line is text: of the item it is indented under, or that it follows with no blank line between, else of the heading above it. A fenced code block is text whole.
   - A list is always children: a list in a node's text makes children of that node.
 - **The map shows the note's order,** list items before headings. So a node moves when its form changes: a one-line leaf given a second line or a child goes after its one-line siblings, and back among them once it is one line again.
+- **On the paper.** A mindmap is drawn straight on the paper, as ink: no stock and no shadow, its outline showing only while it is selected. A color washes its box over the paper as a zone is washed, the grid showing through. Dimmed, it fades into the paper. Its Markdown, while it is typed as text, is on the paper's plain color, so the grid never runs under it.
 - **Its look.** The root at the left; each node's children in a column to its right, centered on it, joined to it by curves in the theme's soft ink. The root is boxed and bold; every other node sits on a line its curve runs into. A node's text, rendered from its Markdown, is under its title, smaller. An empty mindmap shows a faint root, "Mindmap". The map fits in the card, shrunk until it does but never grown, and sits where the card's alignment puts it, top left by default: resizing the card gives it room.
 - **Editing it in the map.** A double-click, or Enter, opens it with its root selected; the canvas's keys are off until it closes.
   - A click selects a node. Left selects its parent, Right its first child, Up and Down the sibling above or below.
@@ -411,7 +412,7 @@ The tray is also where one is deleted for good. See [Unplaced tray and search](#
   - Escape, or a click outside the card, closes it. The card stays selected.
 - **Editing it as text.** Markdown, in the corner of an open mindmap, shows its note's text in an editor, and Map shows the map again, read from the text. In the text, Tab indents by two spaces, so a list item nests. While a mindmap is open, Tab never adds a linked card.
 - **Saving.** Each change in the map writes the whole note in the form above. It is saved as a card's text is: about a second after the last change, and when the mindmap closes; the first save with content creates the note, and a note created in this edit and left empty goes. So a note written any other way takes that form from the first change made in the map. Text typed as text is saved as typed.
-- **Otherwise it is a card:** it moves, resizes, takes a color as an index card does, aligns, joins zones, takes edges, and copies and pastes as a mindmap. Tab after it, while it is closed, adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty mindmap.
+- **Otherwise it is a card:** it moves, resizes, takes a color, aligns, joins zones, takes edges, and copies and pastes as a mindmap. Tab after it, while it is closed, adds an index card. Its note missing, it shows "Note not found" as any card does, and Clear makes it an empty mindmap.
 
 ### Images
 
