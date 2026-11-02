@@ -79,7 +79,7 @@ export async function pasteItems(e: Edit, clip: Clip, x: number, y: number): Pro
 		const image = card.preview?.image !== undefined && isAttachment(card.preview.image) ? card.preview.image : undefined;
 		const preview = link && card.preview ? { ...card.preview, image } : undefined;
 		const kind = (told === 'image' && !file) || (told === 'link' && !link) ? undefined : told;
-		const note = (kind === undefined || kind === 'postit') && text?.trim() ? await newNote(e, text) : null;
+		const note = kind !== 'image' && kind !== 'link' && text?.trim() ? await newNote(e, text) : null;
 		const id = newId();
 		if (zone === landing) ids.push(id);
 		states.push(state('card', id, { ...card, kind, note, zone, x: cx, y: cy, file, link, preview }));

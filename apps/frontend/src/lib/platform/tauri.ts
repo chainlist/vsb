@@ -126,8 +126,8 @@ export const linkPreview = (url: string) => invoke<LinkPreview | null>('link_pre
 export const queryViewport = (rect: Rect, minSize: number, cell: number | null) =>
 	invoke<Viewport>('query_viewport', { rect, minSize, cell });
 
-/** Places an empty card on a world rectangle, an index card or a post-it, in `color` (null for the
- * theme's plain stock), and returns its ID. */
+/** Places an empty card on a world rectangle, an index card, a post-it or a mindmap, in `color` (null
+ * for the theme's plain stock), and returns its ID. */
 export const createCard = (x: number, y: number, w: number, h: number, kind: CardKind = 'note', color: string | null = null) =>
 	invoke<string>('create_card', { kind, color, x, y, w, h });
 

@@ -157,14 +157,15 @@ pub struct Zone {
   pub color: Option<String>,
 }
 
-/// What a card shows: a note, on an index card or on a post-it, or in its place an image file of the
-/// vault or a web page.
+/// What a card shows: a note, on an index card, on a post-it or drawn as a mindmap, or in its place an
+/// image file of the vault or a web page.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum CardKind {
   #[default]
   Note,
   Postit,
+  Mindmap,
   Image,
   Link,
 }
@@ -174,14 +175,15 @@ impl CardKind {
     match self {
       CardKind::Note => "note",
       CardKind::Postit => "postit",
+      CardKind::Mindmap => "mindmap",
       CardKind::Image => "image",
       CardKind::Link => "link",
     }
   }
 
-  /// Whether the card shows a note: an index card or a post-it, empty or not.
+  /// Whether the card shows a note: an index card, a post-it or a mindmap, empty or not.
   pub fn shows_note(self) -> bool {
-    matches!(self, CardKind::Note | CardKind::Postit)
+    matches!(self, CardKind::Note | CardKind::Postit | CardKind::Mindmap)
   }
 
   /// The kind of a card written before cards had one, told by what it shows: an image card by its

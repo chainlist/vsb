@@ -21,7 +21,7 @@ pub struct ZoneView {
 #[derive(Serialize, Debug, PartialEq)]
 pub struct CardView {
   pub id: String,
-  /// `note`, `postit`, `image` or `link`.
+  /// `note`, `postit`, `mindmap`, `image` or `link`.
   pub kind: String,
   pub note: Option<String>,
   pub zone: Option<String>,

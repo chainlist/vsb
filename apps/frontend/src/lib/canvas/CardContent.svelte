@@ -4,9 +4,8 @@
 	import ImageOff from '@lucide/svelte/icons/image-off';
 	import Link from '@lucide/svelte/icons/link';
 	import Play from '@lucide/svelte/icons/play';
-	import { openLink, type CardView } from '#lib/api.js';
-	import { isMod } from '#lib/keys.js';
-	import { renderMarkdown } from '#lib/markdown.js';
+	import type { CardView } from '#lib/api.js';
+	import { blockLinks, renderMarkdown } from '#lib/markdown.js';
 	import { clear } from './actions.js';
 	import { imageUrl } from './images.js';
 	import { hostOf } from './links.svelte.js';
@@ -20,15 +19,6 @@
 	const video = $derived(card.kind === 'link' && card.link ? videoOf(card.link) : null);
 	let playing = $state(false);
 	const selected = $derived(selection.has(card.id));
-
-	// Links render, but following one would navigate the whole app away: Ctrl+click opens it outside
-	// the app instead, as on a link card.
-	function blockLinks(e: MouseEvent) {
-		const link = (e.target as Element).closest('a');
-		if (!link) return;
-		e.preventDefault();
-		if (isMod(e)) void openLink(link.getAttribute('href') ?? '');
-	}
 </script>
 
 {#if missing}

@@ -23,10 +23,10 @@ async function place(e: Edit, card: Partial<CardFile>, x: number, y: number, w: 
 	return { id, undo };
 }
 
-/** Places an empty card on a world rectangle, an index card or a post-it, in `color` (null for the
- * theme's plain stock). It joins the innermost zone under its center. */
+/** Places an empty card on a world rectangle, an index card, a post-it or a mindmap, in `color` (null
+ * for the theme's plain stock). It joins the innermost zone under its center. */
 export async function createCard(e: Edit, kind: CardKind, color: string | null, x: number, y: number, w: number, h: number) {
-	if (kind !== 'note' && kind !== 'postit') throw new Error('an image or link card is placed with what it shows');
+	if (kind === 'image' || kind === 'link') throw new Error('an image or link card is placed with what it shows');
 	return (await place(e, { kind: kind === 'note' ? undefined : kind, color: color ?? undefined }, x, y, w, h)).id;
 }
 

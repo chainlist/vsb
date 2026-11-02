@@ -194,6 +194,15 @@ test('a post-it is a note card of its own kind and stays one', async () => {
 	assert.deepEqual([(await file('card', 'P')).kind, (await file('card', 'P')).note], ['postit', null]);
 });
 
+test('a mindmap is a note card of its own kind', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 480, 300, 'mindmap');
+	assert.deepEqual(await file('card', id), { kind: 'mindmap', note: null, zone: null, x: 0, y: 0, w: 480, h: 300 });
+	await api.createNoteForCard(id, '# Launch plan\n- Hiring\n');
+	const [view] = (await api.queryViewport(WORLD, 0, null)).cards;
+	assert.deepEqual([view.kind, view.title], ['mindmap', 'Launch plan']);
+});
+
 test('only a card showing a note is created empty', async () => {
 	await fresh();
 	await assert.rejects(api.createCard(0, 0, 200, 200, 'image'));

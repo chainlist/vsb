@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import GitFork from '@lucide/svelte/icons/git-fork';
 	import PenLine from '@lucide/svelte/icons/pen-line';
 	import SquareDashed from '@lucide/svelte/icons/square-dashed';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
@@ -36,7 +37,7 @@
 	);
 </script>
 
-<!-- Down the left edge: the zone list, the panels, the builder, pen mode and a new post-it, by their icons alone. -->
+<!-- Down the left edge: the zone list, the panels, the builder, pen mode, a new post-it and a new mindmap, by their icons alone. -->
 <nav class="rail index-card chrome" aria-label="Tools" data-beside-zones>
 	<!-- Not a route like the panels: the zone list stays open beside them. -->
 	<Tip label="Zones" keys={keys(PANEL_KEYS.zones)}>
@@ -81,6 +82,13 @@
 		{#snippet children(props)}
 			<button {...props} onclick={() => placeCard(camera.toWorld(camera.width / 2, camera.height / 2), 'postit')}>
 				<StickyNote size={ICON} />
+			</button>
+		{/snippet}
+	</Tip>
+	<Tip label="Mindmap">
+		{#snippet children(props)}
+			<button {...props} onclick={() => placeCard(camera.toWorld(camera.width / 2, camera.height / 2), 'mindmap')}>
+				<GitFork size={ICON} />
 			</button>
 		{/snippet}
 	</Tip>

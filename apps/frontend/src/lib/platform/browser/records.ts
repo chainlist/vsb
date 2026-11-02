@@ -140,7 +140,7 @@ function linkPreview(v: unknown): LinkPreview | undefined {
  * shows: an image card by its `file`, a link card by its `link`. An index card leaves its kind out,
  * so it is never written with either. */
 export function cardKind(v: Record<string, unknown>): CardFile['kind'] {
-	const kind = choice(v.kind, ['note', 'postit', 'image', 'link'], 'note', 'kind') as CardFile['kind'];
+	const kind = choice(v.kind, ['note', 'postit', 'mindmap', 'image', 'link'], 'note', 'kind') as CardFile['kind'];
 	return kind ?? (typeof v.file === 'string' ? 'image' : typeof v.link === 'string' ? 'link' : undefined);
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { BUILDER_KEYS } from '#lib/canvas/batchDialog.svelte.js';
+	import { MINDMAP_KEYS, TYPING_KEYS } from '#lib/canvas/mindmap.js';
 	import { DRAWING_KEYS } from '#lib/canvas/pen.svelte.js';
 	import { CANVAS_KEYS, EDITING_KEYS } from '#lib/canvas/shortcuts.js';
 	import { PICKER_KEYS } from '#lib/canvas/tab.svelte.js';
@@ -17,6 +18,8 @@
 		['Canvas', all(CANVAS_KEYS)],
 		['Editing', [...all(EDITING_KEYS), { keys: ['Enter'], label: "Finish an edge's label or a zone's name" }]],
 		['Placing a linked card', all(PICKER_KEYS)],
+		['Mindmap, while open', [...all(MINDMAP_KEYS), { keys: ['Escape'], label: 'Close the mindmap' }]],
+		['Typing a mindmap node', [...all(TYPING_KEYS), { keys: ['Shift+Enter'], label: 'Start a new line: the lines after the first are its text' }]],
 		[
 			'Drawing',
 			[

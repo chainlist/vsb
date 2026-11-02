@@ -25,7 +25,7 @@ impl Session {
     self.index.zone_around(Rect::of(x + w / 2.0, y + h / 2.0, 0.0, 0.0), &[])
   }
 
-  /// Places an empty card on a world rectangle, an index card or a post-it, in `color` (None for the
+  /// Places an empty card on a world rectangle, an index card, a post-it or a mindmap, in `color` (None for the
   /// theme's plain stock). It joins the innermost zone under its center.
   pub fn create_card(&self, kind: CardKind, color: Option<String>, x: f64, y: f64, w: f64, h: f64) -> Result<String> {
     if !kind.shows_note() {

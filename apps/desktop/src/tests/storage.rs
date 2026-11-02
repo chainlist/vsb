@@ -139,11 +139,12 @@ fn a_card_file_from_before_kinds_is_told_by_what_it_shows_and_gains_its_kind() {
   f.write(".canvas/cards/L.json", &format!(r#"{{ {at}, "link": "https://example.com" }}"#));
   f.write(".canvas/cards/N.json", &format!("{{ {at} }}"));
   f.write(".canvas/cards/P.json", &format!(r##"{{ "kind": "postit", {at}, "color": "#f5d76e" }}"##));
+  f.write(".canvas/cards/M.json", &format!(r#"{{ "kind": "mindmap", {at} }}"#));
   let read = |id| items::read::<Card>(&items::path(&f.vault, Kind::Card, id)).unwrap();
-  let kinds = ["I", "L", "N", "P"].map(|id| read(id).kind);
-  assert_eq!(kinds, [CardKind::Image, CardKind::Link, CardKind::Note, CardKind::Postit]);
+  let kinds = ["I", "L", "N", "P", "M"].map(|id| read(id).kind);
+  assert_eq!(kinds, [CardKind::Image, CardKind::Link, CardKind::Note, CardKind::Postit, CardKind::Mindmap]);
   // Written again, each but the index card says what kind it is.
-  for (id, kind) in [("I", Some("image")), ("L", Some("link")), ("N", None), ("P", Some("postit"))] {
+  for (id, kind) in [("I", Some("image")), ("L", Some("link")), ("N", None), ("P", Some("postit")), ("M", Some("mindmap"))] {
     let path = items::write(&f.vault, id, &read(id)).unwrap();
     let json: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
     assert_eq!(json.get("kind").and_then(|k| k.as_str()), kind, "{id}");

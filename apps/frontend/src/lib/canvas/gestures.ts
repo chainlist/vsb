@@ -29,6 +29,8 @@ export const MIN = { w: 60, h: 40 };
 export const NEW_CARD = { w: 240, h: 140 };
 /** Size of a newly placed post-it, in world units: 10 by 10 squares. */
 export const NEW_POSTIT = { w: 200, h: 200 };
+/** Size of a newly placed mindmap, in world units: 24 by 15 squares. */
+export const NEW_MINDMAP = { w: 480, h: 300 };
 /** Width of a resize handle on a side or corner, in screen pixels, half of it outside the item. */
 export const GRIP = 10;
 /** How near, in screen pixels, a side or middle is pulled onto one of a card around it. */

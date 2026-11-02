@@ -30,14 +30,14 @@ import {
 } from '#lib/api.js';
 import { camera } from './camera.svelte.js';
 import { POSTIT_COLOR } from './colors.js';
-import { NEW_CARD, NEW_POSTIT, newCardAt } from './gestures.js';
+import { NEW_CARD, NEW_MINDMAP, NEW_POSTIT, newCardAt } from './gestures.js';
 import { history } from './history.js';
 import { cover, inside, items, OPEN_ZOOM } from './items.svelte.js';
 import { selection } from './selection.svelte.js';
 
-/** Whether a card shows a note: an index card or a post-it. An image or link card shows something
- * else in its place, with no text to edit or align. */
-export const showsNote = (card: CardView) => card.kind === 'note' || card.kind === 'postit';
+/** Whether a card shows a note: an index card, a post-it or a mindmap. An image or link card shows
+ * something else in its place, with no text to edit or align. */
+export const showsNote = (card: CardView) => card.kind !== 'image' && card.kind !== 'link';
 
 /** How far a card leans, in degrees: a post-it from half a degree to two either way, told by its ID
  * so it leans the same each time it is drawn and on every device; any other card stands straight. */
@@ -183,11 +183,12 @@ export async function fitAll() {
 	if (contents) camera.glide(contents);
 }
 
-/** Places an empty card centered on a world point and opens it: an index card, or a post-it, square
- * and yellow. Zoomed out, it would be hidden in a cluster: it is framed, zoomed in until it shows. */
-export function placeCard(at: { x: number; y: number }, kind: 'note' | 'postit' = 'note') {
+/** Places an empty card centered on a world point and opens it: an index card, a post-it, square and
+ * yellow, or a mindmap, wide. Zoomed out, it would be hidden in a cluster: it is framed, zoomed in
+ * until it shows. */
+export function placeCard(at: { x: number; y: number }, kind: 'note' | 'postit' | 'mindmap' = 'note') {
 	const postit = kind === 'postit';
-	const { x, y, w, h } = newCardAt(at, postit ? NEW_POSTIT : NEW_CARD);
+	const { x, y, w, h } = newCardAt(at, postit ? NEW_POSTIT : kind === 'mindmap' ? NEW_MINDMAP : NEW_CARD);
 	const hidden = items.collapsed;
 	return history.edit(async () => {
 		const id = await createCard(x, y, w, h, kind, postit ? POSTIT_COLOR : null);

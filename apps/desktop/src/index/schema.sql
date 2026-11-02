@@ -19,7 +19,7 @@ CREATE INDEX zones_parent ON zones(parent);
 CREATE TABLE cards (
   key       INTEGER PRIMARY KEY,      -- shared with card_bounds
   id        TEXT UNIQUE NOT NULL,
-  kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, image or link
+  kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, mindmap, image or link
   note      TEXT,                     -- NULL = empty card
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file

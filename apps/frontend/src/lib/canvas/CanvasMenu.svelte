@@ -4,6 +4,7 @@
 	import CopyPlus from '@lucide/svelte/icons/copy-plus';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import GitBranchPlus from '@lucide/svelte/icons/git-branch-plus';
+	import GitFork from '@lucide/svelte/icons/git-fork';
 	import Group from '@lucide/svelte/icons/group';
 	import Network from '@lucide/svelte/icons/network';
 	import Pencil from '@lucide/svelte/icons/pencil';
@@ -42,6 +43,7 @@
 				[
 					{ label: 'Add card here', icon: SquarePlus, keys: 'Double-click', run: () => placeCard(at) },
 					{ label: 'Add post-it here', icon: StickyNotePlus, run: () => placeCard(at, 'postit') },
+					{ label: 'Add mindmap here', icon: GitFork, run: () => placeCard(at, 'mindmap') },
 					{ label: 'Paste here', icon: ClipboardPaste, keys: key(CANVAS_KEYS.paste), run: () => pasteAt(at).catch(failure.report) }
 				],
 				[

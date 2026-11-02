@@ -11,6 +11,8 @@
 	import { selection } from './selection.svelte.js';
 	import CardContent from './CardContent.svelte';
 	import CardEditor from './CardEditor.svelte';
+	import Mindmap from './Mindmap.svelte';
+	import MindmapEditor from './MindmapEditor.svelte';
 
 	let { card }: { card: CardView } = $props();
 
@@ -79,7 +81,13 @@
 >
 	<!-- A note that fails to show fails alone, in its card. -->
 	<ErrorBoundary what="This card">
-		{#if editing}
+		{#if card.kind === 'mindmap' && !missing}
+			{#if editing}
+				<MindmapEditor {card} />
+			{:else}
+				<Mindmap {card} />
+			{/if}
+		{:else if editing}
 			<CardEditor {card} />
 		{:else}
 			<CardContent {card} {missing} />

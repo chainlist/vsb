@@ -48,9 +48,9 @@ export type ZoneView = {
 export type HAlign = 'left' | 'center' | 'right';
 export type VAlign = 'top' | 'center' | 'bottom';
 
-/** What a card shows: a note, on an index card or on a post-it, or in its place an image file of the
- * vault or a web page. */
-export type CardKind = 'note' | 'postit' | 'image' | 'link';
+/** What a card shows: a note, on an index card, on a post-it or drawn as a mindmap, or in its place an
+ * image file of the vault or a web page. */
+export type CardKind = 'note' | 'postit' | 'mindmap' | 'image' | 'link';
 
 /** A card in absolute world coordinates, with what the index knows of its note. */
 export type CardView = {
