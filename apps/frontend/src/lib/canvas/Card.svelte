@@ -2,7 +2,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { openLink, type CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
-	import { edit, tilt } from './actions.js';
+	import { edit, sizeMindmap, tilt } from './actions.js';
 	import { startMove } from './gestures.js';
 	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
@@ -18,6 +18,14 @@
 
 	/** What a mindmap shows, as its editor says at once, until its file says so too. */
 	let view = $derived(card.view);
+	let element: HTMLElement;
+
+	/** Sizes a mindmap's card to its map, `w` by `h`, with the card's padding around it. */
+	function hold(w: number, h: number) {
+		const style = getComputedStyle(element);
+		const px = (side: string) => parseFloat(style.getPropertyValue(`padding-${side}`));
+		void sizeMindmap(card, w + px('left') + px('right'), h + px('top') + px('bottom'));
+	}
 
 	const justify = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
 	/** Whether the card's image file was found missing. */
@@ -64,6 +72,7 @@
 	class:note-card={card.kind !== 'image' || missing}
 	class:postit={card.kind === 'postit'}
 	class:mindmap={card.kind === 'mindmap' && view === 'map'}
+	class:unclipped={card.kind === 'mindmap' && (view === 'map' || editing)}
 	class:tinted={card.color !== null}
 	class:missing
 	class:selected
@@ -77,6 +86,7 @@
 	style:--tint={card.color}
 	style:text-align={card.halign}
 	style:justify-content={justify[card.valign]}
+	bind:this={element}
 	onpointerdown={press}
 	onclick={follow}
 	ondblclick={open}
@@ -87,9 +97,9 @@
 	<ErrorBoundary what="This card">
 		<!-- Showing its Markdown, a mindmap is an index card but for its editor. -->
 		{#if card.kind === 'mindmap' && !missing && editing}
-			<MindmapEditor {card} onview={(v) => (view = v)} />
+			<MindmapEditor {card} onview={(v) => (view = v)} onsize={hold} />
 		{:else if card.kind === 'mindmap' && !missing && view === 'map'}
-			<Mindmap {card} />
+			<Mindmap {card} onsize={hold} />
 		{:else if editing}
 			<CardEditor {card} />
 		{:else}
@@ -157,6 +167,12 @@
 		--lift: 0 0 transparent;
 		background: none;
 		transition: opacity var(--fade);
+	}
+
+	/* A map can pass its card's sides while its nodes are on their way to a new size, and an open
+	   mindmap's buttons sit above its card. The map clips itself when it fits its card. */
+	.unclipped {
+		overflow: visible;
 	}
 
 	/* Open, its nodes are selected, not the card: no outline. */

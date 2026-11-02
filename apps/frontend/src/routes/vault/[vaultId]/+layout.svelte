@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import Canvas from '#lib/canvas/Canvas.svelte';
 	import { snap } from '#lib/canvas/grid.svelte.js';
+	import { mindmapFit } from '#lib/canvas/mindmapFit.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
 	import { ink } from '#lib/canvas/pen.svelte.js';
 	import { wheel } from '#lib/canvas/wheel.svelte.js';
@@ -25,6 +26,9 @@
 	});
 	$effect(() => {
 		snap.on = data.snap;
+	});
+	$effect(() => {
+		mindmapFit.on = data.fitMindmaps;
 	});
 	$effect(() => {
 		newEdges.style = data.edgeStyle;

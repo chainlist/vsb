@@ -17,6 +17,7 @@ import {
 	labelEdge,
 	placeNote,
 	renameZone,
+	resizeCard,
 	setMindmapView,
 	shapeEdges,
 	strokeEdges,
@@ -31,11 +32,13 @@ import {
 	type VAlign,
 	type ZoneView
 } from '#lib/api.js';
+import { failure } from '#lib/failure.svelte.js';
 import { camera } from './camera.svelte.js';
 import { POSTIT_COLOR } from './colors.js';
-import { NEW_CARD, NEW_MINDMAP, NEW_POSTIT, newCardAt } from './gestures.js';
+import { NEW_CARD, NEW_MINDMAP, NEW_POSTIT, NEW_ROOT, newCardAt } from './gestures.js';
 import { history } from './history.js';
 import { cover, inside, items, OPEN_ZOOM } from './items.svelte.js';
+import { mindmapFit } from './mindmapFit.svelte.js';
 import { selection } from './selection.svelte.js';
 
 /** Whether a card shows a note: an index card, a post-it or a mindmap. An image or link card shows
@@ -127,6 +130,30 @@ export function alignSelected(halign: HAlign, valign: VAlign) {
 /** Shows a mindmap's map, or its note's Markdown on an index card. */
 export const showMindmap = (card: CardView, view: MindmapView) => history.edit(() => setMindmapView(card.id, view));
 
+/** The size each mindmap card waits to be written at, while a write of its size is under way. */
+const unwritten = new Map<string, Frame | null>();
+
+/** Sizes a mindmap's card to hold its map, its top left corner staying put: drawn at once, written
+ * after any write of its size still under way. Not an undo step: its map sizes it again. */
+export async function sizeMindmap(card: CardView, w: number, h: number) {
+	[w, h] = [Math.ceil(w), Math.ceil(h)];
+	if (card.w === w && card.h === h) return;
+	[card.w, card.h] = [w, h];
+	const writing = unwritten.has(card.id);
+	unwritten.set(card.id, { x: card.x, y: card.y, w, h });
+	if (writing) return;
+	try {
+		for (let next = unwritten.get(card.id); next; next = unwritten.get(card.id)) {
+			unwritten.set(card.id, null);
+			await resizeCard(card.id, next.x, next.y, next.w, next.h);
+		}
+	} catch (e) {
+		failure.report(e);
+	} finally {
+		unwritten.delete(card.id);
+	}
+}
+
 /** Sets the color of the selected cards, zones and drawings together; null for none. */
 export function colorSelected(color: string | null) {
 	const cards = selection.cards.map((c) => c.id);
@@ -197,11 +224,12 @@ export async function fitSelected() {
 }
 
 /** Places an empty card centered on a world point and opens it: an index card, a post-it, square and
- * yellow, or a mindmap, wide. Zoomed out, it would be hidden in a cluster: it is framed, zoomed in
- * until it shows. */
+ * yellow, or a mindmap, its root's size, or wide while maps fit their cards. Zoomed out, it would be
+ * hidden in a cluster: it is framed, zoomed in until it shows. */
 export function placeCard(at: { x: number; y: number }, kind: 'note' | 'postit' | 'mindmap' = 'note') {
 	const postit = kind === 'postit';
-	const { x, y, w, h } = newCardAt(at, postit ? NEW_POSTIT : kind === 'mindmap' ? NEW_MINDMAP : NEW_CARD);
+	const mindmap = mindmapFit.on ? NEW_MINDMAP : NEW_ROOT;
+	const { x, y, w, h } = newCardAt(at, postit ? NEW_POSTIT : kind === 'mindmap' ? mindmap : NEW_CARD);
 	const hidden = items.collapsed;
 	return history.edit(async () => {
 		const id = await createCard(x, y, w, h, kind, postit ? POSTIT_COLOR : null);

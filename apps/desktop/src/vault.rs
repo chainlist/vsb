@@ -23,6 +23,10 @@ struct VaultFile {
   /// Whether moved and resized cards and zones land on the grid; left out while on, the default.
   #[serde(default = "on", skip_serializing_if = "is_on")]
   snap: bool,
+  /// Whether each mindmap is shrunk to fit its card, rather than its card taking its map's size;
+  /// left out while off, the default.
+  #[serde(default, rename = "fitMindmaps", skip_serializing_if = "is_default")]
+  fit_mindmaps: bool,
   /// The style every edge the app creates gets; left out at the default, each part as in an edge file.
   #[serde(default, rename = "newEdges", skip_serializing_if = "is_default")]
   new_edges: NewEdges,
@@ -80,7 +84,7 @@ impl Vault {
   pub fn open_or_init(root: &Path) -> Result<Vault> {
     let file = vault_file(root);
     if !file.exists() {
-      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, new_edges: NewEdges::default(), onboarded: false };
+      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, fit_mindmaps: false, new_edges: NewEdges::default(), onboarded: false };
       atomic_write(&file, &serde_json::to_vec_pretty(&v)?)?;
     }
     fs::create_dir_all(root.join("notes"))?;
@@ -123,6 +127,19 @@ impl Vault {
   pub fn set_snap(&self, snap: bool) -> Result<()> {
     let mut v = read_vault_file(&self.root)?;
     v.snap = snap;
+    atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
+  }
+
+  /// Whether `vault.json` has each mindmap shrunk to fit its card: not unless it says so.
+  pub fn fit_mindmaps(&self) -> Result<bool> {
+    Ok(read_vault_file(&self.root)?.fit_mindmaps)
+  }
+
+  /// Has each mindmap shrunk to fit its card in `vault.json`, or its card take its map's size again
+  /// by leaving it out. Read again first, as for the theme.
+  pub fn set_fit_mindmaps(&self, fit: bool) -> Result<()> {
+    let mut v = read_vault_file(&self.root)?;
+    v.fit_mindmaps = fit;
     atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
   }
 

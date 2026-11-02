@@ -5,6 +5,7 @@
 	import { blockLinks, renderInline, renderMarkdown } from '#lib/markdown.js';
 	import { motion } from '#lib/motion.js';
 	import { layout, type Key, type MindNode, type Size } from './mindmap.js';
+	import { mindmapFit } from './mindmapFit.svelte.js';
 
 	let {
 		root,
@@ -15,7 +16,8 @@
 		typing = null,
 		field,
 		onpick,
-		onopen
+		onopen,
+		onsize
 	}: {
 		root: MindNode;
 		/** An ID for each node that stays with it as the map changes, so it animates; without, a node is
@@ -31,6 +33,9 @@
 		/** A press on a node, and a double-click. */
 		onpick?: (key: Key, e: PointerEvent) => void;
 		onopen?: (key: Key) => void;
+		/** Hears the map's size as laid out, once each of its nodes is measured, while its card takes
+		 * its size. */
+		onsize?: (w: number, h: number) => void;
 	} = $props();
 
 	/** Room around the map; between a node and its children's column, and between branches. */
@@ -59,11 +64,17 @@
 	const targets = $derived(
 		map.nodes.map((p): Frame => ({ ...p, id: idOf(p.key), parent: p.parent === null ? null : idOf(p.parent), grown: 1 }))
 	);
+	/** Whether every node is measured: until then the map is not laid out at its size. */
+	const measured = $derived(map.nodes.every((p) => sizes[idOf(p.key)]));
 	/** Shown once every node is measured, so it never shows piled up; a node added later is laid out
 	 * as it is measured. */
 	let ready = $state(false);
 	$effect(() => {
-		if (map.nodes.every((p) => sizes[idOf(p.key)])) ready = true;
+		if (measured) ready = true;
+	});
+	// The size laid out, not the one drawn on the way there, with the room around the map.
+	$effect(() => {
+		if (measured && !mindmapFit.on) onsize?.(map.w + 2 * PAD, map.h + 2 * PAD);
 	});
 
 	// The nodes as drawn, on their way from where they were (`from`, or `begins` for a node added) to
@@ -154,8 +165,11 @@
 	let height = $state(0);
 	const w = $derived(Math.max(0, ...frames.map((f) => f.x + f.w)) + 2 * PAD);
 	const h = $derived(Math.max(0, ...frames.map((f) => f.y + f.h)) + 2 * PAD);
-	/** Shrunk to fit the card, never grown. */
-	const scale = $derived(Math.min(1, width / w, height / h));
+	/** While maps fit their cards, shrunk to fit the card, never grown, and set where its alignment puts
+	 * it; else at its own size in the card's top left corner, as the card takes its size. */
+	const scale = $derived(mindmapFit.on ? Math.min(1, width / w, height / h) : 1);
+	const left = $derived(mindmapFit.on ? (width - w * scale) * ALIGN[halign] : 0);
+	const top = $derived(mindmapFit.on ? (height - h * scale) * ALIGN[valign] : 0);
 
 	/** The curve from a node's parent's end into the left end of this node's line. */
 	function curve(f: Frame) {
@@ -188,16 +202,8 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="frame" bind:clientWidth={width} bind:clientHeight={height} onclick={blockLinks}>
-	<div
-		class="map"
-		class:ready
-		style:width="{w}px"
-		style:height="{h}px"
-		style:left="{(width - w * scale) * ALIGN[halign]}px"
-		style:top="{(height - h * scale) * ALIGN[valign]}px"
-		style:scale
-	>
+<div class="frame" class:fit={mindmapFit.on} bind:clientWidth={width} bind:clientHeight={height} onclick={blockLinks}>
+	<div class="map" class:ready style:width="{w}px" style:height="{h}px" style:left="{left}px" style:top="{top}px" style:scale>
 		<svg width={w} height={h} aria-hidden="true">
 			<g transform="translate({PAD} {PAD})">
 				{#each frames as f (f.id)}
@@ -240,15 +246,20 @@
 </div>
 
 <style>
-	/* The card's whole inside, the map fitted in it where the card's alignment puts it. Fading in while
-	   the card appears (--shown, from Card.svelte). */
+	/* The card's whole inside, holding the map. Fading in while the card appears (--shown, from
+	   Card.svelte). */
 	.frame {
 		position: relative;
 		flex: 1 1 auto;
 		min-height: 0;
-		overflow: hidden;
 		text-align: left;
 		opacity: var(--shown);
+	}
+
+	/* Fitted in its card, the map stays inside it. Taking its card's size, it can pass the card's new
+	   sides while its nodes are on their way. */
+	.fit {
+		overflow: hidden;
 	}
 
 	/* Clear until it is laid out, not hidden: a new mindmap's root takes the focus for typing from the

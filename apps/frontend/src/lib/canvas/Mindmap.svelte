@@ -12,9 +12,11 @@
 	import { openAt } from './MindmapEditor.svelte';
 	import MindmapMap from './MindmapMap.svelte';
 
-	let { card }: { card: CardView } = $props();
+	/** `onsize` hears its map's size once its note is read, so the size is its own. */
+	let { card, onsize }: { card: CardView; onsize: (w: number, h: number) => void } = $props();
 
 	let text = $state('');
+	let read = $state(false);
 	const root = $derived(parse(text));
 	// The note is read again when its title or excerpt changes, as an edit ends.
 	const note = $derived(card.note);
@@ -24,14 +26,15 @@
 		void stamp;
 		const id = note;
 		text = id ? (texts.get(id) ?? '') : '';
+		read = !id;
 		if (!id) return;
 		let live = true;
 		// After the last edit is saved, so its text is the one read.
 		finished()
 			.then(() => readNote(id))
-			.then((read) => {
-				texts.set(id, read);
-				if (live) text = read;
+			.then((got) => {
+				texts.set(id, got);
+				if (live) [text, read] = [got, true];
 			})
 			.catch(failure.report);
 		return () => (live = false);
@@ -39,4 +42,10 @@
 </script>
 
 <!-- A click on a node opens the mindmap at it; a drag moves the card. -->
-<MindmapMap {root} halign={card.halign} valign={card.valign} onpick={(key, e) => pressNode(e, card, () => openAt(card, key))} />
+<MindmapMap
+	{root}
+	halign={card.halign}
+	valign={card.valign}
+	onpick={(key, e) => pressNode(e, card, () => openAt(card, key))}
+	onsize={read ? onsize : undefined}
+/>

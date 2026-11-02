@@ -41,6 +41,15 @@ export const setSnap = (e: Edit, snap: boolean) =>
 		else v.snap = false;
 	});
 
+/** Each mindmap shrunk to fit its card: not unless the vault says so. */
+export const fitMindmaps = async (e: Edit) => (await settings(e)).fitMindmaps ?? false;
+
+export const setFitMindmaps = (e: Edit, fit: boolean) =>
+	change(e, (v) => {
+		if (fit) v.fitMindmaps = true;
+		else delete v.fitMindmaps;
+	});
+
 /** Whether the vault's onboarding has been through: not until the vault says so. */
 export const onboarded = async (e: Edit) => (await settings(e)).onboarded ?? false;
 

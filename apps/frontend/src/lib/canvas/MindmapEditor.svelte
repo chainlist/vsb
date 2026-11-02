@@ -46,8 +46,13 @@
 		type MindNode
 	} from './mindmap.js';
 
-	/** `onview` hears at once what it shows, before its card's file says so. */
-	let { card, onview }: { card: CardView; onview: (view: MindmapView) => void } = $props();
+	/** `onview` hears at once what it shows, before its card's file says so; `onsize`, its map's size
+	 * once its note is read. */
+	let {
+		card,
+		onview,
+		onsize
+	}: { card: CardView; onview: (view: MindmapView) => void; onsize: (w: number, h: number) => void } = $props();
 
 	/** The note's text, and an ID for each node of its map that stays with the node through each
 	 * change, so the map can animate it: a node added grows, one removed draws back, one moved glides. */
@@ -382,6 +387,7 @@
 			typing={typing?.key ?? null}
 			onpick={(key) => (selected = key)}
 			onopen={open}
+			onsize={ready ? onsize : undefined}
 		>
 			{#snippet field()}
 				<span class="field" data-text={draft}>
@@ -464,12 +470,13 @@
 		font: inherit;
 	}
 
-	/* In the card's top right corner, over its padding: two buttons side by side, the one showing in
-	   the pen's color, as the rail's toggles are. */
+	/* Just above the card's top right corner, past its padding, clear of a map taking the card's size:
+	   two buttons side by side, the one showing in the pen's color, as the rail's toggles are. */
 	.modes {
 		position: absolute;
-		top: -8px;
-		right: -10px;
+		top: -12px;
+		right: -14px;
+		translate: 0 calc(-100% - 4px);
 		display: flex;
 		gap: 2px;
 		padding: 2px;

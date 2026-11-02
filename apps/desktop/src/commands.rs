@@ -138,6 +138,16 @@ pub async fn set_vault_snap(state: State<'_, AppState>, snap: bool) -> Result<()
 }
 
 #[tauri::command]
+pub async fn vault_fit_mindmaps(state: State<'_, AppState>) -> Result<bool> {
+  state.with(|s| s.vault.fit_mindmaps())
+}
+
+#[tauri::command]
+pub async fn set_vault_fit_mindmaps(state: State<'_, AppState>, fit: bool) -> Result<()> {
+  state.with(|s| s.vault.set_fit_mindmaps(fit))
+}
+
+#[tauri::command]
 pub async fn vault_onboarded(state: State<'_, AppState>) -> Result<bool> {
   state.with(|s| s.vault.onboarded())
 }

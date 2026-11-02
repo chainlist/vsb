@@ -1,6 +1,14 @@
 <script lang="ts">
-	import { setDeviceWheel, setVaultEdgeStyle, setVaultSnap, type EdgeStyle as Style, type Wheel } from '#lib/api.js';
+	import {
+		setDeviceWheel,
+		setVaultEdgeStyle,
+		setVaultFitMindmaps,
+		setVaultSnap,
+		type EdgeStyle as Style,
+		type Wheel
+	} from '#lib/api.js';
 	import { snap } from '#lib/canvas/grid.svelte.js';
+	import { mindmapFit } from '#lib/canvas/mindmapFit.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
 	import { wheel } from '#lib/canvas/wheel.svelte.js';
 	import EdgeStyle from '#lib/canvas/EdgeStyle.svelte';
@@ -9,8 +17,8 @@
 
 	let error = $state('');
 
-	// Each choice applies at once, then is kept: snapping and new edges in vault.json, the wheel for
-	// this device. Each leaves out the default.
+	// Each choice applies at once, then is kept: snapping, new edges and mindmaps in vault.json, the
+	// wheel for this device. Each leaves out the default.
 	async function keep(write: Promise<void>) {
 		error = '';
 		try {
@@ -23,6 +31,11 @@
 	function toggle(on: boolean) {
 		snap.on = on;
 		keep(setVaultSnap(on));
+	}
+
+	function fitMindmaps(fit: boolean) {
+		mindmapFit.on = fit;
+		keep(setVaultFitMindmaps(fit));
 	}
 
 	function restyle(change: Partial<Style>) {
@@ -62,6 +75,20 @@
 			pick={{ shape: (shape) => restyle({ shape }), arrow: (arrow) => restyle({ arrow }), stroke: (stroke) => restyle({ stroke }) }}
 		/>
 	</div>
+</fieldset>
+
+<fieldset>
+	<legend>Mindmaps</legend>
+	<label class="option">
+		<input type="checkbox" checked={mindmapFit.on} onchange={(e) => fitMindmaps(e.currentTarget.checked)} />
+		<span>
+			<span class="name">Fit maps in their cards</span>
+			<span class="hint">
+				A mindmap's card takes its map's size, growing and shrinking as the map does. Checked, each map is shrunk
+				instead to fit its card, which you resize.
+			</span>
+		</span>
+	</label>
 </fieldset>
 
 <fieldset>

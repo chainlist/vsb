@@ -122,6 +122,18 @@ test("a vault's theme and snapping are its own, left out at their default", asyn
 	assert.deepEqual([await api.vaultTheme(), await api.vaultSnap()], [null, true]);
 });
 
+test("a vault's mindmaps size their cards unless it fits them, left out at that default", async () => {
+	const a = await fresh();
+	assert.equal(await api.vaultFitMindmaps(), false);
+	await api.setVaultFitMindmaps(true);
+	await fresh();
+	assert.equal(await api.vaultFitMindmaps(), false);
+	await api.openVault(a);
+	assert.equal(await api.vaultFitMindmaps(), true);
+	await api.setVaultFitMindmaps(false);
+	assert.equal(await api.vaultFitMindmaps(), false);
+});
+
 test("a vault's onboarding is noted once done, and left out until then", async () => {
 	const a = await fresh();
 	assert.equal(await api.vaultOnboarded(), false);

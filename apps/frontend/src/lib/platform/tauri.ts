@@ -95,6 +95,13 @@ export const vaultSnap = () => invoke<boolean>('vault_snap');
 /** Turns snapping to the grid on or off in the open vault's `vault.json`. */
 export const setVaultSnap = (snap: boolean) => invoke<void>('set_vault_snap', { snap });
 
+/** Whether the open vault's `vault.json` has each mindmap shrunk to fit its card, rather than its card
+ * taking its map's size. */
+export const vaultFitMindmaps = () => invoke<boolean>('vault_fit_mindmaps');
+
+/** Has each mindmap shrunk to fit its card, or not, in the open vault's `vault.json`. */
+export const setVaultFitMindmaps = (fit: boolean) => invoke<void>('set_vault_fit_mindmaps', { fit });
+
 /** Whether the open vault's onboarding has been through, as its `vault.json` says. */
 export const vaultOnboarded = () => invoke<boolean>('vault_onboarded');
 

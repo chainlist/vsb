@@ -87,6 +87,8 @@ pub fn run() {
       commands::set_vault_paper,
       commands::vault_snap,
       commands::set_vault_snap,
+      commands::vault_fit_mindmaps,
+      commands::set_vault_fit_mindmaps,
       commands::vault_onboarded,
       commands::set_vault_onboarded,
       commands::vault_edge_style,

@@ -96,6 +96,21 @@ fn snap_is_on_by_default_and_only_written_while_off() {
 }
 
 #[test]
+fn mindmaps_size_their_cards_by_default_and_fitting_them_is_only_written_while_on() {
+  let f = Fixture::new();
+  assert!(!f.vault.fit_mindmaps().unwrap());
+  assert!(!f.read(".canvas/vault.json").contains("fitMindmaps"));
+  f.vault.set_theme(Some("pad".into())).unwrap();
+  f.vault.set_fit_mindmaps(true).unwrap();
+  let json: serde_json::Value = serde_json::from_str(&f.read(".canvas/vault.json")).unwrap();
+  assert_eq!(json["fitMindmaps"], true);
+  assert_eq!(json["theme"], "pad");
+  assert!(Vault::open(f.dir.path()).unwrap().fit_mindmaps().unwrap());
+  f.vault.set_fit_mindmaps(false).unwrap();
+  assert!(!f.read(".canvas/vault.json").contains("fitMindmaps"));
+}
+
+#[test]
 fn the_style_for_new_edges_is_kept_in_vault_json_each_part_left_out_at_its_default() {
   let f = Fixture::new();
   assert_eq!(f.vault.edge_style().unwrap(), EdgeStyle::default());

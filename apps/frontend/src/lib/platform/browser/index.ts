@@ -73,6 +73,8 @@ export const vaultPaper = () => reading(settings.paper);
 export const setVaultPaper = (paper: string | null) => writing((e) => settings.setPaper(e, paper));
 export const vaultSnap = () => reading(settings.snap);
 export const setVaultSnap = (snap: boolean) => writing((e) => settings.setSnap(e, snap));
+export const vaultFitMindmaps = () => reading(settings.fitMindmaps);
+export const setVaultFitMindmaps = (fit: boolean) => writing((e) => settings.setFitMindmaps(e, fit));
 export const vaultOnboarded = () => reading(settings.onboarded);
 export const setVaultOnboarded = () => writing(settings.setOnboarded);
 export const vaultEdgeStyle = () => reading(settings.edgeStyle);
