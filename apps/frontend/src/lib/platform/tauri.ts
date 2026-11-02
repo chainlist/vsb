@@ -17,6 +17,7 @@ import type {
 	Link,
 	LinkPreview,
 	LinkPlan,
+	MindmapView,
 	Move,
 	Pasted,
 	Pen,
@@ -216,6 +217,8 @@ export const resizeCard = (id: string, x: number, y: number, w: number, h: numbe
 
 export const alignCards = (ids: string[], halign: HAlign, valign: VAlign) =>
 	invoke<ItemState[]>('align_cards', { ids, halign, valign });
+
+export const setMindmapView = (id: string, view: MindmapView) => invoke<ItemState[]>('set_mindmap_view', { id, view });
 
 /** Turns an unresolved card into an empty one. */
 export const clearCard = (id: string) => invoke<ItemState[]>('clear_card', { id });

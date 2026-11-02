@@ -119,6 +119,7 @@ pub fn run() {
       commands::zone_nodes,
       commands::resize_card,
       commands::align_cards,
+      commands::set_mindmap_view,
       commands::clear_card,
       commands::delete_cards,
       commands::create_zone,

@@ -16,6 +16,7 @@ import {
 	labelEdge,
 	placeNote,
 	renameZone,
+	setMindmapView,
 	shapeEdges,
 	strokeEdges,
 	type Arrow,
@@ -23,6 +24,7 @@ import {
 	type EdgeView,
 	type Frame,
 	type HAlign,
+	type MindmapView,
 	type Shape,
 	type Stroke,
 	type VAlign,
@@ -120,6 +122,9 @@ export function alignSelected(halign: HAlign, valign: VAlign) {
 	const ids = selection.cards.filter(showsNote).map((c) => c.id);
 	return history.edit(() => alignCards(ids, halign, valign));
 }
+
+/** Shows a mindmap's map, or its note's Markdown on an index card. */
+export const showMindmap = (card: CardView, view: MindmapView) => history.edit(() => setMindmapView(card.id, view));
 
 /** Sets the color of the selected cards, zones and drawings together; null for none. */
 export function colorSelected(color: string | null) {

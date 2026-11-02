@@ -23,6 +23,8 @@ pub struct CardView {
   pub id: String,
   /// `note`, `postit`, `mindmap`, `image` or `link`.
   pub kind: String,
+  /// A mindmap's, `map` or `markdown`; `map` for any other card.
+  pub view: String,
   pub note: Option<String>,
   pub zone: Option<String>,
   pub x: f64,

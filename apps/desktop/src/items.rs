@@ -46,6 +46,15 @@ pub enum VAlign {
   Bottom,
 }
 
+/// What a mindmap card shows: its map, or its note's Markdown on an index card.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum MindmapView {
+  #[default]
+  Map,
+  Markdown,
+}
+
 /// How an edge runs between its cards. A thread hangs between pins at the top of both cards, in
 /// front of them, and has no arrowheads.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
@@ -95,6 +104,15 @@ impl VAlign {
       VAlign::Top => "top",
       VAlign::Center => "center",
       VAlign::Bottom => "bottom",
+    }
+  }
+}
+
+impl MindmapView {
+  pub fn as_str(self) -> &'static str {
+    match self {
+      MindmapView::Map => "map",
+      MindmapView::Markdown => "markdown",
     }
   }
 }
@@ -204,6 +222,9 @@ impl CardKind {
 pub struct Card {
   #[serde(default, skip_serializing_if = "is_default")]
   pub kind: CardKind,
+  /// What a mindmap card shows.
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub view: MindmapView,
   pub note: Option<String>,
   pub zone: Option<String>,
   pub x: f64,
@@ -232,6 +253,8 @@ pub struct Card {
 struct WrittenCard {
   #[serde(default)]
   kind: CardKind,
+  #[serde(default)]
+  view: MindmapView,
   note: Option<String>,
   zone: Option<String>,
   x: f64,
@@ -256,7 +279,8 @@ impl From<WrittenCard> for Card {
   fn from(c: WrittenCard) -> Card {
     let kind = c.kind.told(&c.file, &c.link);
     let (note, zone, color, file, link, preview) = (c.note, c.zone, c.color, c.file, c.link, c.preview);
-    Card { kind, note, zone, x: c.x, y: c.y, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color, file, link, preview }
+    let view = c.view;
+    Card { kind, view, note, zone, x: c.x, y: c.y, w: c.w, h: c.h, halign: c.halign, valign: c.valign, color, file, link, preview }
   }
 }
 

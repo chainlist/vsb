@@ -52,10 +52,15 @@ export type VAlign = 'top' | 'center' | 'bottom';
  * image file of the vault or a web page. */
 export type CardKind = 'note' | 'postit' | 'mindmap' | 'image' | 'link';
 
+/** What a mindmap card shows: its map, or its note's Markdown on an index card. */
+export type MindmapView = 'map' | 'markdown';
+
 /** A card in absolute world coordinates, with what the index knows of its note. */
 export type CardView = {
 	id: string;
 	kind: CardKind;
+	/** A mindmap's; `map` for any other card. */
+	view: MindmapView;
 	note: string | null;
 	zone: string | null;
 	x: number;
@@ -186,13 +191,15 @@ export type Batch = { cards: string[]; undo: ItemState[] };
 /** What copying gathers, for the clipboard: the box around it in the world it was copied from, and
  * its items by the IDs they were copied from, their corners from the box's corner. An item's zone (a
  * zone's `parent`) is the copied zone around it, or null. Zones come parents first. A card brings
- * its kind, left out for an index card, its note's text, null for none, and the vault file or web
+ * its kind, left out for an index card, what a mindmap shows, left out for its map, its note's
+ * text, null for none, and the vault file or web
  * page it shows, if any. */
 export type Clip = Frame & {
 	zones: (Frame & { id: string; parent: string | null; name: string; color?: string })[];
 	cards: (Frame & {
 		id: string;
 		kind?: Exclude<CardKind, 'note'>;
+		view?: Exclude<MindmapView, 'map'>;
 		zone: string | null;
 		halign?: HAlign;
 		valign?: VAlign;

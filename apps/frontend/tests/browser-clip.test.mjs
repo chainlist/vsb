@@ -139,6 +139,15 @@ test('a post-it pastes as a post-it with a note of its own', async () => {
 	assert.equal(await api.readNote(copy.note), 'Ask Marie');
 });
 
+test('a mindmap showing its Markdown pastes showing it', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 480, 300, 'mindmap');
+	await api.setMindmapView(id, 'markdown');
+	const clip = await api.copyItems([id], [], []);
+	const copy = await file('card', (await api.pasteItems(clip, 600, 0)).ids[0]);
+	assert.deepEqual([copy.kind, copy.view], ['mindmap', 'markdown']);
+});
+
 test('a clip from before kinds is told by what its cards show', async () => {
 	await fresh();
 	const pasted = async (extra) => {

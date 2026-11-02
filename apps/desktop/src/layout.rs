@@ -4,7 +4,7 @@
 use crate::attachments;
 use crate::error::{msg, Result};
 use crate::index::Rect;
-use crate::items::{Card, CardKind, Drawing, HAlign, Kind, VAlign, Zone};
+use crate::items::{Card, CardKind, Drawing, HAlign, Kind, MindmapView, VAlign, Zone};
 use crate::session::Session;
 use crate::states::{Created, ItemState};
 use serde::Deserialize;
@@ -157,6 +157,13 @@ impl Session {
     self.edit::<Card>(&ids, |_, card| {
       card.halign = halign;
       card.valign = valign;
+      Ok(())
+    })
+  }
+
+  pub fn set_mindmap_view(&self, id: &str, view: MindmapView) -> Result<Vec<ItemState>> {
+    self.edit::<Card>(&[id], |_, card| {
+      card.view = view;
       Ok(())
     })
   }

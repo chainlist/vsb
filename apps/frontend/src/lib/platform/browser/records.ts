@@ -1,7 +1,7 @@
 // What the browser keeps of each item. The `file` of a zone, card, edge or drawing is what the desktop writes
 // to its JSON file, defaults left out, so item states, undo and a later export are the same on both
 // platforms. The rest is derived on every write, as the desktop's index derives it.
-import type { Arrow, CardKind, Frame, HAlign, LinkPreview, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
+import type { Arrow, CardKind, Frame, HAlign, LinkPreview, MindmapView, PenStroke, Shape, Stroke, VAlign } from '#lib/api.js';
 import type { Box } from './grid.ts';
 import type { Words } from './words.ts';
 
@@ -12,6 +12,8 @@ export type ZoneFile = { name: string; parent: string | null; x: number; y: numb
 export type CardFile = {
 	/** Left out for an index card. */
 	kind?: Exclude<CardKind, 'note'>;
+	/** Left out for a mindmap's map. */
+	view?: Exclude<MindmapView, 'map'>;
 	note: string | null;
 	zone: string | null;
 	x: number;
@@ -167,6 +169,7 @@ export function fileOf(kind: Kind, value: unknown): File {
 	if (kind === 'zone') return kept({ name: maybe(v.name) ?? '', parent: maybe(v.parent), ...at, color: maybe(v.color) ?? undefined });
 	return kept({
 		kind: cardKind(v),
+		view: choice(v.view, ['map', 'markdown'], 'map', 'view') as CardFile['view'],
 		note: maybe(v.note),
 		zone: maybe(v.zone),
 		...at,

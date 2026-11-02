@@ -16,6 +16,9 @@
 
 	let { card }: { card: CardView } = $props();
 
+	/** What a mindmap shows, as its editor says at once, until its file says so too. */
+	let view = $derived(card.view);
+
 	const justify = { top: 'flex-start', center: 'center', bottom: 'flex-end' };
 	/** Whether the card's image file was found missing. */
 	let lost = $state(false);
@@ -60,7 +63,7 @@
 	class="card index-card"
 	class:note-card={card.kind !== 'image' || missing}
 	class:postit={card.kind === 'postit'}
-	class:mindmap={card.kind === 'mindmap'}
+	class:mindmap={card.kind === 'mindmap' && view === 'map'}
 	class:tinted={card.color !== null}
 	class:missing
 	class:selected
@@ -82,12 +85,11 @@
 >
 	<!-- A note that fails to show fails alone, in its card. -->
 	<ErrorBoundary what="This card">
-		{#if card.kind === 'mindmap' && !missing}
-			{#if editing}
-				<MindmapEditor {card} />
-			{:else}
-				<Mindmap {card} />
-			{/if}
+		<!-- Showing its Markdown, a mindmap is an index card but for its editor. -->
+		{#if card.kind === 'mindmap' && !missing && editing}
+			<MindmapEditor {card} onview={(v) => (view = v)} />
+		{:else if card.kind === 'mindmap' && !missing && view === 'map'}
+			<Mindmap {card} />
 		{:else if editing}
 			<CardEditor {card} />
 		{:else}

@@ -1,6 +1,6 @@
 // Card edits: placing, moving, arranging, resizing, aligning, clearing and deleting, as on the
 // desktop. Each builds target item states and hands them to `apply`, so every edit can be undone.
-import type { CardKind, Created, HAlign, ItemState, Move, Rect, VAlign } from '#lib/api.js';
+import type { CardKind, Created, HAlign, ItemState, MindmapView, Move, Rect, VAlign } from '#lib/api.js';
 import { apply, edit, gone, read, state, type Edit } from './apply.ts';
 import { check, hasAttachment } from './attachments.ts';
 import { cover, rectAt } from './grid.ts';
@@ -110,6 +110,8 @@ export function resizeCard(e: Edit, id: string, x: number, y: number, w: number,
 
 export const alignCards = (e: Edit, ids: string[], halign: HAlign, valign: VAlign) =>
 	edit(e, 'card', ids, (card) => Object.assign(card, { halign, valign }));
+
+export const setMindmapView = (e: Edit, id: string, view: MindmapView) => edit(e, 'card', [id], (card) => Object.assign(card, { view }));
 
 /** Turns an unresolved card, whose note or file is missing, into an empty one: a post-it stays one,
  * an image card becomes an index card. */

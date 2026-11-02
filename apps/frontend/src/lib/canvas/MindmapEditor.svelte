@@ -15,12 +15,14 @@
 
 <script lang="ts">
 	// An open mindmap: its nodes are selected, added, typed and removed in the map, or its note is
-	// typed as Markdown. Each change in the map writes the whole note, saved as a card's text is.
-	// While it is open, the card itself is not selected: no outline, handles or selection bar.
-	import { onDestroy, onMount, tick } from 'svelte';
-	import { readNote } from '#lib/api.js';
+	// typed as Markdown, on an index card. Each change in the map writes the whole note, saved as a
+	// card's text is. While it shows its map, the card itself is not selected: no outline, handles or
+	// selection bar.
+	import { onDestroy, onMount, tick, untrack } from 'svelte';
+	import { readNote, type MindmapView } from '#lib/api.js';
 	import { failure } from '#lib/failure.svelte.js';
 	import { bindKeys, isMod } from '#lib/keys.js';
+	import { showMindmap } from './actions.js';
 	import { editSession } from './editSession.js';
 	import { items } from './items.svelte.js';
 	import { texts } from './Mindmap.svelte';
@@ -44,7 +46,8 @@
 		type MindNode
 	} from './mindmap.js';
 
-	let { card }: { card: CardView } = $props();
+	/** `onview` hears at once what it shows, before its card's file says so. */
+	let { card, onview }: { card: CardView; onview: (view: MindmapView) => void } = $props();
 
 	/** The note's text, and an ID for each node of its map that stays with the node through each
 	 * change, so the map can animate it: a node added grows, one removed draws back, one moved glides. */
@@ -56,7 +59,8 @@
 	let made = 0;
 	const fresh = () => `n${++made}`;
 	let ready = $state(false);
-	let mode = $state<'map' | 'text'>('map');
+	/** What it shows, from what it showed as it opened: it changes only here. */
+	let mode = $state(untrack(() => card.view));
 	let selected = $state<Key>('');
 	/** The node whose text is being typed, and what to put back on Escape: the note before, and the
 	 * node selected before, when a node was added to be typed. */
@@ -83,9 +87,9 @@
 
 	// A note that fails to load or save says so in the failure notice, as in a card's editor.
 	onMount(async () => {
-		// Open, the card is no longer selected: its nodes are. It opens at the root, unless a click on
-		// another node opened it.
-		selection.clear();
+		// Open on its map, the card is no longer selected: its nodes are. It opens at the root, unless a
+		// click on another node opened it. On its Markdown, it stays selected, as an index card does.
+		if (mode === 'map') selection.clear();
 		const opening = start?.card === card.id ? start.key : '';
 		start = null;
 		// The map as it was drawn closed, at once, so a second click of a double-click finds its node
@@ -104,8 +108,10 @@
 		}
 		session = editSession(card.id, card.note, text, failure.report, () => (selection.editing = null));
 		if (at(root, opening)) selected = opening;
+		opened = now();
 		ready = true;
 		await tick();
+		if (mode === 'markdown') return markdown?.focus();
 		editor.focus();
 		// An empty mindmap opens with its root ready for typing.
 		if (!text.trim()) type('', '');
@@ -252,19 +258,27 @@
 		if (!at(root, selected)) selected = '';
 	}
 
-	/** Shows the note's Markdown, kept as one change for undo once the map is back. The focus moves
-	 * before the field holding it goes, which would close the mindmap. */
+	/** Shows the note's Markdown, or the map again, read from it, and keeps which in the card's file. */
+	function toggle() {
+		if (mode === 'map') toText();
+		else toMap();
+		onview(mode);
+		void showMindmap(card, mode);
+	}
+
+	/** Shows the note's Markdown on an index card, selected as one being typed is, kept as one change
+	 * for undo once the map is back. The focus moves before the field holding it goes, which would
+	 * close the mindmap. */
 	async function toText() {
-		if (mode === 'text') return;
 		keep();
 		opened = now();
-		mode = 'text';
+		mode = 'markdown';
+		selection.only(card.id);
 		await tick();
 		markdown?.focus();
 	}
 
 	function toMap() {
-		if (mode === 'map') return;
 		if (text !== opened.text) {
 			undos.push(opened);
 			redos = [];
@@ -273,6 +287,7 @@
 		show(text);
 		editor.focus();
 		mode = 'map';
+		selection.clear();
 		if (!at(root, selected)) selected = '';
 	}
 
@@ -311,9 +326,9 @@
 	}
 
 	/** A press on the space around the nodes closes the mindmap and goes on to its card, which it
-	 * selects or drags. Presses on a node, the field or the switch stay in the map. */
+	 * selects or drags. Presses on a node, a field or the toggle stay in the map. */
 	function press(e: PointerEvent) {
-		if ((e.target as Element).closest('[data-node], .modes, textarea')) e.stopPropagation();
+		if ((e.target as Element).closest('[data-node], .mode, textarea')) e.stopPropagation();
 		else toCard();
 	}
 
@@ -333,7 +348,7 @@
 			{ ...MINDMAP_KEYS.undo, inText: true, when: inMap, run: undo },
 			{ ...MINDMAP_KEYS.redo, inText: true, when: inMap, run: redo },
 			...MINDMAP_KEYS.move.keys.map((key) => ({ keys: [key], inText: true, when: inMap, run: () => go(key) })),
-			{ ...MINDMAP_KEYS.indent, inText: true, when: () => mode === 'text', run: indent }
+			{ ...MINDMAP_KEYS.indent, inText: true, when: () => mode === 'markdown', run: indent }
 		])
 	);
 
@@ -374,13 +389,19 @@
 			{/snippet}
 		</MindmapMap>
 	{:else}
-		<textarea class="markdown" bind:this={markdown} bind:value={text} oninput={() => session?.input(text)}></textarea>
+		<textarea
+			class="markdown"
+			bind:this={markdown}
+			bind:value={text}
+			disabled={!ready}
+			style:text-align={card.halign}
+			oninput={() => session?.input(text)}
+		></textarea>
 	{/if}
-	<!-- Pressing them keeps the focus where it is, so the mindmap stays open. -->
-	<div class="modes">
-		<button aria-pressed={mode === 'map'} onpointerdown={(e) => e.preventDefault()} onclick={toMap}>Map</button>
-		<button aria-pressed={mode === 'text'} onpointerdown={(e) => e.preventDefault()} onclick={toText}>Markdown</button>
-	</div>
+	<!-- Pressing it keeps the focus where it is, so the mindmap stays open. -->
+	<button class="mode" aria-pressed={mode === 'markdown'} onpointerdown={(e) => e.preventDefault()} onclick={toggle}>
+		Markdown
+	</button>
 </div>
 
 <style>
@@ -424,7 +445,7 @@
 		color: inherit;
 	}
 
-	/* On the paper's plain color, so the grid never runs under the text. */
+	/* Typed as an index card's text is, on the card's stock. */
 	.markdown {
 		flex: 1;
 		margin: 0;
@@ -432,36 +453,34 @@
 		border: none;
 		outline: none;
 		resize: none;
-		background: var(--paper);
+		background: transparent;
 		color: inherit;
-		font: 13px/1.5 var(--font-mono, ui-monospace, monospace);
+		font: inherit;
 	}
 
-	/* In the card's top right corner, over its padding. */
-	.modes {
+	/* In the card's top right corner, over its padding; pressed, in the pen's color, as the rail's
+	   toggles are. */
+	.mode {
 		position: absolute;
 		top: -8px;
 		right: -10px;
-		display: flex;
-		padding: 2px;
+		padding: 4px 10px;
+		border: none;
 		border-radius: var(--radius-control);
 		background: var(--paper);
 		box-shadow: inset 0 0 0 1px var(--border);
-		font: 500 11px var(--font-ui);
-	}
-
-	.modes button {
-		padding: 2px 8px;
-		border: none;
-		border-radius: var(--radius-control);
-		background: none;
 		color: var(--ink-soft);
+		font: 500 11px var(--font-ui);
 		cursor: pointer;
 	}
 
-	.modes button[aria-pressed='true'] {
-		background: var(--card);
-		box-shadow: var(--lift);
+	.mode:hover {
 		color: var(--ink);
+	}
+
+	.mode[aria-pressed='true'] {
+		background: color-mix(in srgb, var(--pen) 12%, var(--paper));
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pen) 40%, transparent);
+		color: var(--pen);
 	}
 </style>

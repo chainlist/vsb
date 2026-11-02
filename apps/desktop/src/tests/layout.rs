@@ -1,5 +1,5 @@
 use super::{card_file, move_to, open, Fixture, WORLD};
-use crate::items::{CardKind, HAlign, Kind, VAlign};
+use crate::items::{CardKind, HAlign, Kind, MindmapView, VAlign};
 use serde_json::Value;
 use std::fs;
 
@@ -111,6 +111,21 @@ fn aligning_writes_alignment_and_default_drops_it_again() {
   assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].halign, "center");
   s.align_cards(std::slice::from_ref(&id), HAlign::Left, VAlign::Top).unwrap();
   assert!(raw(&f, &rel).get("halign").is_none() && raw(&f, &rel).get("valign").is_none());
+}
+
+#[test]
+fn a_mindmap_keeps_what_it_shows_and_its_map_drops_it_again() {
+  let f = Fixture::new();
+  let s = open(&f);
+  let id = s.create_card(CardKind::Mindmap, None, 0.0, 0.0, 480.0, 300.0).unwrap();
+  let rel = format!(".canvas/cards/{id}.json");
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].view, "map");
+  let undo = s.set_mindmap_view(&id, MindmapView::Markdown).unwrap();
+  assert_eq!(raw(&f, &rel)["view"].as_str(), Some("markdown"));
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].view, "markdown");
+  s.apply(undo).unwrap();
+  assert!(raw(&f, &rel).get("view").is_none());
+  assert_eq!(s.index.viewport(WORLD, 0.0, None).unwrap().cards[0].view, "map");
 }
 
 #[test]

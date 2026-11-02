@@ -56,7 +56,7 @@ impl Index {
   pub fn item<T: Item>(&self, id: &str) -> Result<Option<T>> {
     let fields = match T::KIND {
       Kind::Zone => "'name', name, 'parent', parent, 'x', x, 'y', y, 'w', w, 'h', h, 'color', color",
-      Kind::Card => "'kind', kind, 'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign, 'color', color, 'file', file, 'link', link, 'preview', json(preview)",
+      Kind::Card => "'kind', kind, 'view', view, 'note', note, 'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'halign', halign, 'valign', valign, 'color', color, 'file', file, 'link', link, 'preview', json(preview)",
       Kind::Edge => "'from', from_card, 'to', to_card, 'label', label, 'shape', shape, 'arrow', arrow, 'stroke', stroke",
       Kind::Drawing => "'zone', zone, 'x', x, 'y', y, 'w', w, 'h', h, 'strokes', json(strokes)",
     };
@@ -81,13 +81,13 @@ impl Index {
 
   pub fn put_card(&self, id: &str, c: &Card, stamp: Stamp) -> Result<()> {
     self.db.execute(
-      "INSERT INTO cards (id, kind, note, zone, x, y, w, h, halign, valign, color, file, link, preview, mtime, size)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
-       ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, note = excluded.note, zone = excluded.zone, x = excluded.x,
+      "INSERT INTO cards (id, kind, view, note, zone, x, y, w, h, halign, valign, color, file, link, preview, mtime, size)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
+       ON CONFLICT (id) DO UPDATE SET kind = excluded.kind, view = excluded.view, note = excluded.note, zone = excluded.zone, x = excluded.x,
          y = excluded.y, w = excluded.w, h = excluded.h, halign = excluded.halign, valign = excluded.valign, color = excluded.color,
          file = excluded.file, link = excluded.link, preview = excluded.preview, mtime = excluded.mtime, size = excluded.size",
       params![
-        id, c.kind.as_str(), c.note, c.zone, c.x, c.y, c.w, c.h, c.halign.as_str(), c.valign.as_str(), c.color, c.file, c.link,
+        id, c.kind.as_str(), c.view.as_str(), c.note, c.zone, c.x, c.y, c.w, c.h, c.halign.as_str(), c.valign.as_str(), c.color, c.file, c.link,
         c.preview.as_ref().map(serde_json::to_string).transpose()?, stamp.mtime, stamp.size
       ],
     )?;

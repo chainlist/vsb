@@ -13,6 +13,7 @@ import type {
 	ItemState,
 	Link,
 	LinkPreview,
+	MindmapView,
 	Move,
 	Pen,
 	Rect,
@@ -109,6 +110,7 @@ export const setUiState = (key: string, value: string) => writing((e) => setting
 export const moveCards = (moves: Move[]) => writing((e) => cards.moveCards(e, moves));
 export const resizeCard = (id: string, x: number, y: number, w: number, h: number) => writing((e) => cards.resizeCard(e, id, x, y, w, h));
 export const alignCards = (ids: string[], halign: HAlign, valign: VAlign) => writing((e) => cards.alignCards(e, ids, halign, valign));
+export const setMindmapView = (id: string, view: MindmapView) => writing((e) => cards.setMindmapView(e, id, view));
 export const clearCard = (id: string) => writing((e) => cards.clearCard(e, id));
 export const deleteCards = (ids: string[]) => writing((e) => cards.deleteCards(e, ids));
 

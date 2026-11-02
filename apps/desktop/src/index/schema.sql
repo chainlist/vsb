@@ -20,6 +20,7 @@ CREATE TABLE cards (
   key       INTEGER PRIMARY KEY,      -- shared with card_bounds
   id        TEXT UNIQUE NOT NULL,
   kind      TEXT NOT NULL DEFAULT 'note', -- note, postit, mindmap, image or link
+  view      TEXT NOT NULL DEFAULT 'map',  -- a mindmap's: map or markdown
   note      TEXT,                     -- NULL = empty card
   zone      TEXT,                     -- NULL = canvas
   x REAL, y REAL, w REAL, h REAL,     -- relative to zone, as in the file

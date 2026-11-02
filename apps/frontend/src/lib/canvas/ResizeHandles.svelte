@@ -8,6 +8,8 @@
 	import { pick } from './menu.js';
 	import { selection } from './selection.svelte.js';
 
+	const onMap = (card: CardView) => card.kind === 'mindmap' && card.view === 'map';
+
 	/** The card or zone under the pointer, if any. */
 	let { hovered }: { hovered: string | null } = $props();
 
@@ -25,7 +27,7 @@
 
 	// A single selected card or zone has handles, while it is edited too, and so has the one under
 	// the pointer, which can be resized without selecting it first. A zone drawn as a marker has none,
-	// nor has an open mindmap: its nodes are selected, not its card.
+	// nor has an open mindmap on its map: its nodes are selected, not its card.
 	const targets = $derived.by(() => {
 		const ids = new Set<string>();
 		if (selection.ids.length === 1) ids.add(selection.ids[0]);
@@ -33,7 +35,7 @@
 		return [...ids]
 			.flatMap((id) => items.find(id) ?? [])
 			.filter((t) =>
-				t.kind === 'card' ? !(t.item.id === selection.editing && (t.item as CardView).kind === 'mindmap') : !asMarker(t.item)
+				t.kind === 'card' ? !(t.item.id === selection.editing && onMap(t.item as CardView)) : !asMarker(t.item)
 			);
 	});
 

@@ -203,6 +203,18 @@ test('a mindmap is a note card of its own kind', async () => {
 	assert.deepEqual([view.kind, view.title], ['mindmap', 'Launch plan']);
 });
 
+test('a mindmap keeps what it shows and its map drops it again', async () => {
+	await fresh();
+	const id = await api.createCard(0, 0, 480, 300, 'mindmap');
+	assert.equal((await api.queryViewport(WORLD, 0, null)).cards[0].view, 'map');
+	const undo = await api.setMindmapView(id, 'markdown');
+	assert.equal((await file('card', id)).view, 'markdown');
+	assert.equal((await api.queryViewport(WORLD, 0, null)).cards[0].view, 'markdown');
+	await api.applyStates(undo);
+	assert.deepEqual(await file('card', id), { kind: 'mindmap', note: null, zone: null, x: 0, y: 0, w: 480, h: 300 });
+	assert.equal((await api.queryViewport(WORLD, 0, null)).cards[0].view, 'map');
+});
+
 test('only a card showing a note is created empty', async () => {
 	await fresh();
 	await assert.rejects(api.createCard(0, 0, 200, 200, 'image'));

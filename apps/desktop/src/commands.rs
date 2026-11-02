@@ -7,7 +7,7 @@ use crate::device::{self, Pen, Wheel};
 use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
 use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
-use crate::items::{Arrow, CardKind, EdgeStyle, HAlign, Kind, Preview, Shape, Stroke, VAlign};
+use crate::items::{Arrow, CardKind, EdgeStyle, HAlign, Kind, MindmapView, Preview, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::links;
 use crate::states::{Created, ItemState};
@@ -331,6 +331,11 @@ pub async fn resize_card(state: State<'_, AppState>, id: String, x: f64, y: f64,
 #[tauri::command]
 pub async fn align_cards(state: State<'_, AppState>, ids: Vec<String>, halign: HAlign, valign: VAlign) -> Result<Vec<ItemState>> {
   state.with(|s| s.align_cards(&ids, halign, valign))
+}
+
+#[tauri::command]
+pub async fn set_mindmap_view(state: State<'_, AppState>, id: String, view: MindmapView) -> Result<Vec<ItemState>> {
+  state.with(|s| s.set_mindmap_view(&id, view))
 }
 
 #[tauri::command]
