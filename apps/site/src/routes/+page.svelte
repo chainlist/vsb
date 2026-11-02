@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Card from '#lib/Card.svelte';
 	import Edge from '#lib/Edge.svelte';
+	import Kinds from '#lib/Kinds.svelte';
 	import Shot from '#lib/Shot.svelte';
 	import Themes from '#lib/Themes.svelte';
 	import Zone from '#lib/Zone.svelte';
@@ -70,6 +71,12 @@
 
 	<Edge />
 
+	<Zone id="kinds" name="Five kinds of cards" color={highlighter('Yellow')}>
+		<Kinds />
+	</Zone>
+
+	<Edge back />
+
 	<Zone id="builder" name="Many cards at once" color={highlighter('Violet')}>
 		<Shot src={builder} alt="The New cards dialog: three lines of text with arrows, and a preview of the six cards and five links they make." />
 		<div class="row">
@@ -86,7 +93,7 @@ Main study <=> EEG lab`}</code></pre>
 		</div>
 	</Zone>
 
-	<Edge back />
+	<Edge />
 
 	<Zone id="zoom" name="Zoom out to see the whole map" color={highlighter('Green')}>
 		<div class="row">
@@ -106,7 +113,7 @@ Main study <=> EEG lab`}</code></pre>
 		/>
 	</Zone>
 
-	<Edge />
+	<Edge back />
 
 	<Zone id="find" name="Find your way back">
 		<Shot src={panels} alt="The zone list open on the left with seven zones, and search on the right showing the notes that mention replay." />
@@ -123,7 +130,7 @@ Main study <=> EEG lab`}</code></pre>
 		</div>
 	</Zone>
 
-	<Edge back />
+	<Edge />
 
 	<Zone id="pen" name="Write by hand" color={highlighter('Orange')}>
 		<div class="row">
@@ -137,7 +144,7 @@ Main study <=> EEG lab`}</code></pre>
 		<Shot src={pen} alt="Close up at 140%: an orange loop drawn by hand around the Do naps count? card, and the pen bar at the bottom with tools, colors and widths." />
 	</Zone>
 
-	<Edge />
+	<Edge back />
 
 	<Zone id="files" name="Plain files you own" color={highlighter('Yellow')}>
 		<div class="files">
@@ -176,7 +183,7 @@ attachments/
 		</div>
 	</Zone>
 
-	<Edge back />
+	<Edge />
 
 	<Zone id="investigation" name="Pin it up like a case" color={highlighter('Orange')}>
 		<div class="row">
@@ -202,7 +209,7 @@ attachments/
 		/>
 	</Zone>
 
-	<Edge />
+	<Edge back />
 
 	<Zone id="themes" name="Six themes" color={highlighter('Pink')}>
 		<Themes />

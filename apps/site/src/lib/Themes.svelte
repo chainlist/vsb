@@ -1,8 +1,8 @@
-<!-- The themes: a button per theme, named as the app names it, shows its screenshot, faded in over
-     the others, and a line on its look. A theme with no screenshot yet is left out. -->
+<!-- The themes: a button per theme, named as the app names it, shows its screenshot and a line on its
+     look. A theme with no screenshot yet is left out. -->
 <script lang="ts">
 	import { THEMES } from '#lib/app.js';
-	import Shot from '#lib/Shot.svelte';
+	import Picker from '#lib/Picker.svelte';
 	import studio from '#lib/shots/canvas.webp';
 	import board from '#lib/shots/theme-board.webp';
 	import cairn from '#lib/shots/theme-cairn.webp';
@@ -18,76 +18,13 @@
 		wilds: { src: wilds, look: 'deep-space indigo with stars at the grid crossings, warm cream text and a campfire-orange accent.' },
 		board: { src: board, look: 'tan cork with a fine grain, cream sheets pinned flat, typewritten notes and a ballpoint-blue accent.' }
 	};
-	const themes = THEMES.filter((t) => t.id in looks);
-
-	let picked = $state(themes[0].id);
-	const name = $derived(themes.find((t) => t.id === picked)!.name);
+	const themes = THEMES.filter((t) => t.id in looks).map((t) => ({
+		id: t.id,
+		name: t.name,
+		src: looks[t.id].src,
+		alt: `The thesis in ${t.name}.`,
+		line: looks[t.id].look
+	}));
 </script>
 
-<div class="names" role="group" aria-label="Theme">
-	{#each themes as theme (theme.id)}
-		<button type="button" aria-pressed={theme.id === picked} onclick={() => (picked = theme.id)}>{theme.name}</button>
-	{/each}
-</div>
-<div>
-	<div class="shots">
-		{#each themes as theme (theme.id)}
-			<div class:off={theme.id !== picked}><Shot src={looks[theme.id].src} alt="The thesis in {theme.name}." /></div>
-		{/each}
-	</div>
-	<p class="look">{name}: {looks[picked].look}</p>
-</div>
-
-<style>
-	.names {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	button {
-		min-height: 40px;
-		padding: 0 16px;
-		border: 0;
-		border-radius: 999px;
-		background: var(--card);
-		box-shadow: var(--lift);
-		color: var(--ink);
-		font: 500 0.98rem var(--font-ui);
-		cursor: pointer;
-	}
-
-	[aria-pressed='true'] {
-		background: var(--ink);
-		box-shadow: none;
-		color: var(--paper);
-	}
-
-	/* Stacked in one cell, so the page never moves as they swap. */
-	.shots {
-		display: grid;
-	}
-
-	.shots > * {
-		grid-area: 1 / 1;
-		transition: opacity 0.25s ease;
-	}
-
-	.off {
-		opacity: 0;
-		visibility: hidden;
-	}
-
-	.look {
-		min-height: 3.2em;
-		margin-top: 12px;
-		color: var(--ink-soft);
-		font-size: 0.9375rem;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.shots > * {
-			transition: none;
-		}
-	}
-</style>
+<Picker label="Theme" options={themes} />

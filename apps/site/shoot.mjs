@@ -202,6 +202,161 @@ async function seedCase({ base }) {
 	return id;
 }
 
+/** Where each scene of the kinds vault starts, in world units, far enough apart to be shot alone. */
+const SCENES = { note: 0, postit: 3000, mindmap: 6000, image: 9000, link: 12000 };
+
+/** Runs in the page: the third demo vault, a card of each kind from the thesis, each in a scene of its
+ * own along the x axis, for the kinds picker. Returns its ID. */
+async function seedKinds({ base, scenes }) {
+	const api = await import(`${base}src/lib/api.ts`);
+	const { createVault } = await import(`${base}src/lib/platform/browser/vaults.ts`);
+	const { POSTIT_COLOR } = await import(`${base}src/lib/canvas/colors.ts`);
+	const { id } = await createVault('Kinds');
+	await api.openVault(id);
+	await api.setVaultOnboarded();
+	const [pink, green, yellow] = ['#e98a9b', '#7cc49a', '#f5d76e'];
+
+	async function card(text, x, y, w = 300, h = 120, kind = 'note', color = null) {
+		const id = await api.createCard(x, y, w, h, kind, color);
+		await api.createNoteForCard(id, text);
+		return id;
+	}
+	async function edge(from, to, { label, stroke } = {}) {
+		const { id } = await api.createEdge(from, to);
+		if (label) await api.labelEdge(id, label);
+		if (stroke) await api.strokeEdges([id], stroke);
+	}
+
+	// An index card: its first line the title, the rest Markdown.
+	let x = scenes.note;
+	const stickgold = await card('Stickgold 2005\n\nSkills learned in the day improve overnight, without more practice.', x - 440, 50, 340, 150);
+	const replay = await card(
+		'Replay\n\nWhile we sleep, the hippocampus plays the day back to the cortex.\n\n- strongest in **slow-wave sleep**\n- carried by *sharp-wave ripples*\n- measured with `EEG`',
+		x,
+		0,
+		380,
+		250
+	);
+	const naps = await card("Do naps count?\n\nIf replay needs slow-wave sleep, a nap should do part of a night's work.", x + 480, 60, 340, 150);
+	await api.colorItems([naps], [], [], yellow);
+	await edge(stickgold, replay, { label: 'evidence' });
+	await edge(replay, naps, { label: 'raises', stroke: 'dashed' });
+
+	// Post-its stuck around the study's card, each in its own color.
+	x = scenes.postit;
+	await card('3. The nap study\n\n- 24 students learn word pairs\n- half nap, half stay awake\n- everyone is tested at 6 pm', x, 0, 380, 200);
+	await card('Book the sleep lab for March', x + 330, -110, 200, 200, 'postit', POSTIT_COLOR);
+	await card('Ask the lab about EEG caps', x - 230, 150, 200, 200, 'postit', pink);
+	await card('24 students, not 20!', x + 420, 170, 200, 200, 'postit', green);
+
+	// A mindmap: the study planned as a map, its card taking the map's size as it is drawn.
+	x = scenes.mindmap;
+	await card(
+		'# The nap study\n\n## Question\n- Do naps help memory?\n\n## Method\n- 24 students\n- Word pairs at 1 pm\n- Nap or stay awake\n\n## Measures\n- Recall at 6 pm\n- EEG during the nap\n\n## Next\n- Ethics approval\n- Pilot in March\n',
+		x,
+		0,
+		80,
+		64,
+		'mindmap'
+	);
+
+	// An image: a hypnogram of one night, as a chart exported from the sleep lab's software.
+	x = scenes.image;
+	const [w, h] = [960, 480];
+	const chart = new OffscreenCanvas(w, h);
+	const g = chart.getContext('2d');
+	g.fillStyle = '#ffffff';
+	g.fillRect(0, 0, w, h);
+	const stages = ['Wake', 'REM', 'N1', 'N2', 'N3'];
+	const [left, top, right, bottom] = [110, 80, 920, 400];
+	const yOf = (stage) => top + (stage * (bottom - top)) / (stages.length - 1);
+	const xOf = (minute) => left + (minute * (right - left)) / 480;
+	g.font = '600 26px sans-serif';
+	g.fillStyle = '#1f2933';
+	g.fillText('Night 1, sleeper 7', left, 46);
+	g.font = '20px sans-serif';
+	g.fillStyle = '#52606d';
+	g.textAlign = 'right';
+	g.textBaseline = 'middle';
+	g.strokeStyle = '#e4e7eb';
+	g.lineWidth = 1;
+	for (const [i, name] of stages.entries()) {
+		g.fillText(name, left - 16, yOf(i));
+		g.beginPath();
+		g.moveTo(left, yOf(i));
+		g.lineTo(right, yOf(i));
+		g.stroke();
+	}
+	g.textAlign = 'center';
+	g.textBaseline = 'top';
+	for (let hour = 0; hour <= 8; hour++) g.fillText(`${hour} h`, xOf(hour * 60), bottom + 20);
+	// Minutes from lights out and the stage from then: deep sleep early, longer REM toward morning.
+	const night = [
+		[0, 0], [10, 2], [18, 3], [30, 4], [75, 3], [85, 1], [95, 3], [110, 4], [150, 3], [170, 1], [195, 3], [215, 4], [235, 3],
+		[255, 1], [290, 3], [310, 2], [320, 3], [345, 1], [385, 3], [400, 0], [405, 2], [415, 3], [430, 1], [470, 0], [480, 0]
+	];
+	g.strokeStyle = '#2f6f8f';
+	g.lineWidth = 3;
+	g.beginPath();
+	for (const [i, [minute, stage]] of night.entries()) {
+		if (i === 0) {
+			g.moveTo(xOf(minute), yOf(stage));
+		} else {
+			g.lineTo(xOf(minute), yOf(night[i - 1][1]));
+			g.lineTo(xOf(minute), yOf(stage));
+		}
+	}
+	g.stroke();
+	g.strokeStyle = '#c0392b';
+	g.lineWidth = 7;
+	for (const [i, [minute, stage]] of night.entries()) {
+		if (stage !== 1) continue;
+		g.beginPath();
+		g.moveTo(xOf(minute), yOf(1));
+		g.lineTo(xOf(night[i + 1][0]), yOf(1));
+		g.stroke();
+	}
+	const bytes = await (await chart.convertToBlob({ type: 'image/png' })).arrayBuffer();
+	const image = await api.placeFile(await api.writeImage('Hypnogram night 1.png', bytes), x, 0, 480, 240);
+	const night1 = await card('Night 1, sleeper 7\n\nDeep sleep in the first two cycles, REM growing toward morning: a textbook night.', x + 580, 40, 340, 160);
+	await edge(image.id, night1, { label: 'scored as' });
+
+	// Links: a web address pasted becomes a card, with what the page said of itself on the desktop.
+	x = scenes.link;
+	const reading = await card('Read next\n\nBefore the pilot: the background, then the paper that started it.', x - 440, 70, 340, 150);
+	const pasted = await api.pasteItems(
+		{
+			x: 0,
+			y: 0,
+			w: 320,
+			h: 360,
+			zones: [],
+			drawings: [],
+			edges: [],
+			cards: [
+				{
+					id: 'wiki',
+					kind: 'link',
+					zone: null,
+					x: 0,
+					y: 0,
+					w: 320,
+					h: 160,
+					text: null,
+					link: 'https://en.wikipedia.org/wiki/Memory_consolidation',
+					preview: { title: 'Memory consolidation', description: 'The processes that make a new memory stable after it is first formed.' }
+				},
+				{ id: 'doi', kind: 'link', zone: null, x: 0, y: 200, w: 320, h: 160, text: null, link: 'https://doi.org/10.1038/nature04286' }
+			]
+		},
+		x,
+		0
+	);
+	await edge(reading, pasted.ids[0], { label: 'background' });
+	await edge(reading, pasted.ids[1], { label: 'the paper' });
+	return id;
+}
+
 const page = await connect(Number(args.port));
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** Waits until `expression` is true in the page. */
@@ -327,4 +482,23 @@ await open();
 await view(CASE);
 await mouse(1400, 880);
 await shoot('investigation');
+
+// A card of each kind, each scene framed up close, at most 130%. Twice: a mindmap takes its map's size
+// as it is drawn.
+await go(args.app);
+vault = await page.evaluate(`(${seedKinds})(${JSON.stringify({ base, scenes: SCENES })})`);
+await open();
+for (const [kind, x] of Object.entries(SCENES)) {
+	for (let pass = 0; pass < 2; pass++) {
+		const r = await page.evaluate(`(async () => {
+			const api = await import('${base}src/lib/api.ts');
+			const { cards } = await api.queryViewport({ minX: ${x - 1500}, minY: -1500, maxX: ${x + 1500}, maxY: 1500 }, 0, null);
+			return { minX: Math.min(...cards.map((c) => c.x)), minY: Math.min(...cards.map((c) => c.y)), maxX: Math.max(...cards.map((c) => c.x + c.w)), maxY: Math.max(...cards.map((c) => c.y + c.h)) };
+		})()`);
+		const zoom = Math.min(1.3, 1200 / (r.maxX - r.minX), 700 / (r.maxY - r.minY));
+		await view({ x: (r.minX + r.maxX) / 2, y: (r.minY + r.maxY) / 2, zoom });
+	}
+	await mouse(1400, 880);
+	await shoot(`kind-${kind}`);
+}
 page.close();
