@@ -184,6 +184,26 @@ export function keyOf(root: MindNode, target: MindNode, key: Key = ''): Key | un
 	return undefined;
 }
 
+/** Visits every node of a map, parents before their children, with its key. */
+export function walk(n: MindNode, visit: (n: MindNode, key: Key) => void, key: Key = '') {
+	visit(n, key);
+	for (const [i, c] of n.children.entries()) walk(c, visit, child(key, i));
+}
+
+/** Gives every node of a map an ID: the one it had at its key in `known`, else a new one, never one
+ * another node already took. */
+export function identify(root: MindNode, known: Map<Key, string>, fresh: () => string) {
+	const ids = new Map<Key, string>();
+	const used = new Set<string>();
+	walk(root, (_, key) => {
+		let id = known.get(key);
+		if (id === undefined || used.has(id)) id = fresh();
+		used.add(id);
+		ids.set(key, id);
+	});
+	return ids;
+}
+
 /** The key of a node's parent; undefined for the root. */
 export const parentKey = (key: Key) => (key ? key.split('.').slice(0, -1).join('.') : undefined);
 

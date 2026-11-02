@@ -13,6 +13,7 @@
 		at,
 		child,
 		clone,
+		identify,
 		keyOf,
 		MINDMAP_KEYS,
 		node,
@@ -22,6 +23,7 @@
 		setText,
 		textOf,
 		TYPING_KEYS,
+		walk,
 		write,
 		type Key,
 		type MindNode
@@ -30,19 +32,35 @@
 
 	let { card }: { card: CardView } = $props();
 
+	/** The note's text, and an ID for each node of its map that stays with the node through each
+	 * change, so the map can animate it: a node added grows, one removed draws back, one moved glides. */
+	type Version = { text: string; ids: Map<Key, string> };
+
 	let text = $state('');
 	const root = $derived(parse(text));
+	let ids = $state.raw(new Map<Key, string>());
+	let made = 0;
+	const fresh = () => `n${++made}`;
 	let ready = $state(false);
 	let mode = $state<'map' | 'text'>('map');
 	let selected = $state<Key>('');
 	/** The node whose text is being typed, what is typed so far, and what to put back on Escape: the
-	 * note's text before, and the node selected before, when a node was added to be typed. */
-	let typing = $state<{ key: Key; draft: string; before: string; back: Key } | null>(null);
-	/** The note's text before each change made since the mindmap opened, and after each undone. */
-	let undos: string[] = [];
-	let redos: string[] = [];
-	/** The note's text as its Markdown was opened. */
-	let opened = '';
+	 * note before, and the node selected before, when a node was added to be typed. */
+	let typing = $state<{ key: Key; draft: string; before: Version; back: Key } | null>(null);
+	/** The note before each change made since the mindmap opened, and after each undone. */
+	let undos: Version[] = [];
+	let redos: Version[] = [];
+	/** The note as its Markdown was opened. */
+	let opened: Version = { text: '', ids: new Map() };
+
+	const now = (): Version => ({ text, ids });
+
+	/** Shows a version of the note: its nodes keep the IDs `known` gives them by key, and the others
+	 * get new ones. */
+	function show(next: string, known = ids) {
+		text = next;
+		ids = identify(root, known, fresh);
+	}
 	let editor: HTMLElement;
 	let markdown = $state<HTMLTextAreaElement>();
 	let session: ReturnType<typeof editSession> | undefined;
@@ -50,7 +68,7 @@
 	// A note that fails to load or save says so in the failure notice, as in a card's editor.
 	onMount(async () => {
 		try {
-			if (card.note) text = await readNote(card.note);
+			show(card.note ? await readNote(card.note) : '');
 		} catch (e) {
 			failure.report(e);
 			selection.editing = null;
@@ -72,33 +90,33 @@
 		session?.finish().then(() => items.changed());
 	});
 
-	/** Writes the note after a change, recorded for undo unless it is the same. */
-	function save(next: string, before = text) {
-		text = next;
-		if (next === before) return;
-		undos.push(before);
-		redos = [];
-		session?.input(next);
-	}
-
-	/** Changes a copy of the map, then writes the note in its form, the map read again from it. The
-	 * node the change returns is selected, else the one selected before, wherever its form puts it.
-	 * A node added to be typed is not saved until it is typed: `before` is null. */
-	function change(edit: (map: MindNode) => MindNode | void, before: string | null = text) {
+	/** Changes a copy of the map, then writes the note in its form, the map read again from it. Each
+	 * node keeps its ID wherever the change and its form put it. The node the change returns is
+	 * selected, else the one selected before. A change is recorded for undo when it changes the note,
+	 * but a node added to be typed is not saved until it is typed: `before` is null. */
+	function change(edit: (map: MindNode) => MindNode | void, before: Version | null = now()) {
 		const map = clone(root);
+		const was = new Map<MindNode, string>();
+		walk(map, (n, key) => was.set(n, ids.get(key)!));
 		const kept = at(map, selected);
 		const pick = edit(map) ?? kept;
 		normalize(map);
 		const key = (pick && keyOf(map, pick)) ?? '';
+		const known = new Map<Key, string>();
+		walk(map, (n, k) => was.has(n) && known.set(k, was.get(n)!));
 		const next = write(map);
-		if (before === null) text = next;
-		else save(next, before);
+		show(next, known);
+		if (before && next !== before.text) {
+			undos.push(before);
+			redos = [];
+			session?.input(next);
+		}
 		selected = at(root, key) ? key : '';
 		return selected;
 	}
 
 	/** Starts typing a node's text, from `draft`. */
-	function type(key: Key, draft: string, before = text, back = key) {
+	function type(key: Key, draft: string, before = now(), back = key) {
 		selected = key;
 		typing = { key, draft, before, back };
 	}
@@ -127,12 +145,12 @@
 		const { before, back } = typing;
 		typing = null;
 		editor.focus();
-		text = before;
+		show(before.text, before.ids);
 		selected = at(root, back) ? back : '';
 	}
 
 	function addChild() {
-		const [before, back] = [text, selected];
+		const [before, back] = [now(), selected];
 		const added = node();
 		const key = change((map) => {
 			at(map, selected)?.children.push(added);
@@ -145,7 +163,7 @@
 	function addSibling() {
 		const parent = parentKey(selected);
 		if (parent === undefined) return addChild();
-		const [before, back] = [text, selected];
+		const [before, back] = [now(), selected];
 		const added = node();
 		const key = change((map) => {
 			const siblings = at(map, parent)!.children;
@@ -186,20 +204,20 @@
 	function undo() {
 		const last = undos.pop();
 		if (last === undefined) return;
-		redos.push(text);
+		redos.push(now());
 		step(last);
 	}
 
 	function redo() {
 		const next = redos.pop();
 		if (next === undefined) return;
-		undos.push(text);
+		undos.push(now());
 		step(next);
 	}
 
-	function step(to: string) {
-		text = to;
-		session?.input(to);
+	function step(to: Version) {
+		show(to.text, to.ids);
+		session?.input(to.text);
 		if (!at(root, selected)) selected = '';
 	}
 
@@ -208,7 +226,7 @@
 	async function toText() {
 		if (mode === 'text') return;
 		keep();
-		opened = text;
+		opened = now();
 		mode = 'text';
 		await tick();
 		markdown?.focus();
@@ -216,10 +234,12 @@
 
 	function toMap() {
 		if (mode === 'map') return;
-		if (text !== opened) {
+		if (text !== opened.text) {
 			undos.push(opened);
 			redos = [];
 		}
+		// Typed as text, a node keeps its ID where its key stays the same.
+		show(text);
 		editor.focus();
 		mode = 'map';
 		if (!at(root, selected)) selected = '';
@@ -293,6 +313,7 @@
 	{#if mode === 'map'}
 		<MindmapMap
 			{root}
+			{ids}
 			halign={card.halign}
 			valign={card.valign}
 			{selected}

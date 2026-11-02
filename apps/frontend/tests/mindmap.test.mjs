@@ -2,7 +2,7 @@
 // their TypeScript source.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { at, clone, keyOf, layout, node, normalize, parse, setText, textOf, write } from '../src/lib/canvas/mindmap.ts';
+import { at, clone, identify, keyOf, layout, node, normalize, parse, setText, textOf, walk, write } from '../src/lib/canvas/mindmap.ts';
 
 const n = node;
 
@@ -131,6 +131,20 @@ test('a node is found by its key, and its key by the node', () => {
 	assert.equal(at(LAUNCH, '1.5'), undefined);
 	assert.equal(keyOf(LAUNCH, LAUNCH.children[1].children[1]), '1.1');
 	assert.equal(keyOf(LAUNCH, n('Elsewhere')), undefined);
+});
+
+test('every node is visited with its key, parents first', () => {
+	const seen = [];
+	walk(LAUNCH, (n, key) => seen.push(`${key}:${n.title}`));
+	assert.deepEqual(seen, [':Launch plan', '0:Goals', '0.0:Faster onboarding', '0.1:Fewer tickets', '1:Risks', '1.0:Hiring', '1.1:Pricing']);
+});
+
+test('each node keeps the ID it had at its key, and only one node takes an ID', () => {
+	let made = 0;
+	const fresh = () => `n${++made}`;
+	const known = new Map([['', 'root'], ['0', 'goals'], ['1', 'goals'], ['9', 'gone']]);
+	const ids = identify(n('Root', '', [n('A'), n('B'), n('C')]), known, fresh);
+	assert.deepEqual([...ids], [['', 'root'], ['0', 'goals'], ['1', 'n1'], ['2', 'n2']]);
 });
 
 test("a node's text as typed: its title, then its body on the lines after", () => {
