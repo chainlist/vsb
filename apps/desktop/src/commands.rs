@@ -6,7 +6,7 @@ use crate::clip::{Clip, Pasted};
 use crate::device::{self, Pen, Wheel};
 use crate::drawings::Erased;
 use crate::error::{msg, Error, Result};
-use crate::index::{BatchScope, Entry, Rect, Viewport, ZoneNodes, ZoneRow};
+use crate::index::{BatchScope, Entry, Loose, Rect, Viewport, ZoneNodes, ZoneRow};
 use crate::items::{Arrow, CardKind, EdgeStyle, HAlign, Kind, MindmapView, Preview, Shape, Stroke, VAlign};
 use crate::layout::Move;
 use crate::links;
@@ -148,6 +148,16 @@ pub async fn set_vault_fit_mindmaps(state: State<'_, AppState>, fit: bool) -> Re
 }
 
 #[tauri::command]
+pub async fn vault_cluster_cards(state: State<'_, AppState>) -> Result<bool> {
+  state.with(|s| s.vault.cluster_cards())
+}
+
+#[tauri::command]
+pub async fn set_vault_cluster_cards(state: State<'_, AppState>, on: bool) -> Result<()> {
+  state.with(|s| s.vault.set_cluster_cards(on))
+}
+
+#[tauri::command]
 pub async fn vault_onboarded(state: State<'_, AppState>) -> Result<bool> {
   state.with(|s| s.vault.onboarded())
 }
@@ -199,8 +209,9 @@ pub async fn link_preview(state: State<'_, AppState>, url: String) -> Result<Opt
 }
 
 #[tauri::command]
-pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f64, cell: Option<f64>) -> Result<Viewport> {
-  state.with(|s| s.index.viewport(rect, min_size, cell))
+pub async fn query_viewport(state: State<'_, AppState>, rect: Rect, min_size: f64, cell: Option<f64>, clusters: bool) -> Result<Viewport> {
+  let loose = cell.map(|cell| if clusters { Loose::Clusters(cell) } else { Loose::Cards });
+  state.with(|s| s.index.viewport(rect, min_size, loose))
 }
 
 #[tauri::command]

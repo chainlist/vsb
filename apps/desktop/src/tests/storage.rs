@@ -111,6 +111,21 @@ fn mindmaps_size_their_cards_by_default_and_fitting_them_is_only_written_while_o
 }
 
 #[test]
+fn loose_cards_are_drawn_as_themselves_by_default_and_clustering_them_is_only_written_while_on() {
+  let f = Fixture::new();
+  assert!(!f.vault.cluster_cards().unwrap());
+  assert!(!f.read(".canvas/vault.json").contains("clusterCards"));
+  f.vault.set_theme(Some("pad".into())).unwrap();
+  f.vault.set_cluster_cards(true).unwrap();
+  let json: serde_json::Value = serde_json::from_str(&f.read(".canvas/vault.json")).unwrap();
+  assert_eq!(json["clusterCards"], true);
+  assert_eq!(json["theme"], "pad");
+  assert!(Vault::open(f.dir.path()).unwrap().cluster_cards().unwrap());
+  f.vault.set_cluster_cards(false).unwrap();
+  assert!(!f.read(".canvas/vault.json").contains("clusterCards"));
+}
+
+#[test]
 fn the_style_for_new_edges_is_kept_in_vault_json_each_part_left_out_at_its_default() {
   let f = Fixture::new();
   assert_eq!(f.vault.edge_style().unwrap(), EdgeStyle::default());

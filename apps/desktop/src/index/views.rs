@@ -96,10 +96,12 @@ pub struct ClusterView {
   pub h: f64,
 }
 
-/// One end of a bundle: an outermost zone and its box, or, with no zone, the box of a cluster.
+/// One end of a bundle: an outermost zone and its box, a loose card and its box when loose cards are
+/// not clustered, or, with neither, the box of a cluster.
 #[derive(Serialize, Debug, PartialEq)]
 pub struct BundleEnd {
   pub zone: Option<String>,
+  pub card: Option<String>,
   pub x: f64,
   pub y: f64,
   pub w: f64,

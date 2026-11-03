@@ -17,7 +17,7 @@
 		route: Route;
 		shape?: Shape;
 		/** World units per pixel a thread's tacks and shadow are sized in: 1 for an edge, which zooms with
-		 * its cards, or one screen pixel for a bundle, which does not. */
+		 * its cards, or one screen pixel for a bundle, and for an edge once zones collapse, which do not. */
 		px?: number;
 		stroke?: Stroke;
 		selected?: boolean;

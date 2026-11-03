@@ -27,7 +27,17 @@
 
 <!-- The line and its label: a press selects the edge, a double-click edits the label, a right-click
      opens its menu. -->
-<EdgeLine route={line} shape={edge.shape} stroke={edge.stroke} {selected} {dimmed} onpointerdown={press} ondblclick={open} oncontextmenu={menu} />
+<EdgeLine
+	route={line}
+	shape={edge.shape}
+	px={items.edgePx()}
+	stroke={edge.stroke}
+	{selected}
+	{dimmed}
+	onpointerdown={press}
+	ondblclick={open}
+	oncontextmenu={menu}
+/>
 {#if editing || edge.label}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div

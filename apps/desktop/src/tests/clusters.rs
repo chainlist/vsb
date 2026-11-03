@@ -1,5 +1,5 @@
 use super::{put_card, put_zone, Fixture, WORLD};
-use crate::index::{Index, Rect, Viewport};
+use crate::index::{Index, Loose, Rect, Viewport};
 use crate::scan::scan;
 
 /// Each cluster as (column, row, count, box), in order.
@@ -19,7 +19,7 @@ fn bundles(v: &Viewport) -> Vec<(String, String, i64, String)> {
 }
 
 fn zoomed_out(index: &Index, rect: Rect, cell: f64) -> Viewport {
-  index.viewport(rect, 0.0, Some(cell)).unwrap()
+  index.viewport(rect, 0.0, Some(Loose::Clusters(cell))).unwrap()
 }
 
 #[test]
@@ -140,4 +140,37 @@ fn a_loose_cards_edges_attach_to_its_cluster() {
   assert_eq!(bundles(&v), [pair("(-800, 100)", "Z", 2, "to")]);
   let end = &v.bundles[0].ends[0];
   assert_eq!([end.x, end.y, end.w, end.h], [-800.0, 100.0, 400.0, 250.0]);
+}
+
+#[test]
+fn unclustered_loose_cards_come_back_as_themselves_and_their_edges_into_zones_bundled() {
+  let f = Fixture::new();
+  let index = f.index();
+  put_zone(&f, "Z", None, 0.0, 0.0, 1000.0, 1000.0);
+  put_card(&f, "A", Some("Z"), 100.0, 100.0);
+  put_card(&f, "B", Some("Z"), 500.0, 500.0);
+  put_card(&f, "L1", None, -500.0, 100.0);
+  put_card(&f, "L2", None, -800.0, 300.0);
+  // Its zone is missing: it sits on the canvas, loose.
+  put_card(&f, "L3", Some("GONE"), -3000.0, 0.0);
+  f.write(".canvas/edges/E1.json", r#"{ "from": "L1", "to": "A" }"#);
+  f.write(".canvas/edges/E2.json", r#"{ "from": "B", "to": "L1", "arrow": "both" }"#);
+  f.write(".canvas/edges/E3.json", r#"{ "from": "A", "to": "L2" }"#);
+  // Between two loose cards: drawn as itself. Inside the zone: left out.
+  f.write(".canvas/edges/E4.json", r#"{ "from": "L1", "to": "L3" }"#);
+  f.write(".canvas/edges/E5.json", r#"{ "from": "A", "to": "B" }"#);
+  scan(&f.vault, &index).unwrap();
+
+  let v = index.viewport(WORLD, 0.0, Some(Loose::Cards)).unwrap();
+  let mut cards: Vec<_> = v.cards.iter().map(|c| c.id.as_str()).collect();
+  cards.sort();
+  assert_eq!(cards, ["L1", "L2", "L3"]);
+  assert_eq!(v.edges.iter().map(|e| e.id.as_str()).collect::<Vec<_>>(), ["E4"]);
+  assert!(v.clusters.is_empty());
+  let pair = |a: &str, b: &str, n, arrow: &str| (a.to_string(), b.to_string(), n, arrow.to_string());
+  assert_eq!(bundles(&v), [pair("Z", "(-500, 100)", 2, "both"), pair("Z", "(-800, 300)", 1, "to")]);
+  // A card's end is the card itself, named so the line can follow it.
+  let end = &v.bundles[0].ends[1];
+  assert_eq!((end.card.as_deref(), [end.x, end.y, end.w, end.h]), (Some("L1"), [-500.0, 100.0, 100.0, 50.0]));
+  assert_eq!(v.bundles[0].ends[0].card, None);
 }

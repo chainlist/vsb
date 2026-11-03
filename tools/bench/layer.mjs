@@ -13,10 +13,10 @@ async function ab({ vaultId }) {
 	const layer = await import('/src/lib/api.ts');
 	await layer.openVault(vaultId);
 	const view = (cx, cy) => ({ minX: cx - 1600, minY: cy - 1000, maxX: cx + 1600, maxY: cy + 1000 });
-	const { cards } = await layer.queryViewport(view(2000, 1500), 0, null);
+	const { cards } = await layer.queryViewport(view(2000, 1500), 0, null, false);
 	const card = cards.find((c) => c.zone);
 	const calls = {
-		'viewport 100%': (api, i) => api.queryViewport(view(2000 + (i % 30) * 400, 1500), 4, null),
+		'viewport 100%': (api, i) => api.queryViewport(view(2000 + (i % 30) * 400, 1500), 4, null, false),
 		'move card': (api, i) => api.moveCards([{ id: card.id, x: card.x + (i % 2) * 20, y: card.y }]),
 		search: (api, i) => api.search('strategy interview'.slice(0, 1 + (i % 18)), 0, 50),
 		'zone rows': (api) => api.zoneRows(null, 0, 50),

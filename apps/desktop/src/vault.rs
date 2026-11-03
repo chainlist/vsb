@@ -27,6 +27,10 @@ struct VaultFile {
   /// left out while off, the default.
   #[serde(default, rename = "fitMindmaps", skip_serializing_if = "is_default")]
   fit_mindmaps: bool,
+  /// Whether, zoomed out, loose cards are counted per cell and drawn as one marker each, rather than
+  /// as themselves; left out while off, the default.
+  #[serde(default, rename = "clusterCards", skip_serializing_if = "is_default")]
+  cluster_cards: bool,
   /// The style every edge the app creates gets; left out at the default, each part as in an edge file.
   #[serde(default, rename = "newEdges", skip_serializing_if = "is_default")]
   new_edges: NewEdges,
@@ -84,7 +88,7 @@ impl Vault {
   pub fn open_or_init(root: &Path) -> Result<Vault> {
     let file = vault_file(root);
     if !file.exists() {
-      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, fit_mindmaps: false, new_edges: NewEdges::default(), onboarded: false };
+      let v = VaultFile { format: FORMAT, id: crate::new_id(), theme: None, paper: None, snap: true, fit_mindmaps: false, cluster_cards: false, new_edges: NewEdges::default(), onboarded: false };
       atomic_write(&file, &serde_json::to_vec_pretty(&v)?)?;
     }
     fs::create_dir_all(root.join("notes"))?;
@@ -140,6 +144,19 @@ impl Vault {
   pub fn set_fit_mindmaps(&self, fit: bool) -> Result<()> {
     let mut v = read_vault_file(&self.root)?;
     v.fit_mindmaps = fit;
+    atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
+  }
+
+  /// Whether `vault.json` has loose cards counted per cell zoomed out: not unless it says so.
+  pub fn cluster_cards(&self) -> Result<bool> {
+    Ok(read_vault_file(&self.root)?.cluster_cards)
+  }
+
+  /// Has loose cards counted per cell zoomed out in `vault.json`, or drawn as themselves again by
+  /// leaving it out. Read again first, as for the theme.
+  pub fn set_cluster_cards(&self, on: bool) -> Result<()> {
+    let mut v = read_vault_file(&self.root)?;
+    v.cluster_cards = on;
     atomic_write(&vault_file(&self.root), &serde_json::to_vec_pretty(&v)?)
   }
 

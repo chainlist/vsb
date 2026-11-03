@@ -75,6 +75,8 @@ export const vaultSnap = () => reading(settings.snap);
 export const setVaultSnap = (snap: boolean) => writing((e) => settings.setSnap(e, snap));
 export const vaultFitMindmaps = () => reading(settings.fitMindmaps);
 export const setVaultFitMindmaps = (fit: boolean) => writing((e) => settings.setFitMindmaps(e, fit));
+export const vaultClusterCards = () => reading(settings.clusterCards);
+export const setVaultClusterCards = (on: boolean) => writing((e) => settings.setClusterCards(e, on));
 export const vaultOnboarded = () => reading(settings.onboarded);
 export const setVaultOnboarded = () => writing(settings.setOnboarded);
 export const vaultEdgeStyle = () => reading(settings.edgeStyle);
@@ -84,7 +86,8 @@ export const openLink = (url: string) => local(() => links.openLink(url));
 /** None: a page cannot read another site's page (CORS), and the web build has no server of its own. */
 export const linkPreview = (_url: string) => local((): LinkPreview | null => null);
 
-export const queryViewport = (rect: Rect, minSize: number, cell: number | null) => reading((e) => viewport(e, rect, minSize, cell));
+export const queryViewport = (rect: Rect, minSize: number, cell: number | null, clusters: boolean) =>
+	reading((e) => viewport(e, rect, minSize, cell, clusters));
 export const createCard = (x: number, y: number, w: number, h: number, kind: CardKind = 'note', color: string | null = null) =>
 	writing((e) => cards.createCard(e, kind, color, x, y, w, h));
 export const placeNote = (path: string, x: number, y: number, w: number, h: number) => writing((e) => cards.placeNote(e, path, x, y, w, h));

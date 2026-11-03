@@ -190,12 +190,12 @@ export function clear(card: CardView) {
 	return history.edit(() => clearCard(card.id));
 }
 
-/** What selects new items landing on these boxes, then frames them when zoomed out, where they would
- * be hidden in a collapsed zone or a cluster, or when they land partly off-screen. Asked before the
- * edit, which can move the camera. */
+/** What selects new items landing on these boxes, then frames them when one would be hidden zoomed
+ * out, in a collapsed zone or a cluster, or when they land partly off-screen. Asked before the edit,
+ * which can move the camera. */
 export function landing(boxes: Frame[]) {
 	const span = cover(boxes);
-	const framed = items.collapsed || !inside(span, camera.visible);
+	const framed = boxes.some((b) => items.hides(b)) || !inside(span, camera.visible);
 	return (ids: string[]) => {
 		selection.ids = ids;
 		if (framed) camera.glide(span, OPEN_ZOOM);
@@ -223,13 +223,13 @@ export async function fitSelected() {
 }
 
 /** Places an empty card centered on a world point and opens it: an index card, a post-it, square and
- * yellow, or a mindmap, its root's size, or wide while maps fit their cards. Zoomed out, it would be
- * hidden in a cluster: it is framed, zoomed in until it shows. */
+ * yellow, or a mindmap, its root's size, or wide while maps fit their cards. Zoomed out, where it would
+ * be hidden in a cluster, it is framed, zoomed in until it shows. */
 export function placeCard(at: { x: number; y: number }, kind: 'note' | 'postit' | 'mindmap' = 'note') {
 	const postit = kind === 'postit';
 	const mindmap = mindmapFit.on ? NEW_MINDMAP : NEW_ROOT;
 	const { x, y, w, h } = newCardAt(at, postit ? NEW_POSTIT : kind === 'mindmap' ? mindmap : NEW_CARD);
-	const hidden = items.collapsed;
+	const hidden = items.hides({ x, y, w, h });
 	return history.edit(async () => {
 		const id = await createCard(x, y, w, h, kind, postit ? POSTIT_COLOR : null);
 		if (hidden) camera.glide(cover([{ x, y, w, h }]), OPEN_ZOOM);
@@ -243,9 +243,9 @@ export function placeCard(at: { x: number; y: number }, kind: 'note' | 'postit' 
  * its card gets no other (one card per note until V3): its card is shown instead. */
 export function dropNote(path: string, at: { x: number; y: number }) {
 	const { x, y, w, h } = newCardAt(at);
-	// The card joins the zone under its center. Zoomed out it would be hidden, in a collapsed zone or
-	// a cluster: it is shown.
-	const hidden = items.collapsed;
+	// The card joins the zone under its center. Zoomed out it may be hidden, in a collapsed zone or
+	// a cluster: then it is shown.
+	const hidden = items.hides({ x, y, w, h });
 	return history.edit(async () => {
 		const { id, undo } = await placeNote(path, x, y, w, h);
 		if (undo.length && !hidden) selection.only(id);

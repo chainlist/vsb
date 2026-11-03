@@ -3,7 +3,7 @@
 
 use super::{files, hour_ago, move_to, open, put_zone, set_time, Fixture, WORLD};
 use crate::drawings::{Cut, Erased};
-use crate::index::Rect;
+use crate::index::{Loose, Rect};
 use crate::items::{Kind, MEDIUM};
 use crate::session::Session;
 use serde_json::{json, Value};
@@ -188,7 +188,7 @@ fn the_viewport_brings_drawings_open_and_zoomed_out_the_loose_ones_and_previews_
   assert_eq!(shown, expected);
   assert!(s.index.viewport(WORLD, 300.0, None).unwrap().drawings.is_empty(), "smaller than the least size");
 
-  let zoomed = s.index.viewport(WORLD, 0.0, Some(1024.0)).unwrap();
+  let zoomed = s.index.viewport(WORLD, 0.0, Some(Loose::Clusters(1024.0))).unwrap();
   assert_eq!(zoomed.drawings.iter().map(|d| &d.id).collect::<Vec<_>>(), [&loose], "loose ones only");
   assert!(zoomed.clusters.is_empty(), "never counted in clusters");
   let inks = serde_json::to_value(&zoomed.previews[0].inks).unwrap();

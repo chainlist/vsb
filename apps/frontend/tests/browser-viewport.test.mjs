@@ -35,8 +35,11 @@ test('zoomed out, nothing inside a zone comes back', async () => {
 		edgeOf('E1', 'L1', 'L2'),
 		edgeOf('E2', 'L1', 'IN2')
 	);
-	const out = await api.queryViewport(WORLD, 0, 1024);
+	const out = await api.queryViewport(WORLD, 0, 1024, true);
 	assert.deepEqual([ids(out.zones), out.cards, out.edges], [['Z1'], [], []]);
+	// Unless loose cards are drawn as themselves: then they come back, with the edges between them.
+	const loose = await api.queryViewport(WORLD, 0, 1024, false);
+	assert.deepEqual([ids(loose.zones), ids(loose.cards), ids(loose.edges)], [['Z1'], ['L1', 'L2'], ['E1']]);
 	const open = await api.queryViewport(WORLD, 0, null);
 	assert.deepEqual([ids(open.zones), ids(open.cards), ids(open.edges)], [['Z1', 'Z2'], ['IN1', 'IN2', 'L1', 'L2'], ['E1', 'E2']]);
 });
@@ -94,7 +97,7 @@ test('loose cards are counted per cell, never returned', async () => {
 		cardAt('IN', 'Z', 10, 10)
 	);
 	// Rounding toward zero would put A with B and C: the cells on either side of 0 are distinct.
-	const v = await api.queryViewport(WORLD, 0, 512);
+	const v = await api.queryViewport(WORLD, 0, 512, true);
 	assert.deepEqual(clusters(v), [
 		[-1, -1, 1, [-60, -35, 100, 50]],
 		[-1, 0, 1, [-260, -25, 100, 50]],
@@ -108,18 +111,18 @@ test('cells on either side of 0 are distinct, and a cell comes back whole', asyn
 	// Centers at (-90, -90) and (-10, -10), in cell (-1, -1) of 512; and (110, 10), in cell (0, 0).
 	await put(cardAt('A', null, -140, -115), cardAt('B', null, -60, -35), cardAt('C', null, 60, -15));
 	const corner = { minX: -5, minY: -5, maxX: -1, maxY: -1 };
-	assert.deepEqual(clusters(await api.queryViewport(corner, 0, 512)), [[-1, -1, 2, [-140, -115, 180, 130]]]);
+	assert.deepEqual(clusters(await api.queryViewport(corner, 0, 512, true)), [[-1, -1, 2, [-140, -115, 180, 130]]]);
 	// A card counts in the cell holding its center only.
 	const middle = { minX: 1, minY: 1, maxX: 99, maxY: 99 };
-	assert.deepEqual(clusters(await api.queryViewport(middle, 0, 512)), [[0, 0, 1, [60, -15, 100, 50]]]);
+	assert.deepEqual(clusters(await api.queryViewport(middle, 0, 512, true)), [[0, 0, 1, [60, -15, 100, 50]]]);
 	const far = { minX: 600, minY: 600, maxX: 700, maxY: 700 };
-	assert.deepEqual(clusters(await api.queryViewport(far, 0, 512)), []);
+	assert.deepEqual(clusters(await api.queryViewport(far, 0, 512, true)), []);
 });
 
 test('clusters follow cards moved, deleted and undone', async () => {
 	await fresh();
 	await put(cardAt('A', null, 0, 0), cardAt('B', null, 300, 300));
-	const at = async () => clusters(await api.queryViewport(WORLD, 0, 1024));
+	const at = async () => clusters(await api.queryViewport(WORLD, 0, 1024, true));
 	assert.deepEqual(await at(), [[0, 0, 2, [0, 0, 400, 350]]]);
 	const undo = await api.moveCards([{ id: 'B', x: 2100, y: 0 }]);
 	assert.deepEqual(await at(), [[0, 0, 1, [0, 0, 100, 50]], [2, 0, 1, [2100, 0, 100, 50]]]);
@@ -153,7 +156,7 @@ test('edges are bundled per pair of outermost zones', async () => {
 		// Inside Z1: left out.
 		edgeOf('E6', 'A', 'B')
 	);
-	const v = await api.queryViewport(WORLD, 0, 1024);
+	const v = await api.queryViewport(WORLD, 0, 1024, true);
 	assert.deepEqual(bundles(v), [['Z1', 'Z2', 3, 'both'], ['Z3', 'Z1', 1, 'to'], ['Z2', 'Z3', 1, 'none']]);
 	const z1 = v.bundles[0].ends[0];
 	assert.deepEqual([z1.x, z1.y, z1.w, z1.h], [0, 0, 1000, 1000]);
@@ -175,22 +178,48 @@ test("a loose card's edges attach to its cluster, seen whole from anywhere", asy
 		// Inside one cluster: left out.
 		edgeOf('E4', 'L1', 'L2')
 	);
-	const v = await api.queryViewport(WORLD, 0, 1024);
+	const v = await api.queryViewport(WORLD, 0, 1024, true);
 	assert.deepEqual(bundles(v), [['(-800, 100)', 'Z', 2, 'to'], ['(-800, 100)', '(-3000, 0)', 1, 'to']]);
 	const end = v.bundles[0].ends[0];
 	assert.deepEqual([end.x, end.y, end.w, end.h], [-800, 100, 400, 250]);
 
 	// Looking at the zone alone, the cluster is off-screen and still its whole self.
-	const zone = await api.queryViewport({ minX: 0, minY: 0, maxX: 1000, maxY: 1000 }, 0, 1024);
+	const zone = await api.queryViewport({ minX: 0, minY: 0, maxX: 1000, maxY: 1000 }, 0, 1024, true);
 	assert.deepEqual(bundles(zone), [['(-800, 100)', 'Z', 2, 'to']]);
+});
+
+test('unclustered, loose cards come back as themselves and their edges into zones are bundled', async () => {
+	await fresh();
+	await put(
+		zoneAt('Z', null, 0, 0, 1000, 1000),
+		cardAt('A', 'Z', 100, 100),
+		cardAt('B', 'Z', 500, 500),
+		cardAt('L1', null, -500, 100),
+		cardAt('L2', null, -800, 300),
+		// Its zone is missing: it sits on the canvas, loose.
+		cardAt('L3', 'GONE', -3000, 0),
+		edgeOf('E1', 'L1', 'A'),
+		edgeOf('E2', 'B', 'L1', { arrow: 'both' }),
+		edgeOf('E3', 'A', 'L2'),
+		// Between two loose cards: drawn as itself. Inside the zone: left out.
+		edgeOf('E4', 'L1', 'L3'),
+		edgeOf('E5', 'A', 'B')
+	);
+	const v = await api.queryViewport(WORLD, 0, 1024, false);
+	assert.deepEqual([ids(v.cards), ids(v.edges), v.clusters], [['L1', 'L2', 'L3'], ['E4'], []]);
+	assert.deepEqual(bundles(v), [['Z', '(-500, 100)', 2, 'both'], ['Z', '(-800, 300)', 1, 'to']]);
+	// A card's end is the card itself, named so the line can follow it.
+	const end = v.bundles[0].ends[1];
+	assert.deepEqual([end.card, end.x, end.y, end.w, end.h], ['L1', -500, 100, 100, 50]);
+	assert.equal(v.bundles[0].ends[0].card, null);
 });
 
 test('bundles follow restyled, moved and deleted edges', async () => {
 	await fresh();
 	await put(zoneAt('Z1', null, 0, 0, 1000, 1000), zoneAt('Z2', null, 2000, 0, 1000, 1000), cardAt('A', 'Z1', 10, 10), cardAt('B', 'Z2', 10, 10), edgeOf('E', 'A', 'B'));
-	const at = async () => bundles(await api.queryViewport(WORLD, 0, 1024));
+	const at = async () => bundles(await api.queryViewport(WORLD, 0, 1024, true));
 	assert.deepEqual(await at(), [['Z1', 'Z2', 1, 'to']]);
-	const thread = async () => (await api.queryViewport(WORLD, 0, 1024)).bundles[0].thread;
+	const thread = async () => (await api.queryViewport(WORLD, 0, 1024, true)).bundles[0].thread;
 	assert.equal(await thread(), false);
 	await api.shapeEdges(['E'], 'thread');
 	assert.deepEqual(await at(), [['Z1', 'Z2', 1, 'none']], 'a thread brings no arrowheads');
@@ -225,5 +254,5 @@ test('a selection is framed by its items whatever their kinds', async () => {
 
 test('only the cell sizes the canvas asks for are kept', async () => {
 	await fresh();
-	await assert.rejects(api.queryViewport(WORLD, 0, 100), /512, 1024, 2048, 4096/);
+	await assert.rejects(api.queryViewport(WORLD, 0, 100, true), /512, 1024, 2048, 4096/);
 });

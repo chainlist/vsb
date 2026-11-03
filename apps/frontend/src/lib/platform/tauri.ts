@@ -102,6 +102,13 @@ export const vaultFitMindmaps = () => invoke<boolean>('vault_fit_mindmaps');
 /** Has each mindmap shrunk to fit its card, or not, in the open vault's `vault.json`. */
 export const setVaultFitMindmaps = (fit: boolean) => invoke<void>('set_vault_fit_mindmaps', { fit });
 
+/** Whether the open vault's `vault.json` has loose cards counted per cell zoomed out, rather than
+ * drawn as themselves. */
+export const vaultClusterCards = () => invoke<boolean>('vault_cluster_cards');
+
+/** Has loose cards counted per cell zoomed out, or not, in the open vault's `vault.json`. */
+export const setVaultClusterCards = (on: boolean) => invoke<void>('set_vault_cluster_cards', { on });
+
 /** Whether the open vault's onboarding has been through, as its `vault.json` says. */
 export const vaultOnboarded = () => invoke<boolean>('vault_onboarded');
 
@@ -130,9 +137,10 @@ export const linkPreview = (url: string) => invoke<LinkPreview | null>('link_pre
 
 /** Zones, cards and edges in `rect`, skipping those smaller than `minSize` world units. Zoomed
  * out, given the size of a `cell` of the clusters' grid, nothing inside a zone comes back: only the
- * outermost zones, the loose cards counted per cell and the edges bundled. */
-export const queryViewport = (rect: Rect, minSize: number, cell: number | null) =>
-	invoke<Viewport>('query_viewport', { rect, minSize, cell });
+ * outermost zones, the loose cards counted per cell with `clusters` or else as themselves with the
+ * edges between them, and the other edges bundled. */
+export const queryViewport = (rect: Rect, minSize: number, cell: number | null, clusters: boolean) =>
+	invoke<Viewport>('query_viewport', { rect, minSize, cell, clusters });
 
 /** Places an empty card on a world rectangle, an index card, a post-it or a mindmap, in `color` (null
  * for the theme's plain stock), and returns its ID. */

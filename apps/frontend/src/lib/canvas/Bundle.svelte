@@ -9,9 +9,10 @@
 
 	let { bundle }: { bundle: Bundle } = $props();
 
-	/** A zone as it is on the canvas, so the line follows a drag, or its marker when it is drawn as one;
-	 * or a cluster's marker. */
+	/** A zone or a loose card as it is on the canvas, so the line follows a drag, or the zone's marker
+	 * when it is drawn as one; or a cluster's marker. */
 	function box(end: BundleEnd) {
+		if (end.card) return items.find(end.card)?.item ?? end;
 		if (!end.zone) return markerAt(end);
 		const zone = items.find(end.zone)?.item ?? end;
 		return asMarker(zone) ? markerAt(zone, zoneMarkers.get(end.zone)) : zone;

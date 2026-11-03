@@ -1,7 +1,7 @@
 //! Zoomed out, a collapsed zone's preview: its cards by color and its inner zones, at any depth.
 
 use super::{move_to, open, put_card, put_zone, Fixture, WORLD};
-use crate::index::{Rect, Viewport};
+use crate::index::{Loose, Rect, Viewport};
 use crate::session::Session;
 
 type Boxes = Vec<[f64; 4]>;
@@ -41,7 +41,7 @@ fn nested() -> (Fixture, Session) {
 #[test]
 fn a_collapsed_zone_previews_its_cards_by_color_and_its_inner_zones_at_any_depth() {
   let (_f, s) = nested();
-  let v = s.index.viewport(WORLD, 0.0, Some(1024.0)).unwrap();
+  let v = s.index.viewport(WORLD, 0.0, Some(Loose::Clusters(1024.0))).unwrap();
   let stock = ("stock".to_string(), vec![[300.0, 60.0, 100.0, 50.0], [115.0, 605.0, 100.0, 50.0]]);
   let blue = ("#6fa8dc".to_string(), vec![[120.0, 520.0, 100.0, 50.0]]);
   let yellow = ("#f5d76e".to_string(), vec![[50.0, 60.0, 100.0, 50.0]]);
@@ -54,21 +54,21 @@ fn a_collapsed_zone_previews_its_cards_by_color_and_its_inner_zones_at_any_depth
 fn a_preview_holds_what_meets_the_area_and_is_large_enough() {
   let (_f, s) = nested();
   let corner = Rect { min_x: 1000.0, min_y: 0.0, max_x: 1250.0, max_y: 200.0 };
-  let v = s.index.viewport(corner, 0.0, Some(1024.0)).unwrap();
+  let v = s.index.viewport(corner, 0.0, Some(Loose::Clusters(1024.0))).unwrap();
   assert_eq!(previews(&v), [("Z1".to_string(), vec![("#f5d76e".to_string(), vec![[50.0, 60.0, 100.0, 50.0]])], vec![])]);
   // Far out, cards smaller than a few pixels on screen are left out, bigger zones stay.
-  let v = s.index.viewport(WORLD, 120.0, Some(4096.0)).unwrap();
+  let v = s.index.viewport(WORLD, 120.0, Some(Loose::Clusters(4096.0))).unwrap();
   assert_eq!(previews(&v), [("Z1".to_string(), vec![], vec![[100.0, 500.0, 400.0, 300.0], [110.0, 600.0, 200.0, 150.0]])]);
 }
 
 #[test]
 fn a_preview_moves_with_its_zone_and_follows_its_cards() {
   let (_f, s) = nested();
-  let before = previews(&s.index.viewport(WORLD, 0.0, Some(1024.0)).unwrap());
+  let before = previews(&s.index.viewport(WORLD, 0.0, Some(Loose::Clusters(1024.0))).unwrap());
   s.move_zones(&[move_to("Z1", 5000.0, 2000.0)]).unwrap();
-  assert_eq!(previews(&s.index.viewport(WORLD, 0.0, Some(1024.0)).unwrap()), before, "in the zone's coordinates");
+  assert_eq!(previews(&s.index.viewport(WORLD, 0.0, Some(Loose::Clusters(1024.0))).unwrap()), before, "in the zone's coordinates");
   // A card moved out of the zone leaves its preview; one moved within it moves in it.
   s.move_cards(&[move_to("A", 0.0, 0.0), move_to("B", 5100.0, 2100.0)]).unwrap();
-  let after = previews(&s.index.viewport(WORLD, 0.0, Some(1024.0)).unwrap());
+  let after = previews(&s.index.viewport(WORLD, 0.0, Some(Loose::Clusters(1024.0))).unwrap());
   assert_eq!(after[0].1, [("stock".to_string(), vec![[100.0, 100.0, 100.0, 50.0], [115.0, 605.0, 100.0, 50.0]]), ("#6fa8dc".to_string(), vec![[120.0, 520.0, 100.0, 50.0]])]);
 }

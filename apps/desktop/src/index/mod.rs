@@ -20,6 +20,7 @@ pub use batch_scope::{BatchScope, ScopeEdge};
 pub use bounds::Scope;
 pub use notes::Entry;
 pub use rows::NoteRow;
+pub use viewport::Loose;
 pub use views::Viewport;
 pub use zone_list::ZoneRow;
 pub use zone_nodes::ZoneNodes;

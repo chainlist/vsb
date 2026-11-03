@@ -33,29 +33,29 @@ test('a collapsed zone previews its cards by color and its inner zones, at any d
 	const blue = ['#6fa8dc', [[120, 520, 100, 50]]];
 	const yellow = ['#f5d76e', [[50, 60, 100, 50]]];
 	const inner = [[100, 500, 400, 300], [110, 600, 200, 150]];
-	assert.deepEqual(previews(await api.queryViewport(WORLD, 0, 1024)), [['Z1', [stock, blue, yellow], inner]], 'an empty zone has none; loose cards are clusters');
+	assert.deepEqual(previews(await api.queryViewport(WORLD, 0, 1024, true)), [['Z1', [stock, blue, yellow], inner]], 'an empty zone has none; loose cards are clusters');
 	assert.deepEqual((await api.queryViewport(WORLD, 0, null)).previews, [], 'open zones show their cards themselves');
 });
 
 test('a preview holds what meets the area and is large enough', async () => {
 	await nested();
 	const corner = { minX: 1000, minY: 0, maxX: 1250, maxY: 200 };
-	assert.deepEqual(previews(await api.queryViewport(corner, 0, 1024)), [['Z1', [['#f5d76e', [[50, 60, 100, 50]]]], []]]);
+	assert.deepEqual(previews(await api.queryViewport(corner, 0, 1024, true)), [['Z1', [['#f5d76e', [[50, 60, 100, 50]]]], []]]);
 	// Far out, cards smaller than a few pixels on screen are left out, bigger zones stay.
-	assert.deepEqual(previews(await api.queryViewport(WORLD, 120, 4096)), [['Z1', [], [[100, 500, 400, 300], [110, 600, 200, 150]]]]);
+	assert.deepEqual(previews(await api.queryViewport(WORLD, 120, 4096, true)), [['Z1', [], [[100, 500, 400, 300], [110, 600, 200, 150]]]]);
 });
 
 test('a preview moves with its zone and follows its cards', async () => {
 	await nested();
-	const before = previews(await api.queryViewport(WORLD, 0, 1024));
+	const before = previews(await api.queryViewport(WORLD, 0, 1024, true));
 	await api.moveZones([{ id: 'Z1', x: 5000, y: 2000 }]);
-	assert.deepEqual(previews(await api.queryViewport(WORLD, 0, 1024)), before, "in the zone's coordinates");
+	assert.deepEqual(previews(await api.queryViewport(WORLD, 0, 1024, true)), before, "in the zone's coordinates");
 	// A card moved out of the zone leaves its preview; one moved within it moves in it.
 	await api.moveCards([
 		{ id: 'A', x: 0, y: 0 },
 		{ id: 'B', x: 5100, y: 2100 }
 	]);
-	const [[, cards]] = previews(await api.queryViewport(WORLD, 0, 1024));
+	const [[, cards]] = previews(await api.queryViewport(WORLD, 0, 1024, true));
 	assert.deepEqual(cards, [['stock', [[100, 100, 100, 50], [115, 605, 100, 50]]], ['#6fa8dc', [[120, 520, 100, 50]]]]);
 	// The zone list and framing count from the same cards.
 	assert.equal((await api.zoneRows(null, 0, 50)).find((z) => z.id === 'Z1').cards, 3);

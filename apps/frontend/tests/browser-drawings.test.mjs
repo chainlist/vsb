@@ -150,7 +150,7 @@ test('the viewport brings drawings, and zoomed out the loose ones and previews b
 	]);
 	assert.deepEqual((await api.queryViewport(WORLD, 300, null)).drawings, [], 'smaller than the least size');
 
-	const zoomed = await api.queryViewport(WORLD, 0, 1024);
+	const zoomed = await api.queryViewport(WORLD, 0, 1024, true);
 	assert.deepEqual(zoomed.drawings.map((d) => d.id), [loose], 'loose ones only');
 	assert.deepEqual(zoomed.clusters, [], 'never counted in clusters');
 	const sketch = (strokes) => [{ x: 98.5, y: 98.5, strokes: [strokes] }];

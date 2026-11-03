@@ -3,6 +3,7 @@
 	import { openLink, type CardView } from '#lib/api.js';
 	import { isMod } from '#lib/keys.js';
 	import { edit, sizeMindmap, tilt } from './actions.js';
+	import { clustering } from './clustering.svelte.js';
 	import { mindmaps, startMove } from './gestures.js';
 	import { imageUrl } from './images.js';
 	import { items } from './items.svelte.js';
@@ -57,10 +58,11 @@
 		if (card.kind === 'link' && card.link !== null && isMod(e)) void openLink(card.link);
 	}
 
-	/** As zones collapse, the card fades into the preview drawn beneath it, as long as dimming takes,
-	 * and no longer takes presses. Leaving the canvas any other way, it goes at once. */
+	/** As zones collapse, the card fades into the preview drawn beneath it, or into its cluster, as long
+	 * as dimming takes, and no longer takes presses. Leaving the canvas any other way, it goes at once,
+	 * as a loose card does while loose cards are not clustered. */
 	function collapse(node: HTMLElement) {
-		if (!items.collapsed) return { duration: 0 };
+		if (!items.collapsed || (!card.zone && !clustering.on)) return { duration: 0 };
 		node.style.pointerEvents = 'none';
 		const duration = parseFloat(getComputedStyle(node).getPropertyValue('--fade'));
 		return { duration, easing: cubicOut, css: (t: number) => `opacity: ${t}` };

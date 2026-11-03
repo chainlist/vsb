@@ -134,6 +134,18 @@ test("a vault's mindmaps size their cards unless it fits them, left out at that 
 	assert.equal(await api.vaultFitMindmaps(), false);
 });
 
+test("a vault's loose cards are drawn as themselves unless it clusters them, left out at that default", async () => {
+	const a = await fresh();
+	assert.equal(await api.vaultClusterCards(), false);
+	await api.setVaultClusterCards(true);
+	await fresh();
+	assert.equal(await api.vaultClusterCards(), false);
+	await api.openVault(a);
+	assert.equal(await api.vaultClusterCards(), true);
+	await api.setVaultClusterCards(false);
+	assert.equal(await api.vaultClusterCards(), false);
+});
+
 test("a vault's onboarding is noted once done, and left out until then", async () => {
 	const a = await fresh();
 	assert.equal(await api.vaultOnboarded(), false);

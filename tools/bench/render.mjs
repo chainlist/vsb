@@ -13,6 +13,9 @@ import { generate } from './vault.mjs';
 async function render({ base }) {
 	const { camera } = await import(`${base}src/lib/canvas/camera.svelte.ts`);
 	const { items } = await import(`${base}src/lib/canvas/items.svelte.ts`);
+	const { clustering } = await import(`${base}src/lib/canvas/clustering.svelte.ts`);
+	// The map as it has always been measured: loose cards clustered, whatever the vault says.
+	clustering.on = true;
 	/** Resolves once the next frame is painted. */
 	const painted = () => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 	/** The longest gap between two turns of the main thread while `run` runs. */

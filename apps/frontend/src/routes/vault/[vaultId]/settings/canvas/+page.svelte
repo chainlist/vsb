@@ -1,12 +1,14 @@
 <script lang="ts">
 	import {
 		setDeviceWheel,
+		setVaultClusterCards,
 		setVaultEdgeStyle,
 		setVaultFitMindmaps,
 		setVaultSnap,
 		type EdgeStyle as Style,
 		type Wheel
 	} from '#lib/api.js';
+	import { clustering } from '#lib/canvas/clustering.svelte.js';
 	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { mindmapFit } from '#lib/canvas/mindmapFit.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
@@ -17,8 +19,8 @@
 
 	let error = $state('');
 
-	// Each choice applies at once, then is kept: snapping, new edges and mindmaps in vault.json, the
-	// wheel for this device. Each leaves out the default.
+	// Each choice applies at once, then is kept: snapping, new edges, mindmaps and clusters in
+	// vault.json, the wheel for this device. Each leaves out the default.
 	async function keep(write: Promise<void>) {
 		error = '';
 		try {
@@ -36,6 +38,11 @@
 	function fitMindmaps(fit: boolean) {
 		mindmapFit.on = fit;
 		keep(setVaultFitMindmaps(fit));
+	}
+
+	function cluster(on: boolean) {
+		clustering.on = on;
+		keep(setVaultClusterCards(on));
 	}
 
 	function restyle(change: Partial<Style>) {
@@ -86,6 +93,20 @@
 			<span class="hint">
 				A mindmap's card takes its map's size, growing and shrinking as the map does, and resizing the card scales
 				the map. Checked, the card keeps the size you give it and its map is scaled to fit it.
+			</span>
+		</span>
+	</label>
+</fieldset>
+
+<fieldset>
+	<legend>Zoomed out</legend>
+	<label class="option">
+		<input type="checkbox" checked={clustering.on} onchange={(e) => cluster(e.currentTarget.checked)} />
+		<span>
+			<span class="name">Cluster loose cards</span>
+			<span class="hint">
+				Below 40%, where zones collapse, the cards in no zone are still drawn as themselves. Checked, they are counted
+				per area of the canvas instead, each area drawn as one marker, such as "14 notes".
 			</span>
 		</span>
 	</label>

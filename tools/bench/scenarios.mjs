@@ -41,7 +41,7 @@ export async function scenarios({ base, vaultId, search, only }) {
 	const across = (zoom, y, steps) => Array.from({ length: steps }, (_, i) => [2000 + (i * 400) / zoom, y]);
 	async function pan(name, zoom, path) {
 		if (!want(name)) return;
-		for (const [cx, cy] of path) await time(name, () => api.queryViewport(view(cx, cy, zoom), 4 / zoom, cellAt(zoom)));
+		for (const [cx, cy] of path) await time(name, () => api.queryViewport(view(cx, cy, zoom), 4 / zoom, cellAt(zoom), true));
 	}
 	await pan('viewport 100%', 1, [...across(1, 1500, 60), ...across(1, 30000, 60)]);
 	await pan('viewport 40%', 0.4, [...across(0.4, 6000, 40), ...across(0.4, 32000, 40)]);
@@ -50,8 +50,8 @@ export async function scenarios({ base, vaultId, search, only }) {
 
 	// Moving a card and back: 20 in zones, 20 loose.
 	if (want('move card')) {
-		const inZones = (await api.queryViewport(view(2000, 1500, 0.4), 0, null)).cards.filter((c) => c.zone);
-		const loose = (await api.queryViewport(view(20000, 32000, 0.4), 0, null)).cards.filter((c) => !c.zone);
+		const inZones = (await api.queryViewport(view(2000, 1500, 0.4), 0, null, false)).cards.filter((c) => c.zone);
+		const loose = (await api.queryViewport(view(20000, 32000, 0.4), 0, null, false)).cards.filter((c) => !c.zone);
 		for (const c of [...inZones.slice(0, 20), ...loose.slice(0, 20)]) {
 			await time('move card', () => api.moveCards([{ id: c.id, x: c.x + 20, y: c.y }]));
 			await time('move card', () => api.moveCards([{ id: c.id, x: c.x, y: c.y }]));

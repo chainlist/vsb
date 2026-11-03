@@ -50,6 +50,15 @@ export const setFitMindmaps = (e: Edit, fit: boolean) =>
 		else delete v.fitMindmaps;
 	});
 
+/** Loose cards counted per cell zoomed out: not unless the vault says so. */
+export const clusterCards = async (e: Edit) => (await settings(e)).clusterCards ?? false;
+
+export const setClusterCards = (e: Edit, on: boolean) =>
+	change(e, (v) => {
+		if (on) v.clusterCards = true;
+		else delete v.clusterCards;
+	});
+
 /** Whether the vault's onboarding has been through: not until the vault says so. */
 export const onboarded = async (e: Edit) => (await settings(e)).onboarded ?? false;
 

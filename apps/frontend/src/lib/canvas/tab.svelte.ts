@@ -58,7 +58,7 @@ export async function addChildTo(card: CardView) {
 			await finished();
 		}
 		// Its edges as drawn, those running off-screen too: an edge's bounds cover both its cards.
-		const { edges } = await queryViewport(box(card), 0, null);
+		const { edges } = await queryViewport(box(card), 0, null, false);
 		const links: Link[] = edges.filter((e) => e.from === card.id || e.to === card.id).map((e) => ({ ...e, ...items.routeOf(e) }));
 		const found = ways(card.id, links);
 		const way = found.length > 1 ? await picker.ask(card) : (found[0] ?? WAYS[batchDialog.direction]);
@@ -66,7 +66,7 @@ export async function addChildTo(card: CardView) {
 		const grid = snap.on ? GRID : 0;
 		const first = firstSpot(card, way, children(card.id, way, links), NEW_CARD, { rank: RANK_GAP, gap: NODE_GAP }, grid);
 		// Every card along the way it may slide, off-screen and inside zones too.
-		const { cards } = await queryViewport(lane(first, way, NODE_GAP), 0, null);
+		const { cards } = await queryViewport(lane(first, way, NODE_GAP), 0, null, false);
 		const at = box(slide(first, way, cards, NODE_GAP, grid));
 		await history.edit(async () => {
 			const { id, undo } = await addChild(card.id, at);

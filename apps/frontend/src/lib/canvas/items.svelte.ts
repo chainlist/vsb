@@ -14,6 +14,7 @@ import {
 	type ZoneView
 } from '#lib/api.js';
 import { camera } from './camera.svelte.js';
+import { clustering } from './clustering.svelte.js';
 import { route } from './route.js';
 
 /** Area queried around the screen, as a fraction of its size, so small pans need no new query. */
@@ -21,7 +22,8 @@ const MARGIN = 0.5;
 /** Items smaller than this on screen are skipped. */
 const MIN_PIXELS = 4;
 /** Below this zoom, 14px card text would be under 6px on screen: zones collapse to their frame, their
- * title and a faded preview of what they hold, and loose cards are counted per cell of a grid. */
+ * title and a faded preview of what they hold, and loose cards are counted per cell of a grid when
+ * the vault clusters them. */
 export const OPEN_ZOOM = 0.4;
 /** Smallest side of a cell on screen, in pixels. A cell is a power of two world units wide, so it
  * measures 160 to 320 pixels, and four cells merge into one as the zoom halves. */
@@ -56,7 +58,8 @@ class Items {
 	edges = $state<EdgeView[]>([]);
 	/** Oldest first, so newer ones are drawn on top. Zoomed out, only the loose ones. */
 	drawings = $state<DrawingView[]>([]);
-	/** Zoomed out, the loose cards counted per cell, and the edges drawn as one line per pair of ends. */
+	/** Zoomed out, the loose cards counted per cell, when clustered, and the edges drawn as one line per
+	 * pair of ends. */
 	clusters = $state<Cluster[]>([]);
 	bundles = $state<Bundle[]>([]);
 	/** Zoomed out, what each zone holds, drawn faded inside it. */
@@ -72,6 +75,7 @@ class Items {
 	#boxes = $derived(this.cards.map(({ id, x, y, w, h }) => ({ id, x, y, w, h })));
 	#queried: Rect | null = null;
 	#zoom = 1;
+	#clustered = false;
 	#latest = 0;
 
 	reset() {
@@ -108,6 +112,12 @@ class Items {
 		return this.zones.findLast((z) => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h);
 	}
 
+	/** Whether a card landing on this box would be hidden: zoomed out, in the collapsed zone under its
+	 * center, or loose in a cluster. */
+	hides(box: Frame) {
+		return this.collapsed && (clustering.on || !!this.zoneAt({ x: box.x + box.w / 2, y: box.y + box.h / 2 }));
+	}
+
 	/** The card or zone on the canvas with this id, and which of the two it is. */
 	find(id: string) {
 		const card = this.#byId.get(id);
@@ -121,7 +131,13 @@ class Items {
 	 * when it can. */
 	routeOf(edge: EdgeView) {
 		const others = this.#boxes.filter((c) => c.id !== edge.from && c.id !== edge.to);
-		return route(this.#byId.get(edge.from) ?? edge.ends[0], this.#byId.get(edge.to) ?? edge.ends[1], edge, 1, others);
+		return route(this.#byId.get(edge.from) ?? edge.ends[0], this.#byId.get(edge.to) ?? edge.ends[1], edge, this.edgePx(), others);
+	}
+
+	/** World units per pixel an edge's arrowheads and tacks are sized in: one, zooming with its cards,
+	 * or once zones collapse (loose cards drawn as themselves) one screen pixel, as its line is then. */
+	edgePx() {
+		return this.collapsed ? 1 / camera.zoom : 1;
 	}
 
 	/** The zones, cards and drawings on the canvas lying inside these zones, at any depth. */
@@ -137,11 +153,12 @@ class Items {
 	}
 
 	/** Queries again once the screen leaves the queried area, the zoom changed twofold, zones open or
-	 * collapse, or cells change size. */
+	 * collapse, cells change size, or loose cards start or stop clustering. */
 	update() {
 		const zoomed = Math.abs(Math.log2(camera.zoom / this.#zoom)) >= 1;
 		const crossed = cellAt(camera.zoom) !== cellAt(this.#zoom);
-		if (this.#queried && inside(camera.visible, this.#queried) && !zoomed && !crossed) return;
+		const regrouped = clustering.on !== this.#clustered;
+		if (this.#queried && inside(camera.visible, this.#queried) && !zoomed && !crossed && !regrouped) return;
 		void this.refresh();
 	}
 
@@ -156,8 +173,9 @@ class Items {
 		const query = ++this.#latest;
 		this.#queried = grow(camera.visible, MARGIN);
 		this.#zoom = camera.zoom;
+		this.#clustered = clustering.on;
 		const cell = cellAt(camera.zoom);
-		const found = await queryViewport(this.#queried, MIN_PIXELS / camera.zoom, cell);
+		const found = await queryViewport(this.#queried, MIN_PIXELS / camera.zoom, cell, this.#clustered);
 		if (query !== this.#latest) return;
 		// Zones change look with the answer, so they never collapse over cards still on the canvas.
 		this.collapsed = cell !== null;

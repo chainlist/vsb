@@ -143,8 +143,9 @@ export type Pen = { color: string | null; width: number; eraser: Eraser };
  * how many, and the square's column and row counted from the world origin. Never the cards. */
 export type Cluster = Frame & { cell: [number, number]; count: number };
 
-/** One end of a bundle: an outermost zone and its box, or, with no zone, the box of a cluster. */
-export type BundleEnd = Frame & { zone: string | null };
+/** One end of a bundle: an outermost zone and its box, a loose card and its box when loose cards are
+ * not clustered, or, with neither, the box of a cluster. */
+export type BundleEnd = Frame & { zone: string | null; card: string | null };
 
 /** Zoomed out, the edges between two ends drawn as one line: how many, where they point, and
  * whether they are all threads, so the line is drawn as one. */

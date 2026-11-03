@@ -1,5 +1,5 @@
 use super::{Fixture, WORLD};
-use crate::index::Rect;
+use crate::index::{Loose, Rect};
 use crate::scan::scan;
 
 fn card(zone: Option<&str>, x: f64, y: f64, note: Option<&str>) -> String {
@@ -88,7 +88,9 @@ fn collapsed_viewport_leaves_out_everything_inside_zones() {
   };
 
   // Zoomed out: the outer zone alone. Loose cards and edges come back as clusters and bundles.
-  assert_eq!(ids(Some(1000.0)), [vec!["Z1"], vec![], vec![]]);
+  assert_eq!(ids(Some(Loose::Clusters(1000.0))), [vec!["Z1"], vec![], vec![]]);
+  // Unless loose cards are drawn as themselves: then they come back, with the edges between them.
+  assert_eq!(ids(Some(Loose::Cards)), [vec!["Z1"], vec!["L1", "L2"], vec!["E1"]]);
   // Zoomed back in: everything inside the zones again.
   assert_eq!(ids(None), [vec!["Z1", "Z2"], vec!["IN1", "IN2", "L1", "L2"], vec!["E1", "E2"]]);
 }

@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Canvas from '#lib/canvas/Canvas.svelte';
+	import { clustering } from '#lib/canvas/clustering.svelte.js';
 	import { snap } from '#lib/canvas/grid.svelte.js';
 	import { mindmapFit } from '#lib/canvas/mindmapFit.svelte.js';
 	import { newEdges } from '#lib/canvas/newEdges.svelte.js';
@@ -29,6 +30,9 @@
 	});
 	$effect(() => {
 		mindmapFit.on = data.fitMindmaps;
+	});
+	$effect(() => {
+		clustering.on = data.clusterCards;
 	});
 	$effect(() => {
 		newEdges.style = data.edgeStyle;

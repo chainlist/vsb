@@ -12,21 +12,31 @@ pub(super) const MEETS: &str = "b.max_x >= ?1 AND b.min_x <= ?3 AND b.max_y >= ?
 /// R*Tree filter: bounds `b` are at least ?5 wide or tall.
 pub(super) const LARGE: &str = "(b.max_x - b.min_x >= ?5 OR b.max_y - b.min_y >= ?5)";
 
+/// Zoomed out, what the loose cards come back as: counted per cell of the clusters' grid, this many
+/// world units wide, or as themselves.
+#[derive(Clone, Copy)]
+pub enum Loose {
+  Clusters(f64),
+  Cards,
+}
+
 impl Index {
   /// Zones (parents first), cards, edges and drawings in `rect`, skipping those smaller than `min_size`
-  /// world units. Zoomed out, with the size of a `cell` of the clusters' grid (?6), nothing inside a
-  /// zone comes back on its own: only the outermost zones with a preview of what they hold, the loose
-  /// cards counted per cell, the edges bundled and the loose drawings.
-  pub fn viewport(&self, rect: Rect, min_size: f64, cell: Option<f64>) -> Result<Viewport> {
-    let args = params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, min_size];
+  /// world units. Zoomed out, with `loose` saying what loose cards come back as, nothing inside a zone
+  /// comes back on its own: only the outermost zones with a preview of what they hold, the loose cards
+  /// counted per cell or as themselves with the edges between them, the other edges bundled and the
+  /// loose drawings.
+  pub fn viewport(&self, rect: Rect, min_size: f64, loose: Option<Loose>) -> Result<Viewport> {
+    let out = loose.is_some();
+    let args = params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, min_size, out];
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
        SELECT z.id, z.parent, coalesce(z.name, ''), z.color, zabs.ax, zabs.ay, z.w, z.h
        FROM zone_bounds b JOIN zones z ON z.key = b.key JOIN zabs ON zabs.id = z.id
-       WHERE {MEETS} AND {LARGE} AND (?6 IS NULL OR zabs.depth = 0) ORDER BY zabs.depth"
+       WHERE {MEETS} AND {LARGE} AND (NOT ?6 OR zabs.depth = 0) ORDER BY zabs.depth"
     ))?;
     let zones: Vec<ZoneView> = stmt
-      .query_map(params![rect.min_x, rect.min_y, rect.max_x, rect.max_y, min_size, cell], |r| {
+      .query_map(args, |r| {
         Ok(ZoneView {
           id: r.get(0)?,
           parent: r.get(1)?,
@@ -39,11 +49,12 @@ impl Index {
         })
       })?
       .collect::<rusqlite::Result<_>>()?;
-    if let Some(cell) = cell {
-      let (clusters, bundles, previews) = (self.clusters(rect, cell)?, self.bundles(rect, cell)?, self.previews(rect, min_size, &zones)?);
+    if let Some(Loose::Clusters(cell)) = loose {
+      let (clusters, bundles, previews) = (self.clusters(rect, cell)?, self.bundles(rect, Some(cell))?, self.previews(rect, min_size, &zones)?);
       let drawings = self.drawings(rect, min_size, true)?;
       return Ok(Viewport { zones, cards: vec![], edges: vec![], drawings, clusters, bundles, previews });
     }
+    // Zoomed out, only the loose cards and the edges between two of them come back as themselves.
     let mut stmt = self.db.prepare(&format!(
       "WITH RECURSIVE {ZONE_ABS}
        SELECT c.id, c.note, c.zone, coalesce(zabs.ax, 0) + c.x, coalesce(zabs.ay, 0) + c.y, c.w, c.h,
@@ -51,7 +62,7 @@ impl Index {
          json_extract(c.preview, '$.title'), json_extract(c.preview, '$.description'), json_extract(c.preview, '$.image'), c.kind, c.view, c.scale
        FROM card_bounds b JOIN cards c ON c.key = b.key
        LEFT JOIN zabs ON zabs.id = c.zone LEFT JOIN notes n ON n.id = c.note
-       WHERE {MEETS} AND {LARGE}"
+       WHERE {MEETS} AND {LARGE} AND (NOT ?6 OR zabs.id IS NULL)"
     ))?;
     let cards = stmt
       .query_map(args, |r| {
@@ -88,7 +99,7 @@ impl Index {
        FROM edge_bounds b JOIN edges e ON e.key = b.key
        JOIN cards f ON f.id = e.from_card LEFT JOIN zabs fz ON fz.id = f.zone
        JOIN cards t ON t.id = e.to_card LEFT JOIN zabs tz ON tz.id = t.zone
-       WHERE {MEETS} AND {LARGE}"
+       WHERE {MEETS} AND {LARGE} AND (NOT ?6 OR (fz.id IS NULL AND tz.id IS NULL))"
     ))?;
     let frame = |r: &rusqlite::Row, at: usize| -> rusqlite::Result<Frame> {
       Ok(Frame { x: r.get(at)?, y: r.get(at + 1)?, w: r.get(at + 2)?, h: r.get(at + 3)? })
@@ -107,7 +118,8 @@ impl Index {
         })
       })?
       .collect::<rusqlite::Result<_>>()?;
-    let drawings = self.drawings(rect, min_size, false)?;
-    Ok(Viewport { zones, cards, edges, drawings, clusters: vec![], bundles: vec![], previews: vec![] })
+    let drawings = self.drawings(rect, min_size, out)?;
+    let (bundles, previews) = if out { (self.bundles(rect, None)?, self.previews(rect, min_size, &zones)?) } else { (vec![], vec![]) };
+    Ok(Viewport { zones, cards, edges, drawings, clusters: vec![], bundles, previews })
   }
 }
