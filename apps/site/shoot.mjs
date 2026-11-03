@@ -68,6 +68,8 @@ async function seed({ base }) {
 	await api.openVault(id);
 	// A new vault opens on its onboarding until it has been through it.
 	await api.setVaultOnboarded();
+	// Its map shows loose cards clustered, which a vault does only once it says so.
+	await api.setVaultClusterCards(true);
 	await api.setDevicePen({ color: '#f4a261', width: 3, eraser: 'stroke' });
 	const [yellow, orange, pink, violet, blue, green] = ['#f5d76e', '#f4a261', '#e98a9b', '#a78bdb', '#6fa8dc', '#7cc49a'];
 
